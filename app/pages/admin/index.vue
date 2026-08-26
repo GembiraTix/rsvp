@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'Admin Dashboard - FPCE Job Fair'
+  title: 'Admin Dashboard - FPCE Job Fair',
 })
 
 // Mock events data for admin
@@ -11,53 +11,34 @@ const events = ref([
     date: '2026-09-15',
     location: 'Faculty Main Hall',
     rsvpCount: 142,
-    status: 'Published'
+    status: 'Published',
   },
-  {
-    id: '2',
-    title: 'Tech Industry Keynote: Future of Engineering',
-    date: '2026-09-15',
-    location: 'Auditorium Hall B',
-    rsvpCount: 68,
-    status: 'Published'
-  },
-  {
-    id: '3',
-    title: 'Resume Review & Walk-in Mock Interviews',
-    date: '2026-09-16',
-    location: 'Seminar Room 301',
-    rsvpCount: 45,
-    status: 'Published'
-  }
 ])
 
-const totalRsvps = computed(() => events.value.reduce((acc, curr) => acc + curr.rsvpCount, 0))
+const totalRsvps = computed(() =>
+  events.value.reduce((acc, curr) => acc + curr.rsvpCount, 0),
+)
 
 function deleteEvent(id: string) {
   if (!confirm('Are you sure you want to delete this event?')) return
-  events.value = events.value.filter(e => e.id !== id)
+  events.value = events.value.filter((e) => e.id !== id)
 }
 </script>
 
 <template>
   <div class="py-8 max-w-6xl mx-auto px-4 space-y-8">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+    >
       <div>
         <h1 class="text-3xl font-bold text-neutral-900 dark:text-white">
-          Event Management Dashboard
+          Events Dashboard
         </h1>
-        <p class="text-sm text-neutral-500">
-          Manage upcoming faculty job fair sessions and track attendees
-        </p>
       </div>
 
       <div class="flex items-center gap-3">
-        <UButton
-          to="/admin/events/new"
-          color="primary"
-          icon="i-lucide-plus"
-        >
+        <UButton to="/admin/events/new" color="primary" icon="i-lucide-plus">
           Create New Event
         </UButton>
       </div>
@@ -67,43 +48,52 @@ function deleteEvent(id: string) {
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <UCard class="border-neutral-200 dark:border-neutral-800">
         <div class="flex items-center gap-4">
-          <div class="p-3 rounded-xl bg-primary/10 text-primary">
+          <div class="p-3 rounded-xl">
             <UIcon name="i-lucide-calendar" class="w-6 h-6" />
           </div>
           <div>
             <p class="text-xs text-neutral-500 font-medium">Total Sessions</p>
-            <p class="text-2xl font-bold text-neutral-900 dark:text-white">{{ events.length }}</p>
+            <p class="text-2xl font-bold text-neutral-900 dark:text-white">
+              {{ events.length }}
+            </p>
           </div>
         </div>
       </UCard>
 
       <UCard class="border-neutral-200 dark:border-neutral-800">
         <div class="flex items-center gap-4">
-          <div class="p-3 rounded-xl bg-blue-500/10 text-blue-500">
+          <div class="p-3 rounded-xl">
             <UIcon name="i-lucide-users" class="w-6 h-6" />
           </div>
           <div>
             <p class="text-xs text-neutral-500 font-medium">Total RSVPs</p>
-            <p class="text-2xl font-bold text-neutral-900 dark:text-white">{{ totalRsvps }}</p>
+            <p class="text-2xl font-bold text-neutral-900 dark:text-white">
+              {{ totalRsvps }}
+            </p>
           </div>
         </div>
       </UCard>
 
       <UCard class="border-neutral-200 dark:border-neutral-800">
         <div class="flex items-center gap-4">
-          <div class="p-3 rounded-xl bg-green-500/10 text-green-500">
+          <div class="p-3 rounded-xl">
             <UIcon name="i-lucide-check-circle" class="w-6 h-6" />
           </div>
           <div>
             <p class="text-xs text-neutral-500 font-medium">Status</p>
-            <p class="text-2xl font-bold text-neutral-900 dark:text-white">Active</p>
+            <p class="text-2xl font-bold text-neutral-900 dark:text-white">
+              Active
+            </p>
           </div>
         </div>
       </UCard>
     </div>
 
     <!-- Events List Table -->
-    <UCard class="border-neutral-200 dark:border-neutral-800" :ui="{ body: 'p-0 sm:p-0' }">
+    <UCard
+      class="border-neutral-200 dark:border-neutral-800"
+      :ui="{ body: 'p-0 sm:p-0' }"
+    >
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-bold text-neutral-900 dark:text-white">
@@ -114,7 +104,9 @@ function deleteEvent(id: string) {
 
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
-          <thead class="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-500 uppercase">
+          <thead
+            class="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-500 uppercase"
+          >
             <tr>
               <th class="px-6 py-3">Event Title</th>
               <th class="px-6 py-3">Date</th>
@@ -129,7 +121,9 @@ function deleteEvent(id: string) {
               :key="ev.id"
               class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20"
             >
-              <td class="px-6 py-4 font-medium text-neutral-900 dark:text-white">
+              <td
+                class="px-6 py-4 font-medium text-neutral-900 dark:text-white"
+              >
                 {{ ev.title }}
               </td>
               <td class="px-6 py-4 text-neutral-600 dark:text-neutral-300">
@@ -139,9 +133,7 @@ function deleteEvent(id: string) {
                 {{ ev.location }}
               </td>
               <td class="px-6 py-4">
-                <UBadge color="primary" variant="subtle" size="sm">
-                  {{ ev.rsvpCount }} RSVPs
-                </UBadge>
+                {{ ev.rsvpCount }}
               </td>
               <td class="px-6 py-4 text-right space-x-2">
                 <UButton
@@ -149,6 +141,7 @@ function deleteEvent(id: string) {
                   size="xs"
                   color="neutral"
                   variant="outline"
+                  title="show attendees"
                 >
                   Attendees
                 </UButton>
@@ -158,12 +151,14 @@ function deleteEvent(id: string) {
                   color="neutral"
                   variant="ghost"
                   icon="i-lucide-external-link"
+                  title="show public event page"
                 />
                 <UButton
                   size="xs"
                   color="error"
                   variant="ghost"
                   icon="i-lucide-trash-2"
+                  title="delete event"
                   @click="deleteEvent(ev.id)"
                 />
               </td>

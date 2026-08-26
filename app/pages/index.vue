@@ -20,6 +20,8 @@ const events = ref([
     status: 'Upcoming',
   },
 ])
+
+const testData = await $fetch('/api/test')
 </script>
 
 <template>
@@ -46,6 +48,7 @@ const events = ref([
           </h2>
           <p class="text-sm text-neutral-500">
             Showing {{ events.length }} event(s)
+            {{ testData[0].column }}
           </p>
         </div>
       </div>
