@@ -1,76 +1,123 @@
+<script setup lang="ts">
+useSeoMeta({
+  title: 'FPCE Job Fair - Event RSVP',
+  description:
+    'Browse upcoming FPCE job fair sessions, company presentations, and RSVP directly.',
+})
+
+// TODO: fetch
+const events = ref([
+  {
+    id: '1',
+    title: 'FPCE Career Fair 2026 - Main Exhibition',
+    date: '2026-09-15',
+    time: '09:00 - 16:00',
+    description:
+      'Connect with over 40+ leading engineering and tech companies. Open for all faculty students and alumni.',
+    image:
+      'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60',
+    rsvpCount: 142,
+    status: 'Upcoming',
+  },
+])
+</script>
+
 <template>
-  <div>
-    <UPageHero
-      title="Nuxt Starter Template"
-      description="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
-      :links="[{
-        label: 'Get started',
-        to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-        target: '_blank',
-        trailingIcon: 'i-lucide-arrow-right',
-        size: 'xl'
-      }, {
-        label: 'Use this template',
-        to: 'https://github.com/nuxt-ui-templates/starter',
-        target: '_blank',
-        icon: 'i-simple-icons-github',
-        size: 'xl',
-        color: 'neutral',
-        variant: 'subtle'
-      }]"
-    />
+  <div class="py-10 space-y-12">
+    <!-- Hero Banner -->
+    <section class="text-center space-y-4 max-w-3xl mx-auto px-4">
+      <h1
+        class="text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 dark:text-white"
+      >
+        Find Opportunities & RSVP Instantly
+      </h1>
+      <p class="text-lg text-neutral-600 dark:text-neutral-300">
+        Browse company talks, recruitment sessions, and workshops. Reserve your
+        spot in seconds without account registration.
+      </p>
+    </section>
 
-    <UPageSection
-      id="features"
-      title="Everything you need to build modern Nuxt apps"
-      description="Start with a solid foundation. This template includes all the essentials for building production-ready applications with Nuxt UI's powerful component system."
-      :features="[{
-        icon: 'i-lucide-rocket',
-        title: 'Production-ready from day one',
-        description: 'Pre-configured with TypeScript, ESLint, Tailwind CSS, and all the best practices. Focus on building features, not setting up tooling.'
-      }, {
-        icon: 'i-lucide-palette',
-        title: 'Beautiful by default',
-        description: 'Leveraging Nuxt UI\'s design system with automatic dark mode, consistent spacing, and polished components that look great out of the box.'
-      }, {
-        icon: 'i-lucide-zap',
-        title: 'Lightning fast',
-        description: 'Optimized for performance with SSR/SSG support, automatic code splitting, and edge-ready deployment. Your users will love the speed.'
-      }, {
-        icon: 'i-lucide-blocks',
-        title: '100+ components included',
-        description: 'Access Nuxt UI\'s comprehensive component library. From forms to navigation, everything is accessible, responsive, and customizable.'
-      }, {
-        icon: 'i-lucide-code-2',
-        title: 'Developer experience first',
-        description: 'Auto-imports, hot module replacement, and TypeScript support. Write less boilerplate and ship more features.'
-      }, {
-        icon: 'i-lucide-shield-check',
-        title: 'Built for scale',
-        description: 'Enterprise-ready architecture with proper error handling, SEO optimization, and security best practices built-in.'
-      }]"
-    />
+    <!-- Event List Grid -->
+    <section class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">
+            Available Sessions
+          </h2>
+          <p class="text-sm text-neutral-500">
+            Showing {{ events.length }} event(s)
+          </p>
+        </div>
+      </div>
 
-    <UPageSection>
-      <UPageCTA
-        title="Ready to build your next Nuxt app?"
-        description="Join thousands of developers building with Nuxt and Nuxt UI. Get this template and start shipping today."
-        variant="subtle"
-        :links="[{
-          label: 'Start building',
-          to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-          target: '_blank',
-          trailingIcon: 'i-lucide-arrow-right',
-          color: 'neutral'
-        }, {
-          label: 'View on GitHub',
-          to: 'https://github.com/nuxt-ui-templates/starter',
-          target: '_blank',
-          icon: 'i-simple-icons-github',
-          color: 'neutral',
-          variant: 'outline'
-        }]"
-      />
-    </UPageSection>
+      <div
+        v-if="events.length > 0"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        <UCard
+          v-for="event in events"
+          :key="event.id"
+          class="flex flex-col h-full overflow-hidden hover:shadow-lg transition-shadow duration-200"
+          :ui="{ body: 'p-5 flex-1 flex flex-col justify-between' }"
+        >
+          <figure
+            class="relative h-44 -mx-5 -mt-5 mb-4 overflow-hidden bg-neutral-100 dark:bg-neutral-800"
+          >
+            <img
+              :src="event.image"
+              :alt="event.title"
+              class="w-full h-full object-cover"
+            />
+            <UBadge
+              class="absolute top-3 right-3"
+              color="primary"
+              variant="solid"
+              size="sm"
+            >
+              {{ event.status }}
+            </UBadge>
+          </figure>
+
+          <figcaption
+            class="space-y-1.5 text-xs text-neutral-500 dark:text-neutral-400 mb-3"
+          >
+            <h3
+              class="text-lg font-bold text-neutral-900 dark:text-white mb-2 line-clamp-2"
+            >
+              {{ event.title }}
+            </h3>
+
+            <div class="flex items-center gap-1.5">
+              <UIcon name="i-lucide-calendar" class="w-4 h-4 text-primary" />
+              <span>{{ event.date }} • {{ event.time }}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <UIcon name="i-lucide-users" class="w-4 h-4 text-primary" />
+              <span>{{ event.rsvpCount }} attendees registered</span>
+            </div>
+          </figcaption>
+
+          <p
+            class="text-sm text-neutral-600 dark:text-neutral-300 line-clamp-3 mb-4"
+          >
+            {{ event.description }}
+          </p>
+
+          <div
+            class="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between"
+          >
+            <UButton
+              :to="`/events/${event.id}`"
+              color="primary"
+              variant="solid"
+              class="w-full justify-center"
+              trailing-icon="i-lucide-arrow-right"
+            >
+              View & RSVP
+            </UButton>
+          </div>
+        </UCard>
+      </div>
+    </section>
   </div>
 </template>

@@ -1,26 +1,20 @@
 <script setup>
 useHead({
-  meta: [
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' }
-  ],
-  link: [
-    { rel: 'icon', href: '/favicon.ico' }
-  ],
+  meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
+  link: [{ rel: 'icon', href: '/favicon.ico' }],
   htmlAttrs: {
-    lang: 'en'
-  }
+    lang: 'en',
+  },
 })
 
-const title = 'Nuxt Starter Template'
-const description = 'A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours.'
+const title = 'FPCE Job Fair - Event RSVP'
+const description = 'RSVP portal for FPCE Faculty Job Fair'
 
 useSeoMeta({
   title,
   description,
   ogTitle: title,
   ogDescription: description,
-  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
-  twitterCard: 'summary_large_image'
 })
 </script>
 
@@ -30,25 +24,30 @@ useSeoMeta({
       <template #left>
         <NuxtLink
           to="/"
-          class="focus-visible:outline-3 outline-primary/25 rounded-md p-1 -ms-1"
+          class="flex items-center gap-2 font-bold text-neutral-900 dark:text-white text-base hover:opacity-90 transition-opacity"
         >
-          <AppLogo class="w-auto h-6 shrink-0" />
+          <span>FPCE Job Fair</span>
         </NuxtLink>
-
-        <TemplateMenu />
       </template>
 
       <template #right>
-        <UColorModeButton />
+        <div class="flex items-center gap-2">
+          <UButton to="/" variant="ghost" color="neutral" size="sm">
+            Events
+          </UButton>
 
-        <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
-          target="_blank"
-          icon="i-simple-icons-github"
-          aria-label="GitHub"
-          color="neutral"
-          variant="ghost"
-        />
+          <UButton
+            to="/admin"
+            variant="outline"
+            color="neutral"
+            size="sm"
+            icon="i-lucide-shield"
+          >
+            Admin
+          </UButton>
+
+          <UColorModeButton size="sm" />
+        </div>
       </template>
     </UHeader>
 
@@ -56,24 +55,23 @@ useSeoMeta({
       <NuxtPage />
     </UMain>
 
-    <USeparator icon="i-simple-icons-nuxtdotjs" />
+    <USeparator />
 
     <UFooter>
       <template #left>
-        <p class="text-sm text-muted">
-          Built with Nuxt UI • © {{ new Date().getFullYear() }}
+        <p class="text-xs text-neutral-500">
+          Faculty Career Center & Job Fair Organizer • ©
+          {{ new Date().getFullYear() }}
         </p>
       </template>
 
       <template #right>
-        <UButton
-          to="https://github.com/nuxt-ui-templates/starter"
-          target="_blank"
-          icon="i-simple-icons-github"
-          aria-label="GitHub"
-          color="neutral"
-          variant="ghost"
-        />
+        <NuxtLink
+          to="/admin/login"
+          class="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+        >
+          Admin Login
+        </NuxtLink>
       </template>
     </UFooter>
   </UApp>
