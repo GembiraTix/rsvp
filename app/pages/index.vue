@@ -5,23 +5,8 @@ useSeoMeta({
     'Browse upcoming FPCE job fair sessions, company presentations, and RSVP directly.',
 })
 
-// TODO: fetch
-const events = ref([
-  {
-    id: '1',
-    title: 'FPCE Career Fair 2026 - Main Exhibition',
-    date: '2026-09-15',
-    time: '09:00 - 16:00',
-    description:
-      'Connect with over 40+ leading engineering and tech companies. Open for all faculty students and alumni.',
-    image:
-      'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60',
-    rsvpCount: 142,
-    status: 'Upcoming',
-  },
-])
-
-const testData = await $fetch('/api/test')
+const supabase = useSupabaseClient()
+const { data: events, error } = await supabase.from('events').select('*')
 </script>
 
 <template>
@@ -41,20 +26,17 @@ const testData = await $fetch('/api/test')
 
     <!-- Event List Grid -->
     <section class="max-w-6xl mx-auto px-4">
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">
-            Available Sessions
-          </h2>
-          <p class="text-sm text-neutral-500">
-            Showing {{ events.length }} event(s)
-            {{ testData[0].column }}
-          </p>
-        </div>
-      </div>
+      <header class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">
+          Available Sessions
+        </h2>
+        <p class="text-sm text-neutral-500">
+          Showing {{ events?.length }} event(s)
+        </p>
+      </header>
 
       <div
-        v-if="events.length > 0"
+        v-if="events && events.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         <UCard
@@ -67,18 +49,11 @@ const testData = await $fetch('/api/test')
             class="relative h-44 -mx-5 -mt-5 mb-4 overflow-hidden bg-neutral-100 dark:bg-neutral-800"
           >
             <img
-              :src="event.image"
+              v-if="event.image_url"
+              :src="event.image_url"
               :alt="event.title"
               class="w-full h-full object-cover"
             />
-            <UBadge
-              class="absolute top-3 right-3"
-              color="primary"
-              variant="solid"
-              size="sm"
-            >
-              {{ event.status }}
-            </UBadge>
           </figure>
 
           <figcaption
@@ -92,11 +67,7 @@ const testData = await $fetch('/api/test')
 
             <div class="flex items-center gap-1.5">
               <UIcon name="i-lucide-calendar" class="w-4 h-4 text-primary" />
-              <span>{{ event.date }} • {{ event.time }}</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <UIcon name="i-lucide-users" class="w-4 h-4 text-primary" />
-              <span>{{ event.rsvpCount }} attendees registered</span>
+              <span>{{ formatDate(event.starts_at) }} WIB</span>
             </div>
           </figcaption>
 
@@ -110,7 +81,7 @@ const testData = await $fetch('/api/test')
             class="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between"
           >
             <UButton
-              :to="`/events/${event.id}`"
+              :to="`/events/${event.slug}`"
               color="primary"
               variant="solid"
               class="w-full justify-center"

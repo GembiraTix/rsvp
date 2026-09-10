@@ -1,25 +1,22 @@
 <script setup lang="ts">
 const route = useRoute()
-const eventId = computed(() => route.params.id as string)
+const eventSlug = computed(() => route.params.slug as string)
 
-// Mock event details for initial setup
-const event = ref({
-  id: eventId.value,
-  title: 'FPCE Career Fair 2026 - Main Exhibition',
-  date: '2026-09-15',
-  time: '09:00 - 16:00',
-  location: 'Faculty Main Hall & Auditorium',
-  speaker: 'Faculty Career Center & Industry Partners',
-  description:
-    'Connect with over 40+ leading engineering and tech companies. Open for all faculty students and alumni. Bring copies of your resume/CV and prepare for on-site inquiries and networking sessions.',
-  image:
-    'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&auto=format&fit=crop&q=80',
-  rsvpCount: 142,
-})
+const supabase = useSupabaseClient()
+
+const { data: event, error } = await supabase
+  .from('events')
+  .select(
+    'id, slug, image_url, title, starts_at, ends_at, location, description',
+  )
+  .eq('slug', eventSlug.value)
+  .single()
+
+if (error) throw error
 
 useSeoMeta({
-  title: () => `${event.value.title} - RSVP`,
-  description: () => event.value.description,
+  title: () => `${event.title} - RSVP`,
+  description: () => event.description,
 })
 
 // RSVP Form State
@@ -52,35 +49,39 @@ function handleRsvp() {
       Back to all events
     </UButton>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    <div v-if="error">
+      {{ error }}
+    </div>
+
+    <div
+      v-if="event"
+      class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+    >
       <!-- Event Info (Left Column) -->
-      <div class="lg:col-span-7 space-y-6">
-        <div
+      <article class="lg:col-span-7 space-y-6">
+        <figure
           class="rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 h-64 md:h-80"
         >
           <img
-            :src="event.image"
+            :src="event.image_url"
             :alt="event.title"
             class="w-full h-full object-cover"
           />
-        </div>
+        </figure>
 
-        <div class="space-y-4">
-          <UBadge color="primary" variant="subtle" size="md">
-            Faculty Job Fair
-          </UBadge>
+        <figcaption class="space-y-4">
           <h1 class="text-3xl font-bold text-neutral-900 dark:text-white">
             {{ event.title }}
           </h1>
 
-          <div
+          <article
             class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm"
           >
             <div
               class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
             >
               <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
-              <span>{{ event.date }} • {{ event.time }}</span>
+              <span>{{ formatDate(event.starts_at) }}</span>
             </div>
             <div
               class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
@@ -88,21 +89,9 @@ function handleRsvp() {
               <UIcon name="i-lucide-map-pin" class="w-5 h-5 text-primary" />
               <span>{{ event.location }}</span>
             </div>
-            <div
-              class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
-            >
-              <UIcon name="i-lucide-user" class="w-5 h-5 text-primary" />
-              <span>{{ event.speaker }}</span>
-            </div>
-            <div
-              class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
-            >
-              <UIcon name="i-lucide-users" class="w-5 h-5 text-primary" />
-              <span>{{ event.rsvpCount }} confirmed guests</span>
-            </div>
-          </div>
+          </article>
 
-          <div class="space-y-2">
+          <article class="space-y-2">
             <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
               About This Session
             </h2>
@@ -111,9 +100,9 @@ function handleRsvp() {
             >
               {{ event.description }}
             </p>
-          </div>
-        </div>
-      </div>
+          </article>
+        </figcaption>
+      </article>
 
       <!-- RSVP Form Card (Right Column) -->
       <div class="lg:col-span-5">
