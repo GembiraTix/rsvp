@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { z } from 'zod'
+
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
@@ -19,8 +21,15 @@ useSeoMeta({
   description: () => event.description,
 })
 
-// RSVP Form State
-const form = reactive({
+const formSchema = z.object({
+  name: z.string().nonempty(),
+  email: z.email(),
+  organization: z.string().optional(),
+})
+
+type RSVPForm = z.output<typeof formSchema>
+
+const form = reactive<RSVPForm>({
   name: '',
   email: '',
   organization: '',
@@ -58,7 +67,7 @@ function handleRsvp() {
       class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
     >
       <!-- Event Info (Left Column) -->
-      <article class="lg:col-span-7 space-y-6">
+      <section class="lg:col-span-7 space-y-6">
         <figure
           class="rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-800 h-64 md:h-80"
         >
@@ -102,10 +111,10 @@ function handleRsvp() {
             </p>
           </article>
         </figcaption>
-      </article>
+      </section>
 
       <!-- RSVP Form Card (Right Column) -->
-      <div class="lg:col-span-5">
+      <section class="lg:col-span-5">
         <UCard
           class="sticky top-20 shadow-xl border-neutral-200 dark:border-neutral-800"
           :ui="{ body: 'p-6 space-y-6' }"
@@ -117,9 +126,9 @@ function handleRsvp() {
             >
               <UIcon name="i-lucide-check" class="w-6 h-6" />
             </div>
-            <h3 class="text-xl font-bold text-neutral-900 dark:text-white">
+            <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
               RSVP Confirmed!
-            </h3>
+            </h2>
             <p class="text-sm text-neutral-600 dark:text-neutral-300">
               Thank you, <strong>{{ form.name }}</strong
               >! We have saved your spot.
@@ -161,37 +170,28 @@ function handleRsvp() {
           </div>
 
           <!-- Form State -->
-          <div v-else class="space-y-5">
-            <div>
+          <template v-else>
+            <header>
               <h3 class="text-xl font-bold text-neutral-900 dark:text-white">
                 Reserve Your Spot
               </h3>
-              <p class="text-xs text-neutral-500 mt-0.5">
+
+              <p class="text-neutral-500 mt-0.5">
                 No account required. Fast and free registration.
               </p>
-            </div>
+            </header>
 
-            <form @submit.prevent="handleRsvp" class="space-y-4">
-              <div class="space-y-1.5">
-                <label
-                  class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                >
-                  Full Name <span class="text-red-500">*</span>
-                </label>
+            <UForm :state="form" @submit="handleRsvp" class="space-y-4">
+              <UFormField class="space-y-1.5" label="Full name">
                 <UInput
                   v-model="form.name"
                   placeholder="e.g. Jane Doe"
                   required
                   class="w-full"
                 />
-              </div>
+              </UFormField>
 
-              <div class="space-y-1.5">
-                <label
-                  class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                >
-                  Email Address <span class="text-red-500">*</span>
-                </label>
+              <UFormField class="space-y-1.5" label="Email address">
                 <UInput
                   v-model="form.email"
                   type="email"
@@ -199,22 +199,20 @@ function handleRsvp() {
                   required
                   class="w-full"
                 />
-              </div>
+              </UFormField>
 
-              <div class="space-y-1.5">
-                <label
-                  class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
-                >
-                  Major
-                  <span class="text-neutral-400 font-normal">(Optional)</span>
-                </label>
+              <UFormField
+                class="space-y-1.5"
+                label="Organization"
+                hint="optional"
+              >
                 <UTextarea
                   v-model="form.organization"
                   placeholder="e.g. 4th year Computer Science student interested in Software Engineering internships."
                   :rows="3"
                   class="w-full"
                 />
-              </div>
+              </UFormField>
 
               <UButton
                 type="submit"
@@ -225,10 +223,10 @@ function handleRsvp() {
               >
                 Confirm RSVP
               </UButton>
-            </form>
-          </div>
+            </UForm>
+          </template>
         </UCard>
-      </div>
+      </section>
     </div>
   </div>
 </template>
