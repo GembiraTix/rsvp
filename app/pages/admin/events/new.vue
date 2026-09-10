@@ -1,6 +1,10 @@
 <script setup lang="ts">
+definePageMeta({
+  middleware: 'auth',
+})
+
 useSeoMeta({
-  title: 'Create New Event - Admin'
+  title: 'Create New Event - Admin',
 })
 
 const router = useRouter()
@@ -10,9 +14,8 @@ const form = reactive({
   date: '',
   time: '',
   location: '',
-  speaker: '',
   description: '',
-  image: ''
+  image: '',
 })
 
 const isSubmitting = ref(false)
@@ -53,7 +56,9 @@ function handleCreate() {
 
       <form @submit.prevent="handleCreate" class="space-y-4">
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <label
+            class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+          >
             Event Title <span class="text-red-500">*</span>
           </label>
           <UInput
@@ -66,19 +71,18 @@ function handleCreate() {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+            <label
+              class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+            >
               Date <span class="text-red-500">*</span>
             </label>
-            <UInput
-              v-model="form.date"
-              type="date"
-              required
-              class="w-full"
-            />
+            <UInput v-model="form.date" type="date" required class="w-full" />
           </div>
 
           <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+            <label
+              class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+            >
               Time Range <span class="text-red-500">*</span>
             </label>
             <UInput
@@ -92,7 +96,9 @@ function handleCreate() {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+            <label
+              class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+            >
               Location / Room <span class="text-red-500">*</span>
             </label>
             <UInput
@@ -102,21 +108,12 @@ function handleCreate() {
               class="w-full"
             />
           </div>
-
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-              Speaker / Presenting Organization
-            </label>
-            <UInput
-              v-model="form.speaker"
-              placeholder="e.g. PT Astra International / Career Center"
-              class="w-full"
-            />
-          </div>
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <label
+            class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+          >
             Banner Image URL
           </label>
           <UInput
@@ -127,7 +124,9 @@ function handleCreate() {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <label
+            class="text-xs font-semibold text-neutral-700 dark:text-neutral-300"
+          >
             Description
           </label>
           <UTextarea
@@ -138,19 +137,13 @@ function handleCreate() {
           />
         </div>
 
-        <div class="pt-4 flex justify-end gap-3 border-t border-neutral-200 dark:border-neutral-800">
-          <UButton
-            to="/admin"
-            variant="ghost"
-            color="neutral"
-          >
+        <div
+          class="pt-4 flex justify-end gap-3 border-t border-neutral-200 dark:border-neutral-800"
+        >
+          <UButton to="/admin" variant="ghost" color="neutral">
             Cancel
           </UButton>
-          <UButton
-            type="submit"
-            color="primary"
-            :loading="isSubmitting"
-          >
+          <UButton type="submit" color="primary" :loading="isSubmitting">
             Publish Event
           </UButton>
         </div>

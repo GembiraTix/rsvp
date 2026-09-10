@@ -16,6 +16,14 @@ useSeoMeta({
   ogTitle: title,
   ogDescription: description,
 })
+
+const user = useSupabaseUser()
+const supabase = useSupabaseClient()
+
+async function handleLogout() {
+  await supabase.auth.signOut()
+  await navigateTo('/login')
+}
 </script>
 
 <template>
@@ -37,13 +45,14 @@ useSeoMeta({
           </UButton>
 
           <UButton
-            to="/admin"
-            variant="outline"
-            color="neutral"
+            v-if="user"
+            variant="ghost"
+            color="error"
             size="sm"
-            icon="i-lucide-shield"
+            icon="i-lucide-log-out"
+            @click="handleLogout"
           >
-            Admin
+            Sign Out
           </UButton>
 
           <UColorModeButton size="sm" />
@@ -66,12 +75,9 @@ useSeoMeta({
       </template>
 
       <template #right>
-        <NuxtLink
-          to="/admin/login"
-          class="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
-        >
-          Admin Login
-        </NuxtLink>
+        <span v-if="user" class="text-xs text-neutral-400">
+          Signed in as {{ user.email }}
+        </span>
       </template>
     </UFooter>
   </UApp>

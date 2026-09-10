@@ -15,12 +15,12 @@ const rsvp = ref({
     title: 'FPCE Career Fair 2026 - Main Exhibition',
     date: '2026-09-15',
     time: '09:00 - 16:00',
-    location: 'Faculty Main Hall & Auditorium'
-  }
+    location: 'Faculty Main Hall & Auditorium',
+  },
 })
 
 useSeoMeta({
-  title: 'Manage RSVP - FPCE Job Fair'
+  title: 'Manage RSVP - FPCE Job Fair',
 })
 
 const isCancelling = ref(false)
@@ -39,12 +39,7 @@ function handleCancelRsvp() {
 
 <template>
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
-    <UButton
-      to="/"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
-    >
+    <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left">
       Back to Home
     </UButton>
 
@@ -55,9 +50,7 @@ function handleCancelRsvp() {
             <h1 class="text-xl font-bold text-neutral-900 dark:text-white">
               Reservation Details
             </h1>
-            <p class="text-xs text-neutral-500 font-mono">
-              Ref: {{ token }}
-            </p>
+            <p class="text-xs text-neutral-500 font-mono">Ref: {{ token }}</p>
           </div>
 
           <UBadge
@@ -72,7 +65,9 @@ function handleCancelRsvp() {
 
       <div class="space-y-6">
         <!-- Event Summary -->
-        <div class="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 space-y-2">
+        <div
+          class="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 space-y-2"
+        >
           <p class="text-xs font-semibold text-primary uppercase tracking-wide">
             Event Information
           </p>
@@ -89,11 +84,15 @@ function handleCancelRsvp() {
         <div class="space-y-3 text-sm">
           <div>
             <span class="text-xs text-neutral-500 block">Attendee Name</span>
-            <span class="font-medium text-neutral-900 dark:text-white">{{ rsvp.name }}</span>
+            <span class="font-medium text-neutral-900 dark:text-white">{{
+              rsvp.name
+            }}</span>
           </div>
           <div>
             <span class="text-xs text-neutral-500 block">Email</span>
-            <span class="font-medium text-neutral-900 dark:text-white">{{ rsvp.email }}</span>
+            <span class="font-medium text-neutral-900 dark:text-white">{{
+              rsvp.email
+            }}</span>
           </div>
           <div v-if="rsvp.note">
             <span class="text-xs text-neutral-500 block">Note / Interests</span>
@@ -104,9 +103,13 @@ function handleCancelRsvp() {
         </div>
 
         <!-- Cancellation Section -->
-        <div v-if="rsvp.status === 'Confirmed'" class="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
+        <div
+          v-if="rsvp.status === 'Confirmed'"
+          class="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3"
+        >
           <p class="text-xs text-neutral-500">
-            Cannot make it? You can cancel your RSVP so organizers know the actual headcount.
+            Cannot make it? You can cancel your RSVP so organizers know the
+            actual headcount.
           </p>
           <UButton
             color="error"
@@ -119,7 +122,10 @@ function handleCancelRsvp() {
           </UButton>
         </div>
 
-        <div v-else class="p-4 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 rounded-lg text-sm text-center">
+        <div
+          v-else
+          class="p-4 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 rounded-lg text-sm text-center"
+        >
           This reservation has been cancelled.
         </div>
       </div>
