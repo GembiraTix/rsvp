@@ -40,15 +40,14 @@ async function handleLogout() {
 
       <template #right>
         <div class="flex items-center gap-2">
-          <UButton to="/" variant="ghost" color="neutral" size="sm">
-            Events
-          </UButton>
+          <UButton to="/" variant="ghost" color="neutral"> Events </UButton>
+
+          <UButton v-if="!user" to="/login" color="neutral"> Log in </UButton>
 
           <UButton
-            v-if="user"
+            v-else
             variant="ghost"
             color="error"
-            size="sm"
             icon="i-lucide-log-out"
             @click="handleLogout"
           >
