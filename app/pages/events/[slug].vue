@@ -6,6 +6,7 @@ const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
 const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 
 const { data: event, error } = await supabase
   .from('events')
@@ -22,31 +23,45 @@ useSeoMeta({
   description: () => event.description,
 })
 
+const existingRsvp = ref<{ token: string; is_attending: boolean } | null>(null)
+
+if (user.value && event) {
+  const { data } = await supabase
+    .from('rsvps')
+    .select('token, is_attending')
+    .eq('event_id', event.id)
+    .eq('email', user.value.email ?? '')
+    .maybeSingle()
+
+  if (data) {
+    existingRsvp.value = data
+  }
+}
+
 const formSchema = z.object({
   name: z.string().min(1, 'Full name is required.'),
-  email: z.string().email('Please enter a valid email address.'),
+  email: z.email('Please enter a valid email address.'),
   organization: z.string().optional(),
 })
 
 type RSVPForm = z.output<typeof formSchema>
 
 const form = reactive<RSVPForm>({
-  name: '',
-  email: '',
+  name: user.value?.user_metadata?.full_name || '',
+  email: user.value?.email || '',
   organization: '',
 })
 
 const isSubmitting = ref(false)
 const rsvpSuccess = ref(false)
-const rsvpToken = ref('')
+const rsvpToken = ref(existingRsvp.value?.token || '')
 const errorMessage = ref('')
+const isConfirmOpen = ref(false)
 
-async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
+async function submitRsvp(name: string, email: string, organization?: string) {
   if (!event) return
   errorMessage.value = ''
   isSubmitting.value = true
-
-  const { data } = e
 
   try {
     const token = crypto.randomUUID()
@@ -54,9 +69,9 @@ async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
       .from('rsvps')
       .insert({
         event_id: event.id,
-        name: data.name,
-        email: data.email,
-        organization: data.organization || null,
+        name,
+        email,
+        organization: organization || null,
         token: token,
         is_attending: true,
       })
@@ -70,6 +85,7 @@ async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
 
     rsvpToken.value = result?.token || token
     rsvpSuccess.value = true
+    isConfirmOpen.value = false
   } catch (err: unknown) {
     if (err instanceof Error) {
       errorMessage.value = err.message
@@ -79,6 +95,17 @@ async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
   } finally {
     isSubmitting.value = false
   }
+}
+
+async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
+  await submitRsvp(e.data.name, e.data.email, e.data.organization)
+}
+
+async function handleAuthenticatedRsvp() {
+  if (!user.value?.email) return
+  const userName =
+    user.value.user_metadata?.full_name || user.value.email.split('@')[0]
+  await submitRsvp(userName, user.value.email)
 }
 </script>
 
@@ -150,37 +177,27 @@ async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
           class="sticky top-20 shadow-xl border-neutral-200 dark:border-neutral-800"
           :ui="{ body: 'p-6 space-y-6' }"
         >
-          <!-- Success State -->
-          <div v-if="rsvpSuccess" class="space-y-4 text-center py-4">
+          <!-- success state -->
+          <div
+            v-if="rsvpSuccess || (existingRsvp && existingRsvp.is_attending)"
+            class="space-y-4 text-center py-4"
+          >
             <div
               class="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center mx-auto"
             >
               <UIcon name="i-lucide-check" class="w-6 h-6" />
             </div>
+
             <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
               RSVP Confirmed!
             </h2>
-            <p class="text-sm text-neutral-600 dark:text-neutral-300">
-              Thank you, <strong>{{ form.name }}</strong
-              >! We have saved your spot.
+            <p class="text-neutral-600 dark:text-neutral-300">
+              You are registered for this session.
             </p>
 
             <div
-              class="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg text-left text-xs text-neutral-500 space-y-1"
+              class="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg text-neutral-500 space-y-1"
             >
-              <p class="font-semibold text-neutral-700 dark:text-neutral-300">
-                Manage your reservation:
-              </p>
-              <p>Need to cancel or review your RSVP? Save this direct link:</p>
-              <NuxtLink
-                :to="`/rsvp/${rsvpToken}`"
-                class="text-primary hover:underline font-mono break-all inline-block pt-1"
-              >
-                /rsvp/{{ rsvpToken }}
-              </NuxtLink>
-            </div>
-
-            <div class="pt-2 flex flex-col gap-2">
               <UButton
                 :to="`/rsvp/${rsvpToken}`"
                 color="neutral"
@@ -200,7 +217,66 @@ async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
             </div>
           </div>
 
-          <!-- Form State -->
+          <!-- Authenticated Quick RSVP -->
+          <template v-else-if="user">
+            <header class="space-y-1">
+              <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
+                Quick RSVP
+              </h2>
+              <p class="text-neutral-500">
+                Logged in as
+                <strong class="text-neutral-700 dark:text-neutral-300">{{
+                  user.email
+                }}</strong>
+              </p>
+            </header>
+
+            <div
+              v-if="errorMessage"
+              class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
+            >
+              <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
+              <span>{{ errorMessage }}</span>
+            </div>
+
+            <UButton
+              color="primary"
+              size="xl"
+              class="w-full justify-center font-bold"
+              icon="i-lucide-ticket"
+              @click="isConfirmOpen = true"
+            >
+              RSVP Now
+            </UButton>
+
+            <!-- Confirm Dialog -->
+            <UModal
+              v-model:open="isConfirmOpen"
+              title="Confirm your RSVP"
+              :description="`Reserve 1 spot for ${user.email} at ${event.title}?`"
+            >
+              <template #footer>
+                <div class="flex justify-end gap-2">
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    @click="isConfirmOpen = false"
+                  >
+                    Cancel
+                  </UButton>
+                  <UButton
+                    color="primary"
+                    :loading="isSubmitting"
+                    @click="handleAuthenticatedRsvp"
+                  >
+                    Confirm RSVP
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+          </template>
+
+          <!-- Guest Form State -->
           <template v-else>
             <header>
               <h3 class="text-xl font-bold text-neutral-900 dark:text-white">
