@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 
 const route = useRoute()
@@ -22,8 +23,8 @@ useSeoMeta({
 })
 
 const formSchema = z.object({
-  name: z.string().nonempty(),
-  email: z.email(),
+  name: z.string().min(1, 'Full name is required.'),
+  email: z.string().email('Please enter a valid email address.'),
   organization: z.string().optional(),
 })
 
@@ -38,17 +39,46 @@ const form = reactive<RSVPForm>({
 const isSubmitting = ref(false)
 const rsvpSuccess = ref(false)
 const rsvpToken = ref('')
+const errorMessage = ref('')
 
-function handleRsvp() {
-  if (!form.name || !form.email) return
-
+async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
+  if (!event) return
+  errorMessage.value = ''
   isSubmitting.value = true
-  // Simulate submission
-  setTimeout(() => {
-    isSubmitting.value = false
-    rsvpToken.value = 'rsvp-' + Math.random().toString(36).substring(2, 10)
+
+  const { data } = e
+
+  try {
+    const token = crypto.randomUUID()
+    const { data: result, error: insertError } = await supabase
+      .from('rsvps')
+      .insert({
+        event_id: event.id,
+        name: data.name,
+        email: data.email,
+        organization: data.organization || null,
+        token: token,
+        is_attending: true,
+      })
+      .select('token')
+      .single()
+
+    if (insertError) {
+      errorMessage.value = insertError.message
+      return
+    }
+
+    rsvpToken.value = result?.token || token
     rsvpSuccess.value = true
-  }, 600)
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      errorMessage.value = err.message
+    } else {
+      errorMessage.value = 'Failed to submit RSVP. Please try again.'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -78,7 +108,7 @@ function handleRsvp() {
           />
         </figure>
 
-        <figcaption class="space-y-4">
+        <div class="space-y-4">
           <h1 class="text-3xl font-bold text-neutral-900 dark:text-white">
             {{ event.title }}
           </h1>
@@ -86,12 +116,14 @@ function handleRsvp() {
           <article
             class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm"
           >
-            <div
+            <time
+              v-if="event.starts_at"
+              :datetime="event.starts_at"
               class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
             >
               <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
               <span>{{ formatDate(event.starts_at) }}</span>
-            </div>
+            </time>
             <div
               class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
             >
@@ -110,10 +142,9 @@ function handleRsvp() {
               {{ event.description }}
             </p>
           </article>
-        </figcaption>
+        </div>
       </section>
 
-      <!-- RSVP Form Card (Right Column) -->
       <section class="lg:col-span-5">
         <UCard
           class="sticky top-20 shadow-xl border-neutral-200 dark:border-neutral-800"
@@ -181,7 +212,20 @@ function handleRsvp() {
               </p>
             </header>
 
-            <UForm :state="form" @submit="handleRsvp" class="space-y-4">
+            <div
+              v-if="errorMessage"
+              class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
+            >
+              <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
+              <span>{{ errorMessage }}</span>
+            </div>
+
+            <UForm
+              :schema="formSchema"
+              :state="form"
+              @submit="handleRsvp"
+              class="space-y-4"
+            >
               <UFormField class="space-y-1.5" label="Full name">
                 <UInput
                   v-model="form.name"

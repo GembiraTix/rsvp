@@ -65,7 +65,7 @@ const { data: events, error } = await supabase.from('events').select('*')
               {{ event.title }}
             </h3>
 
-            <div class="flex items-center gap-1.5">
+            <div v-if="event.starts_at" class="flex items-center gap-1.5">
               <UIcon name="i-lucide-calendar" class="w-4 h-4 text-primary" />
               <span>{{ formatDate(event.starts_at) }} WIB</span>
             </div>

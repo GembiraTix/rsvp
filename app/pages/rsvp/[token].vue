@@ -2,21 +2,23 @@
 const route = useRoute()
 const token = computed(() => route.params.token as string)
 
-// Mock reservation details
-const rsvp = ref({
-  token: token.value,
-  name: 'Alex Munthe',
-  email: 'alex@example.com',
-  note: 'Looking forward to meeting recruiters from civil and environmental engineering firms.',
-  createdAt: '2026-08-26 14:00',
-  status: 'Confirmed',
-  event: {
-    id: '1',
-    title: 'FPCE Career Fair 2026 - Main Exhibition',
-    date: '2026-09-15',
-    time: '09:00 - 16:00',
-    location: 'Faculty Main Hall & Auditorium',
-  },
+const supabase = useSupabaseClient()
+
+const {
+  data: rsvp,
+  error,
+  refresh,
+} = await useAsyncData(`rsvp-${token.value}`, async () => {
+  const { data, error: fetchError } = await supabase
+    .from('rsvps')
+    .select(
+      'id, name, email, organization, token, is_attending, created_at, events (id, title, location, starts_at, ends_at)',
+    )
+    .eq('token', token.value)
+    .single()
+
+  if (fetchError) throw fetchError
+  return data
 })
 
 useSeoMeta({
@@ -24,16 +26,34 @@ useSeoMeta({
 })
 
 const isCancelling = ref(false)
-const isCancelled = ref(false)
+const errorMessage = ref('')
 
-function handleCancelRsvp() {
+async function handleCancelRsvp() {
   if (!confirm('Are you sure you want to cancel your RSVP reservation?')) return
   isCancelling.value = true
-  setTimeout(() => {
+  errorMessage.value = ''
+
+  try {
+    const { error: updateError } = await supabase
+      .from('rsvps')
+      .update({ is_attending: false })
+      .eq('token', token.value)
+
+    if (updateError) {
+      errorMessage.value = updateError.message
+      return
+    }
+
+    await refresh()
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      errorMessage.value = err.message
+    } else {
+      errorMessage.value = 'Failed to cancel reservation.'
+    }
+  } finally {
     isCancelling.value = false
-    isCancelled.value = true
-    rsvp.value.status = 'Cancelled'
-  }, 600)
+  }
 }
 </script>
 
@@ -43,7 +63,18 @@ function handleCancelRsvp() {
       Back to Home
     </UButton>
 
-    <UCard class="border-neutral-200 dark:border-neutral-800 shadow-md">
+    <div
+      v-if="error || !rsvp"
+      class="p-6 text-center rounded-xl bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+    >
+      <UIcon name="i-lucide-alert-circle" class="w-8 h-8 mx-auto mb-2" />
+      <h2 class="text-lg font-bold">Reservation Not Found</h2>
+      <p class="text-xs text-neutral-500 mt-1">
+        Please check your reservation link and try again.
+      </p>
+    </div>
+
+    <UCard v-else class="border-neutral-200 dark:border-neutral-800 shadow-md">
       <template #header>
         <div class="flex items-center justify-between">
           <div>
@@ -54,29 +85,39 @@ function handleCancelRsvp() {
           </div>
 
           <UBadge
-            :color="rsvp.status === 'Confirmed' ? 'primary' : 'neutral'"
+            :color="rsvp.is_attending ? 'primary' : 'neutral'"
             variant="subtle"
             size="md"
           >
-            {{ rsvp.status }}
+            {{ rsvp.is_attending ? 'Confirmed' : 'Cancelled' }}
           </UBadge>
         </div>
       </template>
 
       <div class="space-y-6">
+        <div
+          v-if="errorMessage"
+          class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs"
+        >
+          {{ errorMessage }}
+        </div>
+
         <!-- Event Summary -->
         <div
+          v-if="rsvp.events"
           class="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 space-y-2"
         >
           <p class="text-xs font-semibold text-primary uppercase tracking-wide">
             Event Information
           </p>
           <h2 class="font-bold text-neutral-900 dark:text-white">
-            {{ rsvp.event.title }}
+            {{ rsvp.events.title }}
           </h2>
           <div class="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
-            <p>📅 {{ rsvp.event.date }} ({{ rsvp.event.time }})</p>
-            <p>📍 {{ rsvp.event.location }}</p>
+            <p v-if="rsvp.events.starts_at">
+              📅 {{ formatDate(rsvp.events.starts_at) }}
+            </p>
+            <p v-if="rsvp.events.location">📍 {{ rsvp.events.location }}</p>
           </div>
         </div>
 
@@ -94,17 +135,20 @@ function handleCancelRsvp() {
               rsvp.email
             }}</span>
           </div>
-          <div v-if="rsvp.note">
-            <span class="text-xs text-neutral-500 block">Note / Interests</span>
-            <p class="text-neutral-700 dark:text-neutral-300 text-xs mt-0.5">
-              {{ rsvp.note }}
+          <div v-if="rsvp.organization">
+            <span class="text-xs text-neutral-500 block"
+              >Organization / Background</span
+            >
+            <p
+              class="text-neutral-700 dark:text-neutral-300 text-xs mt-0.5 whitespace-pre-line"
+            >
+              {{ rsvp.organization }}
             </p>
           </div>
         </div>
 
-        <!-- Cancellation Section -->
         <div
-          v-if="rsvp.status === 'Confirmed'"
+          v-if="rsvp.is_attending"
           class="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3"
         >
           <p class="text-xs text-neutral-500">
