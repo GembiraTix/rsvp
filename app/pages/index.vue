@@ -81,7 +81,7 @@ const { data: events, error } = await supabase.from('events').select('*')
             class="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between"
           >
             <UButton
-              :to="`/events/${event.slug}`"
+              :to="`/e/${event.slug}`"
               color="primary"
               variant="solid"
               class="w-full justify-center"
