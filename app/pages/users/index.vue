@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { FormSubmitEvent } from '@nuxt/ui'
+import { z } from 'zod'
+
 definePageMeta({
   middleware: 'auth',
 })
@@ -17,6 +20,79 @@ watch(
   },
   { immediate: true },
 )
+
+const { data: profile, refresh: refreshProfile } = await useAsyncData(
+  `user-profile-${user.value?.sub}`,
+  async () => {
+    if (!user.value) return null
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.value.sub)
+      .single()
+
+    return data
+  },
+)
+
+const isProfileModalOpen = ref(false)
+const isUpdatingProfile = ref(false)
+const profileErrorMessage = ref('')
+const profileSuccessMessage = ref('')
+
+const profileFormSchema = z.object({
+  name: z.string().min(1, 'Name is required.'),
+})
+
+type ProfileFormState = z.output<typeof profileFormSchema>
+
+const profileFormState = reactive<ProfileFormState>({
+  name: '',
+})
+
+function openProfileModal() {
+  profileFormState.name =
+    profile.value?.name || user.value?.user_metadata?.full_name || ''
+  profileErrorMessage.value = ''
+  profileSuccessMessage.value = ''
+  isProfileModalOpen.value = true
+}
+
+async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
+  if (!user.value) return
+  isUpdatingProfile.value = true
+  profileErrorMessage.value = ''
+  profileSuccessMessage.value = ''
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({
+        email: user.value.email || '',
+        name: e.data.name,
+      })
+      .eq('id', user.value.sub)
+
+    if (error) {
+      profileErrorMessage.value = error.message
+      return
+    }
+
+    await refreshProfile()
+    profileSuccessMessage.value = 'Profile updated successfully!'
+    setTimeout(() => {
+      isProfileModalOpen.value = false
+    }, 1000)
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      profileErrorMessage.value = err.message
+    } else {
+      profileErrorMessage.value = 'Failed to update profile.'
+    }
+  } finally {
+    isUpdatingProfile.value = false
+  }
+}
 
 // Fetch events organized by this user
 const { data: organizedEvents, refresh: refreshOrganized } = await useAsyncData(
@@ -64,23 +140,95 @@ async function deleteEvent(id: number) {
 
 <template>
   <div class="py-8 max-w-6xl mx-auto px-4 space-y-10">
-    <!-- Header -->
-    <div
-      class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-    >
-      <div>
-        <h1 class="text-3xl font-bold text-on-surface">My Dashboard</h1>
-        <p class="text-on-surface-variant">
-          Manage your organized events and view your registered sessions
-        </p>
-      </div>
+    <UCard class="border-outline bg-surface-container/50">
+      <div
+        class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+      >
+        <div class="flex items-center gap-4">
+          <div
+            class="w-14 h-14 rounded-full bg-primary/20 text-primary font-bold text-xl flex items-center justify-center shrink-0"
+          >
+            {{ (profile?.name || user?.email || 'U').charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-on-surface">
+              {{ profile?.name || 'User Profile' }}
+            </h2>
+            <p class="text-sm text-on-surface-variant">
+              {{ user?.email }}
+            </p>
+          </div>
+        </div>
 
-      <div class="flex items-center gap-3">
-        <UButton to="/users/events/new" color="primary" icon="i-lucide-plus">
-          Create New Event
+        <UButton
+          color="neutral"
+          variant="outline"
+          icon="i-lucide-user-cog"
+          @click="openProfileModal"
+        >
+          Edit Profile
         </UButton>
       </div>
-    </div>
+    </UCard>
+
+    <!-- edit profile -->
+    <UModal
+      v-model:open="isProfileModalOpen"
+      title="Edit Profile Settings"
+      description="Update your display name and profile details."
+    >
+      <template #body>
+        <div
+          v-if="profileErrorMessage"
+          class="mb-4 p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
+        >
+          <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
+          <span>{{ profileErrorMessage }}</span>
+        </div>
+
+        <div
+          v-if="profileSuccessMessage"
+          class="mb-4 p-3 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 rounded-lg text-xs flex items-center gap-2"
+        >
+          <UIcon name="i-lucide-check-circle" class="w-4 h-4 shrink-0" />
+          <span>{{ profileSuccessMessage }}</span>
+        </div>
+
+        <UForm
+          :schema="profileFormSchema"
+          :state="profileFormState"
+          class="space-y-4"
+          @submit="handleUpdateProfile"
+        >
+          <UFormField label="Email">
+            <UInput :model-value="user?.email" disabled class="w-full" />
+          </UFormField>
+
+          <UFormField label="Full Name / Display Name" name="name">
+            <UInput
+              id="name"
+              v-model="profileFormState.name"
+              placeholder="e.g. Dr. Jane Doe"
+              name="name"
+              class="w-full"
+            />
+          </UFormField>
+
+          <div class="pt-4 flex justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              @click="isProfileModalOpen = false"
+            >
+              Cancel
+            </UButton>
+            <UButton color="primary" type="submit" :loading="isUpdatingProfile">
+              Save Changes
+            </UButton>
+          </div>
+        </UForm>
+      </template>
+    </UModal>
 
     <section class="space-y-4">
       <div class="flex items-center justify-between">
@@ -88,6 +236,12 @@ async function deleteEvent(id: number) {
           <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
           Events You're Organizing ({{ organizedEvents?.length || 0 }})
         </h2>
+
+        <div class="flex items-center gap-3">
+          <UButton to="/users/events/new" color="primary" icon="i-lucide-plus">
+            Create New Event
+          </UButton>
+        </div>
       </div>
 
       <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
