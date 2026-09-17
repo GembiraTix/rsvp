@@ -66,10 +66,10 @@ async function deleteEvent(id: number) {
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-neutral-900 dark:text-white">
+        <h1 class="text-3xl font-bold text-on-surface">
           My Dashboard
         </h1>
-        <p class="text-sm text-neutral-500">
+        <p class="text-sm text-on-surface-variant">
           Manage your organized events and view your registered sessions
         </p>
       </div>
@@ -88,19 +88,19 @@ async function deleteEvent(id: number) {
     <!-- Section 1: Events You're Organizing -->
     <section class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+        <h2 class="text-xl font-bold text-on-surface flex items-center gap-2">
           <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
           Events You're Organizing ({{ organizedEvents?.length || 0 }})
         </h2>
       </div>
 
       <UCard
-        class="border-neutral-200 dark:border-neutral-800"
+        class="border-outline"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
         <div v-if="organizedEvents && organizedEvents.length > 0" class="overflow-x-auto">
           <table class="w-full text-left text-sm">
-            <thead class="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-500 uppercase">
+            <thead class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase">
               <tr>
                 <th class="px-6 py-3">Event Title</th>
                 <th class="px-6 py-3">Date</th>
@@ -108,20 +108,20 @@ async function deleteEvent(id: number) {
                 <th class="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <tbody class="divide-y divide-outline">
               <tr
                 v-for="ev in organizedEvents"
                 :key="ev.id"
-                class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20"
+                class="hover:bg-surface-container/50"
               >
-                <td class="px-6 py-4 font-medium text-neutral-900 dark:text-white">
+                <td class="px-6 py-4 font-medium text-on-surface">
                   {{ ev.title }}
                 </td>
-                <td class="px-6 py-4 text-neutral-600 dark:text-neutral-300">
+                <td class="px-6 py-4 text-on-surface-variant">
                   <span v-if="ev.starts_at">{{ formatDate(ev.starts_at) }}</span>
                   <span v-else>-</span>
                 </td>
-                <td class="px-6 py-4 text-neutral-600 dark:text-neutral-300">
+                <td class="px-6 py-4 text-on-surface-variant">
                   {{ ev.location || '-' }}
                 </td>
                 <td class="px-6 py-4 text-right space-x-2">
@@ -157,8 +157,8 @@ async function deleteEvent(id: number) {
         </div>
 
         <div v-else class="p-8 text-center space-y-3">
-          <UIcon name="i-lucide-calendar-plus" class="w-10 h-10 mx-auto text-neutral-400" />
-          <p class="text-sm text-neutral-500">You haven't organized any events yet.</p>
+          <UIcon name="i-lucide-calendar-plus" class="w-10 h-10 mx-auto text-on-surface-variant" />
+          <p class="text-sm text-on-surface-variant">You haven't organized any events yet.</p>
           <UButton
             to="/users/events/new"
             color="primary"
@@ -174,19 +174,19 @@ async function deleteEvent(id: number) {
     <!-- Section 2: Events You've Joined -->
     <section class="space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+        <h2 class="text-xl font-bold text-on-surface flex items-center gap-2">
           <UIcon name="i-lucide-ticket" class="w-5 h-5 text-primary" />
           Events You've Joined ({{ joinedRsvps?.length || 0 }})
         </h2>
       </div>
 
       <UCard
-        class="border-neutral-200 dark:border-neutral-800"
+        class="border-outline"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
         <div v-if="joinedRsvps && joinedRsvps.length > 0" class="overflow-x-auto">
           <table class="w-full text-left text-sm">
-            <thead class="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-500 uppercase">
+            <thead class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase">
               <tr>
                 <th class="px-6 py-3">Event</th>
                 <th class="px-6 py-3">Location</th>
@@ -194,19 +194,19 @@ async function deleteEvent(id: number) {
                 <th class="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <tbody class="divide-y divide-outline">
               <tr
                 v-for="rsvp in joinedRsvps"
                 :key="rsvp.id"
-                class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20"
+                class="hover:bg-surface-container/50"
               >
-                <td class="px-6 py-4 font-medium text-neutral-900 dark:text-white">
+                <td class="px-6 py-4 font-medium text-on-surface">
                   {{ rsvp.events?.title || 'Event' }}
                 </td>
-                <td class="px-6 py-4 text-neutral-600 dark:text-neutral-300">
+                <td class="px-6 py-4 text-on-surface-variant">
                   {{ rsvp.events?.location || '-' }}
                 </td>
-                <td class="px-6 py-4 text-xs font-mono text-neutral-500">
+                <td class="px-6 py-4 text-xs font-mono text-on-surface-variant">
                   {{ rsvp.token.slice(0, 8) }}...
                 </td>
                 <td class="px-6 py-4 text-right space-x-2">
@@ -233,8 +233,8 @@ async function deleteEvent(id: number) {
         </div>
 
         <div v-else class="p-8 text-center space-y-3">
-          <UIcon name="i-lucide-ticket-slash" class="w-10 h-10 mx-auto text-neutral-400" />
-          <p class="text-sm text-neutral-500">You haven't joined any events yet.</p>
+          <UIcon name="i-lucide-ticket-slash" class="w-10 h-10 mx-auto text-on-surface-variant" />
+          <p class="text-sm text-on-surface-variant">You haven't joined any events yet.</p>
           <UButton
             to="/"
             color="neutral"

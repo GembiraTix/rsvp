@@ -126,17 +126,17 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
 <template>
   <div class="flex flex-col justify-center max-w-md mx-auto gap-6 py-12 px-4">
     <header class="text-center space-y-1">
-      <h1 class="text-3xl font-bold text-neutral-900 dark:text-white">
+      <h1 class="text-3xl font-bold text-on-surface">
         {{ isSignUp ? 'Create Account' : 'Welcome Back' }}
       </h1>
-      <p class="text-sm text-neutral-500">
+      <p class="text-sm text-on-surface-variant">
         {{
           isSignUp ? 'Sign up for a new account' : 'Get back to your account'
         }}
       </p>
     </header>
 
-    <UCard class="border-neutral-200 dark:border-neutral-800 shadow-md">
+    <UCard class="border-outline shadow-md">
       <div
         v-if="errorMessage"
         class="mb-4 p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
@@ -193,11 +193,11 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
       </UForm>
 
       <div
-        class="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800 text-center"
+        class="mt-4 pt-4 border-t border-outline text-center"
       >
         <button
           type="button"
-          class="text-xs text-neutral-600 dark:text-neutral-400 hover:text-primary transition-colors cursor-pointer"
+          class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
           @click="toggleMode"
         >
           {{

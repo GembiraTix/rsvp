@@ -14,11 +14,11 @@ const { data: events, error } = await supabase.from('events').select('*')
     <!-- Hero Banner -->
     <section class="text-center space-y-4 max-w-3xl mx-auto px-4">
       <h1
-        class="text-4xl md:text-5xl font-bold tracking-tight text-neutral-900 dark:text-white"
+        class="text-4xl md:text-5xl font-bold tracking-tight text-on-background"
       >
         Find Opportunities & RSVP Instantly
       </h1>
-      <p class="text-lg text-neutral-600 dark:text-neutral-300">
+      <p class="text-lg text-on-surface-variant">
         Browse company talks, recruitment sessions, and workshops. Reserve your
         spot in seconds without account registration.
       </p>
@@ -27,10 +27,10 @@ const { data: events, error } = await supabase.from('events').select('*')
     <!-- Event List Grid -->
     <section class="max-w-6xl mx-auto px-4">
       <header class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-neutral-900 dark:text-white">
+        <h2 class="text-2xl font-bold text-on-surface">
           Available Sessions
         </h2>
-        <p class="text-sm text-neutral-500">
+        <p class="text-sm text-on-surface-variant">
           Showing {{ events?.length }} event(s)
         </p>
       </header>
@@ -46,7 +46,7 @@ const { data: events, error } = await supabase.from('events').select('*')
           :ui="{ body: 'p-5 flex-1 flex flex-col justify-between' }"
         >
           <figure
-            class="relative h-44 -mx-5 -mt-5 mb-4 overflow-hidden bg-neutral-100 dark:bg-neutral-800"
+            class="relative h-44 -mx-5 -mt-5 mb-4 overflow-hidden bg-surface-container"
           >
             <img
               v-if="event.image_url"
@@ -57,10 +57,10 @@ const { data: events, error } = await supabase.from('events').select('*')
           </figure>
 
           <figcaption
-            class="space-y-1.5 text-xs text-neutral-500 dark:text-neutral-400 mb-3"
+            class="space-y-1.5 text-xs text-on-surface-variant mb-3"
           >
             <h3
-              class="text-lg font-bold text-neutral-900 dark:text-white mb-2 line-clamp-2"
+              class="text-lg font-bold text-on-surface mb-2 line-clamp-2"
             >
               {{ event.title }}
             </h3>
@@ -72,13 +72,13 @@ const { data: events, error } = await supabase.from('events').select('*')
           </figcaption>
 
           <p
-            class="text-sm text-neutral-600 dark:text-neutral-300 line-clamp-3 mb-4"
+            class="text-sm text-on-surface-variant line-clamp-3 mb-4"
           >
             {{ event.description }}
           </p>
 
           <div
-            class="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between"
+            class="pt-4 border-t border-outline flex items-center justify-between"
           >
             <UButton
               :to="`/e/${event.slug}`"

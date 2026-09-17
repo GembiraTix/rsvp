@@ -28,10 +28,10 @@ watch(
       <UIcon name="i-lucide-loader-2" class="w-6 h-6 animate-spin" />
     </div>
     <div class="space-y-1">
-      <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
+      <h2 class="text-xl font-bold text-on-surface">
         Verifying Authentication...
       </h2>
-      <p class="text-sm text-neutral-500">
+      <p class="text-sm text-on-surface-variant">
         Please wait while your session is being confirmed.
       </p>
     </div>

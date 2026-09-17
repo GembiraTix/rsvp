@@ -126,7 +126,7 @@ async function removeAttendee(id: number) {
     >
       <UIcon name="i-lucide-shield-alert" class="w-10 h-10 mx-auto" />
       <h2 class="text-xl font-bold">Unauthorized Access</h2>
-      <p class="text-sm">
+      <p>
         You are not authorized to manage this event because you are not the
         creator.
       </p>
@@ -144,16 +144,13 @@ async function removeAttendee(id: number) {
     <template v-else-if="event">
       <!-- Event Header Card -->
       <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-2xl bg-surface-container border border-outline"
       >
         <div>
-          <UBadge color="primary" variant="subtle" size="sm" class="mb-1">
-            Event Management
-          </UBadge>
-          <h1 class="text-2xl font-bold text-neutral-900 dark:text-white">
+          <h1 class="text-2xl font-bold text-on-surface">
             {{ event.title }}
           </h1>
-          <p class="text-xs text-neutral-500 mt-1">
+          <p class="text-on-surface-variant mt-1">
             <span v-if="event.starts_at"
               >📅 {{ formatDate(event.starts_at) }} •
             </span>
@@ -183,7 +180,7 @@ async function removeAttendee(id: number) {
 
       <!-- Attendees Table Card -->
       <UCard
-        class="border-neutral-200 dark:border-neutral-800"
+        class="border-outline"
         :ui="{ body: 'p-0 sm:p-0' }"
       >
         <template #header>
@@ -191,7 +188,7 @@ async function removeAttendee(id: number) {
             class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
           >
             <div>
-              <h2 class="text-lg font-bold text-neutral-900 dark:text-white">
+              <h2 class="text-lg font-bold text-on-surface">
                 Registered Attendees ({{ attendees?.length || 0 }})
               </h2>
             </div>
@@ -208,9 +205,9 @@ async function removeAttendee(id: number) {
         </template>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
+          <table class="w-full text-left">
             <thead
-              class="bg-neutral-50 dark:bg-neutral-900/50 border-b border-neutral-200 dark:border-neutral-800 text-xs font-semibold text-neutral-500 uppercase"
+              class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
             >
               <tr>
                 <th class="px-6 py-3">Attendee Name</th>
@@ -220,24 +217,24 @@ async function removeAttendee(id: number) {
                 <th class="px-6 py-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-neutral-200 dark:divide-neutral-800">
+            <tbody class="divide-y divide-outline">
               <tr
                 v-for="att in filteredAttendees"
                 :key="att.id"
-                class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20"
+                class="hover:bg-surface-container/50"
               >
                 <td
-                  class="px-6 py-4 font-medium text-neutral-900 dark:text-white"
+                  class="px-6 py-4 font-medium text-on-surface"
                 >
                   {{ att.name }}
                 </td>
                 <td
-                  class="px-6 py-4 text-neutral-600 dark:text-neutral-300 font-mono text-xs"
+                  class="px-6 py-4 text-on-surface-variant font-mono text-xs"
                 >
                   {{ att.email || '-' }}
                 </td>
                 <td
-                  class="px-6 py-4 text-neutral-600 dark:text-neutral-300 max-w-xs truncate"
+                  class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
                 >
                   {{ att.organization || '-' }}
                 </td>
@@ -261,7 +258,7 @@ async function removeAttendee(id: number) {
                 </td>
               </tr>
               <tr v-if="filteredAttendees.length === 0">
-                <td colspan="5" class="px-6 py-8 text-center text-neutral-500">
+                <td colspan="5" class="px-6 py-8 text-center text-on-surface-variant">
                   No attendees found matching search criteria.
                 </td>
               </tr>

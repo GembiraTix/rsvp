@@ -140,23 +140,23 @@ async function handleAuthenticatedRsvp() {
         </figure>
 
         <div class="space-y-4">
-          <h1 class="text-3xl font-bold text-neutral-900 dark:text-white">
+          <h1 class="text-3xl font-bold text-on-surface">
             {{ event.title }}
           </h1>
 
           <article
-            class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-sm"
+            class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-surface-container border border-outline text-sm"
           >
             <time
               v-if="event.starts_at"
               :datetime="event.starts_at"
-              class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
+              class="flex items-center gap-2 text-on-surface-variant"
             >
               <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
               <span>{{ formatDate(event.starts_at) }}</span>
             </time>
             <div
-              class="flex items-center gap-2 text-neutral-600 dark:text-neutral-300"
+              class="flex items-center gap-2 text-on-surface-variant"
             >
               <UIcon name="i-lucide-map-pin" class="w-5 h-5 text-primary" />
               <span>{{ event.location }}</span>
@@ -164,11 +164,11 @@ async function handleAuthenticatedRsvp() {
           </article>
 
           <article class="space-y-2">
-            <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
+            <h2 class="text-xl font-bold text-on-surface">
               About This Session
             </h2>
             <p
-              class="text-neutral-600 dark:text-neutral-300 leading-relaxed whitespace-pre-line"
+              class="text-on-surface-variant leading-relaxed whitespace-pre-line"
             >
               {{ event.description }}
             </p>
@@ -178,14 +178,14 @@ async function handleAuthenticatedRsvp() {
 
       <section class="lg:col-span-5">
         <UCard
-          class="sticky top-20 shadow-xl border-neutral-200 dark:border-neutral-800"
+          class="sticky top-20 shadow-xl border-outline"
           :ui="{ body: 'p-6 space-y-6' }"
         >
           <div v-if="isOwner" class="space-y-4 text-center py-2">
-            <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
+            <h2 class="text-xl font-bold text-on-surface">
               Manage Your Event
             </h2>
-            <p class="text-xs text-neutral-500">
+            <p class="text-xs text-on-surface-variant">
               View registered attendees, export CSV rosters, or edit event
               details.
             </p>
@@ -212,15 +212,15 @@ async function handleAuthenticatedRsvp() {
               <UIcon name="i-lucide-check" class="w-6 h-6" />
             </div>
 
-            <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
+            <h2 class="text-xl font-bold text-on-surface">
               RSVP Confirmed!
             </h2>
-            <p class="text-neutral-600 dark:text-neutral-300">
+            <p class="text-on-surface-variant">
               You are registered for this session.
             </p>
 
             <div
-              class="p-3 bg-neutral-50 dark:bg-neutral-900 rounded-lg text-neutral-500 space-y-1"
+              class="p-3 bg-surface-container rounded-lg text-on-surface-variant space-y-1"
             >
               <UButton
                 :to="`/rsvp/${rsvpToken}`"
@@ -244,12 +244,12 @@ async function handleAuthenticatedRsvp() {
           <!-- Authenticated Quick RSVP -->
           <template v-else-if="user">
             <header class="space-y-1">
-              <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
+              <h2 class="text-xl font-bold text-on-surface">
                 Quick RSVP
               </h2>
-              <p class="text-neutral-500">
+              <p class="text-on-surface-variant">
                 Logged in as
-                <strong class="text-neutral-700 dark:text-neutral-300">{{
+                <strong class="text-on-surface">{{
                   user.email
                 }}</strong>
               </p>
@@ -303,11 +303,11 @@ async function handleAuthenticatedRsvp() {
           <!-- Guest Form State -->
           <template v-else>
             <header>
-              <h3 class="text-xl font-bold text-neutral-900 dark:text-white">
+              <h3 class="text-xl font-bold text-on-surface">
                 Reserve Your Spot
               </h3>
 
-              <p class="text-neutral-500 mt-0.5">
+              <p class="text-on-surface-variant mt-0.5">
                 No account required. Fast and free registration.
               </p>
             </header>

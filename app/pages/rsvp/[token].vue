@@ -69,19 +69,19 @@ async function handleCancelRsvp() {
     >
       <UIcon name="i-lucide-alert-circle" class="w-8 h-8 mx-auto mb-2" />
       <h2 class="text-lg font-bold">Reservation Not Found</h2>
-      <p class="text-xs text-neutral-500 mt-1">
+      <p class="text-xs text-on-surface-variant mt-1">
         Please check your reservation link and try again.
       </p>
     </div>
 
-    <UCard v-else class="border-neutral-200 dark:border-neutral-800 shadow-md">
+    <UCard v-else class="border-outline shadow-md">
       <template #header>
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-xl font-bold text-neutral-900 dark:text-white">
+            <h1 class="text-xl font-bold text-on-surface">
               Reservation Details
             </h1>
-            <p class="text-xs text-neutral-500 font-mono">Ref: {{ token }}</p>
+            <p class="text-xs text-on-surface-variant font-mono">Ref: {{ token }}</p>
           </div>
 
           <UBadge
@@ -105,15 +105,15 @@ async function handleCancelRsvp() {
         <!-- Event Summary -->
         <div
           v-if="rsvp.events"
-          class="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 space-y-2"
+          class="p-4 rounded-xl bg-surface-container border border-outline space-y-2"
         >
           <p class="text-xs font-semibold text-primary uppercase tracking-wide">
             Event Information
           </p>
-          <h2 class="font-bold text-neutral-900 dark:text-white">
+          <h2 class="font-bold text-on-surface">
             {{ rsvp.events.title }}
           </h2>
-          <div class="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
+          <div class="text-xs text-on-surface-variant space-y-1">
             <p v-if="rsvp.events.starts_at">
               📅 {{ formatDate(rsvp.events.starts_at) }}
             </p>
@@ -124,23 +124,23 @@ async function handleCancelRsvp() {
         <!-- Guest Details -->
         <div class="space-y-3 text-sm">
           <div>
-            <span class="text-xs text-neutral-500 block">Attendee Name</span>
-            <span class="font-medium text-neutral-900 dark:text-white">{{
+            <span class="text-xs text-on-surface-variant block">Attendee Name</span>
+            <span class="font-medium text-on-surface">{{
               rsvp.name
             }}</span>
           </div>
           <div>
-            <span class="text-xs text-neutral-500 block">Email</span>
-            <span class="font-medium text-neutral-900 dark:text-white">{{
+            <span class="text-xs text-on-surface-variant block">Email</span>
+            <span class="font-medium text-on-surface">{{
               rsvp.email
             }}</span>
           </div>
           <div v-if="rsvp.organization">
-            <span class="text-xs text-neutral-500 block"
+            <span class="text-xs text-on-surface-variant block"
               >Organization / Background</span
             >
             <p
-              class="text-neutral-700 dark:text-neutral-300 text-xs mt-0.5 whitespace-pre-line"
+              class="text-on-surface-variant text-xs mt-0.5 whitespace-pre-line"
             >
               {{ rsvp.organization }}
             </p>
@@ -149,9 +149,9 @@ async function handleCancelRsvp() {
 
         <div
           v-if="rsvp.is_attending"
-          class="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3"
+          class="pt-4 border-t border-outline space-y-3"
         >
-          <p class="text-xs text-neutral-500">
+          <p class="text-xs text-on-surface-variant">
             Cannot make it? You can cancel your RSVP so organizers know the
             actual headcount.
           </p>

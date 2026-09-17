@@ -32,7 +32,7 @@ async function handleLogout() {
       <template #left>
         <NuxtLink
           to="/"
-          class="flex items-center gap-2 font-bold text-neutral-900 dark:text-white text-base hover:opacity-90 transition-opacity"
+          class="flex items-center gap-2 font-bold text-on-surface text-base hover:opacity-90 transition-opacity"
         >
           <span>FPCE Job Fair</span>
         </NuxtLink>
@@ -69,14 +69,14 @@ async function handleLogout() {
 
     <UFooter>
       <template #left>
-        <p class="text-xs text-neutral-500">
+        <p class="text-xs text-on-surface-variant">
           Faculty Career Center & Job Fair Organizer • ©
           {{ new Date().getFullYear() }}
         </p>
       </template>
 
       <template #right>
-        <span v-if="user" class="text-xs text-neutral-400">
+        <span v-if="user" class="text-xs text-on-surface-variant">
           Signed in as {{ user.email }}
         </span>
       </template>

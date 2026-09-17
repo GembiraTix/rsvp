@@ -1,6 +1,32 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
 
+:root {
+  --color-background: var(--color-slate-50);
+  --color-surface: #ffffff;
+  --color-surface-container: var(--color-slate-100);
+
+  --color-on-background: var(--color-slate-900);
+  --color-on-surface: var(--color-slate-900);
+  --color-on-surface-variant: var(--color-slate-500);
+
+  --color-outline: var(--color-slate-200);
+  --color-outline-variant: var(--color-slate-100);
+}
+
+.dark {
+  --color-background: var(--color-slate-950);
+  --color-surface: var(--color-slate-900);
+  --color-surface-container: var(--color-slate-800);
+
+  --color-on-background: #ffffff;
+  --color-on-surface: #ffffff;
+  --color-on-surface-variant: var(--color-slate-400);
+
+  --color-outline: var(--color-slate-800);
+  --color-outline-variant: var(--color-slate-900);
+}
+
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
 
@@ -16,3 +42,17 @@
   --color-green-900: #0a5331;
   --color-green-950: #052e16;
 }
+
+@theme {
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-container: var(--color-surface-container);
+
+  --color-on-background: var(--color-on-background);
+  --color-on-surface: var(--color-on-surface);
+  --color-on-surface-variant: var(--color-on-surface-variant);
+
+  --color-outline: var(--color-outline);
+  --color-outline-variant: var(--color-outline-variant);
+}
+

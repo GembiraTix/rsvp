@@ -87,13 +87,13 @@ async function handleCreate() {
       Back to Dashboard
     </UButton>
 
-    <UCard class="border-neutral-200 dark:border-neutral-800 shadow-md">
+    <UCard class="border-outline shadow-md">
       <template #header>
         <div>
-          <h1 class="text-2xl font-bold text-neutral-900 dark:text-white">
+          <h1 class="text-2xl font-bold text-on-surface">
             Create Job Fair Event / Session
           </h1>
-          <p class="text-xs text-neutral-500">
+          <p class="text-xs text-on-surface-variant">
             Fill in the details to publish a new session for attendee RSVPs
           </p>
         </div>
@@ -106,7 +106,7 @@ async function handleCreate() {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <label class="text-xs font-semibold text-on-surface-variant">
             Event Title <span class="text-red-500">*</span>
           </label>
           <UInput
@@ -119,14 +119,14 @@ async function handleCreate() {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+            <label class="text-xs font-semibold text-on-surface-variant">
               Date <span class="text-red-500">*</span>
             </label>
             <UInput v-model="form.date" type="date" required class="w-full" />
           </div>
 
           <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+            <label class="text-xs font-semibold text-on-surface-variant">
               Start Time
             </label>
             <UInput
@@ -138,7 +138,7 @@ async function handleCreate() {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <label class="text-xs font-semibold text-on-surface-variant">
             Location / Room <span class="text-red-500">*</span>
           </label>
           <UInput
@@ -150,7 +150,7 @@ async function handleCreate() {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <label class="text-xs font-semibold text-on-surface-variant">
             Banner Image URL
           </label>
           <UInput
@@ -161,7 +161,7 @@ async function handleCreate() {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+          <label class="text-xs font-semibold text-on-surface-variant">
             Description
           </label>
           <UTextarea
@@ -172,7 +172,7 @@ async function handleCreate() {
           />
         </div>
 
-        <div class="pt-4 flex justify-end gap-3 border-t border-neutral-200 dark:border-neutral-800">
+        <div class="pt-4 flex justify-end gap-3 border-t border-outline">
           <UButton to="/users" variant="ghost" color="neutral">
             Cancel
           </UButton>
