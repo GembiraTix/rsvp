@@ -11,12 +11,16 @@ const user = useSupabaseUser()
 const { data: event, error } = await supabase
   .from('events')
   .select(
-    'id, slug, image_url, title, starts_at, ends_at, location, description',
+    'id, slug, image_url, title, starts_at, ends_at, location, description, created_by',
   )
   .eq('slug', eventSlug.value)
   .single()
 
 if (error) throw error
+
+const isOwner = computed(
+  () => user.value && event && event.created_by === user.value.sub,
+)
 
 useSeoMeta({
   title: () => `${event.title} - RSVP`,
@@ -177,9 +181,29 @@ async function handleAuthenticatedRsvp() {
           class="sticky top-20 shadow-xl border-neutral-200 dark:border-neutral-800"
           :ui="{ body: 'p-6 space-y-6' }"
         >
-          <!-- success state -->
+          <div v-if="isOwner" class="space-y-4 text-center py-2">
+            <h2 class="text-xl font-bold text-neutral-900 dark:text-white">
+              Manage Your Event
+            </h2>
+            <p class="text-xs text-neutral-500">
+              View registered attendees, export CSV rosters, or edit event
+              details.
+            </p>
+            <UButton
+              :to="`/e/${event.slug}/manage`"
+              color="primary"
+              size="lg"
+              class="w-full justify-center font-bold"
+              icon="i-lucide-settings"
+            >
+              Manage Event & Attendees
+            </UButton>
+          </div>
+
           <div
-            v-if="rsvpSuccess || (existingRsvp && existingRsvp.is_attending)"
+            v-else-if="
+              rsvpSuccess || (existingRsvp && existingRsvp.is_attending)
+            "
             class="space-y-4 text-center py-4"
           >
             <div
