@@ -38,7 +38,9 @@ async function handleCreate() {
 
   try {
     const slug = `${slugify(form.title)}-${Math.floor(1000 + Math.random() * 9000)}`
-    const startsAt = form.time ? `${form.date}T${form.time}:00Z` : `${form.date}T00:00:00Z`
+    const startsAt = form.time
+      ? `${form.date}T${form.time}:00Z`
+      : `${form.date}T00:00:00Z`
 
     const { data, error } = await supabase
       .from('events')
@@ -49,7 +51,7 @@ async function handleCreate() {
         description: form.description || null,
         image_url: form.image || null,
         starts_at: startsAt,
-        created_by: user.value.id,
+        created_by: user.value.sub,
       })
       .select('slug')
       .single()
@@ -100,7 +102,10 @@ async function handleCreate() {
       </template>
 
       <form @submit.prevent="handleCreate" class="space-y-4">
-        <div v-if="errorMessage" class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2">
+        <div
+          v-if="errorMessage"
+          class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
+        >
           <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
           <span>{{ errorMessage }}</span>
         </div>
@@ -129,11 +134,7 @@ async function handleCreate() {
             <label class="text-xs font-semibold text-on-surface-variant">
               Start Time
             </label>
-            <UInput
-              v-model="form.time"
-              type="time"
-              class="w-full"
-            />
+            <UInput v-model="form.time" type="time" class="w-full" />
           </div>
         </div>
 
