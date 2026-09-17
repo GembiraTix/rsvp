@@ -18,7 +18,7 @@ watch(
   user,
   () => {
     if (user.value) {
-      const redirectPath = (route.query.redirectTo as string) || '/admin'
+      const redirectPath = (route.query.redirectTo as string) || '/users'
       return navigateTo(redirectPath)
     }
   },

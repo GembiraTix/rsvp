@@ -42,6 +42,8 @@ async function handleLogout() {
         <div class="flex items-center gap-2">
           <UButton to="/" variant="ghost" color="neutral"> Events </UButton>
 
+          <UButton v-if="user" to="/users" variant="ghost" color="neutral"> My Dashboard </UButton>
+
           <UButton v-if="!user" to="/login" color="neutral"> Log in </UButton>
 
           <UButton
