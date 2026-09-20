@@ -4,7 +4,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Create New Event - FPCE Job Fair',
+  title: 'Buat Acara Baru - Bursa Kerja FPCE',
 })
 
 const supabase = useSupabaseClient()
@@ -70,7 +70,7 @@ async function handleCreate() {
     if (err instanceof Error) {
       errorMessage.value = err.message
     } else {
-      errorMessage.value = 'Failed to create event. Please try again.'
+      errorMessage.value = 'Gagal membuat acara. Silakan coba lagi.'
     }
   } finally {
     isSubmitting.value = false
@@ -86,17 +86,17 @@ async function handleCreate() {
       color="neutral"
       icon="i-lucide-arrow-left"
     >
-      Back to Dashboard
+      Kembali ke Dasbor
     </UButton>
 
     <UCard class="border-outline shadow-md">
       <template #header>
         <div>
           <h1 class="text-2xl font-bold text-on-surface">
-            Create Job Fair Event / Session
+            Buat Acara / Sesi Bursa Kerja
           </h1>
           <p class="text-xs text-on-surface-variant">
-            Fill in the details to publish a new session for attendee RSVPs
+            Isi detail di bawah untuk memublikasikan sesi baru untuk RSVP peserta
           </p>
         </div>
       </template>
@@ -112,11 +112,11 @@ async function handleCreate() {
 
         <div class="space-y-1.5">
           <label class="text-xs font-semibold text-on-surface-variant">
-            Event Title <span class="text-red-500">*</span>
+            Judul Acara <span class="text-red-500">*</span>
           </label>
           <UInput
             v-model="form.title"
-            placeholder="e.g. Civil Engineering Career Talk by PT Wijaya Karya"
+            placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
             required
             class="w-full"
           />
@@ -125,14 +125,14 @@ async function handleCreate() {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-1.5">
             <label class="text-xs font-semibold text-on-surface-variant">
-              Date <span class="text-red-500">*</span>
+              Tanggal <span class="text-red-500">*</span>
             </label>
             <UInput v-model="form.date" type="date" required class="w-full" />
           </div>
 
           <div class="space-y-1.5">
             <label class="text-xs font-semibold text-on-surface-variant">
-              Start Time
+              Waktu Mulai
             </label>
             <UInput v-model="form.time" type="time" class="w-full" />
           </div>
@@ -140,11 +140,11 @@ async function handleCreate() {
 
         <div class="space-y-1.5">
           <label class="text-xs font-semibold text-on-surface-variant">
-            Location / Room <span class="text-red-500">*</span>
+            Lokasi / Ruangan <span class="text-red-500">*</span>
           </label>
           <UInput
             v-model="form.location"
-            placeholder="e.g. Main Auditorium / Room 204"
+            placeholder="contoh: Auditorium Utama / Ruang 204"
             required
             class="w-full"
           />
@@ -152,7 +152,7 @@ async function handleCreate() {
 
         <div class="space-y-1.5">
           <label class="text-xs font-semibold text-on-surface-variant">
-            Banner Image URL
+            URL Gambar Banner
           </label>
           <UInput
             v-model="form.image"
@@ -163,22 +163,22 @@ async function handleCreate() {
 
         <div class="space-y-1.5">
           <label class="text-xs font-semibold text-on-surface-variant">
-            Description
+            Deskripsi
           </label>
           <UTextarea
             v-model="form.description"
             :rows="4"
-            placeholder="Details about requirements, agenda, eligibility, and speakers..."
+            placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
             class="w-full"
           />
         </div>
 
         <div class="pt-4 flex justify-end gap-3 border-t border-outline">
           <UButton to="/users" variant="ghost" color="neutral">
-            Cancel
+            Batal
           </UButton>
           <UButton type="submit" color="primary" :loading="isSubmitting">
-            Publish Event
+            Publikasikan Acara
           </UButton>
         </div>
       </form>

@@ -43,8 +43,8 @@ if (user.value && event) {
 }
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Full name is required.'),
-  email: z.email('Please enter a valid email address.'),
+  name: z.string().min(1, 'Nama lengkap wajib diisi.'),
+  email: z.email('Masukkan alamat email yang valid.'),
   organization: z.string().optional(),
 })
 
@@ -94,7 +94,7 @@ async function submitRsvp(name: string, email: string, organization?: string) {
     if (err instanceof Error) {
       errorMessage.value = err.message
     } else {
-      errorMessage.value = 'Failed to submit RSVP. Please try again.'
+      errorMessage.value = 'Gagal mengirim RSVP. Silakan coba lagi.'
     }
   } finally {
     isSubmitting.value = false
@@ -116,7 +116,7 @@ async function handleAuthenticatedRsvp() {
 <template>
   <div class="py-8 max-w-5xl mx-auto px-4 space-y-8">
     <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left">
-      Back to all events
+      Kembali ke semua acara
     </UButton>
 
     <div v-if="error">
@@ -165,7 +165,7 @@ async function handleAuthenticatedRsvp() {
 
           <article class="space-y-2">
             <h2 class="text-xl font-bold text-on-surface">
-              About This Session
+              Tentang Sesi Ini
             </h2>
             <p
               class="text-on-surface-variant leading-relaxed whitespace-pre-line"
@@ -183,11 +183,10 @@ async function handleAuthenticatedRsvp() {
         >
           <div v-if="isOwner" class="space-y-4 text-center py-2">
             <h2 class="text-xl font-bold text-on-surface">
-              Manage Your Event
+              Kelola Acara Anda
             </h2>
             <p class="text-xs text-on-surface-variant">
-              View registered attendees, export CSV rosters, or edit event
-              details.
+              Lihat peserta terdaftar, ekspor daftar CSV, atau edit detail acara.
             </p>
             <UButton
               :to="`/e/${event.slug}/manage`"
@@ -196,7 +195,7 @@ async function handleAuthenticatedRsvp() {
               class="w-full justify-center font-bold"
               icon="i-lucide-settings"
             >
-              Manage Event & Attendees
+              Kelola Acara & Peserta
             </UButton>
           </div>
 
@@ -213,10 +212,10 @@ async function handleAuthenticatedRsvp() {
             </div>
 
             <h2 class="text-xl font-bold text-on-surface">
-              RSVP Confirmed!
+              RSVP Terkonfirmasi!
             </h2>
             <p class="text-on-surface-variant">
-              You are registered for this session.
+              Anda telah terdaftar untuk sesi ini.
             </p>
 
             <div
@@ -228,7 +227,7 @@ async function handleAuthenticatedRsvp() {
                 variant="outline"
                 class="w-full justify-center"
               >
-                View / Manage My RSVP
+                Lihat / Kelola RSVP Saya
               </UButton>
               <UButton
                 to="/"
@@ -236,7 +235,7 @@ async function handleAuthenticatedRsvp() {
                 variant="ghost"
                 class="w-full justify-center"
               >
-                Browse Other Events
+                Jelajahi Acara Lain
               </UButton>
             </div>
           </div>
@@ -245,10 +244,10 @@ async function handleAuthenticatedRsvp() {
           <template v-else-if="user">
             <header class="space-y-1">
               <h2 class="text-xl font-bold text-on-surface">
-                Quick RSVP
+                RSVP Cepat
               </h2>
               <p class="text-on-surface-variant">
-                Logged in as
+                Masuk sebagai
                 <strong class="text-on-surface">{{
                   user.email
                 }}</strong>
@@ -270,14 +269,14 @@ async function handleAuthenticatedRsvp() {
               icon="i-lucide-ticket"
               @click="isConfirmOpen = true"
             >
-              RSVP Now
+              RSVP Sekarang
             </UButton>
 
             <!-- Confirm Dialog -->
             <UModal
               v-model:open="isConfirmOpen"
-              title="Confirm your RSVP"
-              :description="`Reserve 1 spot for ${user.email} at ${event.title}?`"
+              title="Konfirmasi RSVP Anda"
+              :description="`Pesan 1 tempat untuk ${user.email} pada acara ${event.title}?`"
             >
               <template #footer>
                 <div class="flex justify-end gap-2">
@@ -286,14 +285,14 @@ async function handleAuthenticatedRsvp() {
                     variant="ghost"
                     @click="isConfirmOpen = false"
                   >
-                    Cancel
+                    Batal
                   </UButton>
                   <UButton
                     color="primary"
                     :loading="isSubmitting"
                     @click="handleAuthenticatedRsvp"
                   >
-                    Confirm RSVP
+                    Konfirmasi RSVP
                   </UButton>
                 </div>
               </template>
@@ -304,11 +303,11 @@ async function handleAuthenticatedRsvp() {
           <template v-else>
             <header>
               <h3 class="text-xl font-bold text-on-surface">
-                Reserve Your Spot
+                Amankan Tempat Anda
               </h3>
 
               <p class="text-on-surface-variant mt-0.5">
-                No account required. Fast and free registration.
+                Tidak memerlukan akun. Pendaftaran cepat dan gratis.
               </p>
             </header>
 
@@ -326,20 +325,20 @@ async function handleAuthenticatedRsvp() {
               @submit="handleRsvp"
               class="space-y-4"
             >
-              <UFormField class="space-y-1.5" label="Full name">
+              <UFormField class="space-y-1.5" label="Nama lengkap">
                 <UInput
                   v-model="form.name"
-                  placeholder="e.g. Jane Doe"
+                  placeholder="contoh: Jane Doe"
                   required
                   class="w-full"
                 />
               </UFormField>
 
-              <UFormField class="space-y-1.5" label="Email address">
+              <UFormField class="space-y-1.5" label="Alamat email">
                 <UInput
                   v-model="form.email"
                   type="email"
-                  placeholder="name@university.edu"
+                  placeholder="nama@university.edu"
                   required
                   class="w-full"
                 />
@@ -347,12 +346,12 @@ async function handleAuthenticatedRsvp() {
 
               <UFormField
                 class="space-y-1.5"
-                label="Organization"
-                hint="optional"
+                label="Organisasi / Latar Belakang"
+                hint="opsional"
               >
                 <UTextarea
                   v-model="form.organization"
-                  placeholder="e.g. 4th year Computer Science student interested in Software Engineering internships."
+                  placeholder="contoh: Mahasiswa Ilmu Komputer tingkat akhir yang tertarik dengan magang Rekayasa Perangkat Lunak."
                   :rows="3"
                   class="w-full"
                 />
@@ -365,7 +364,7 @@ async function handleAuthenticatedRsvp() {
                 class="w-full justify-center"
                 :loading="isSubmitting"
               >
-                Confirm RSVP
+                Konfirmasi RSVP
               </UButton>
             </UForm>
           </template>

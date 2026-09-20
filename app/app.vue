@@ -3,12 +3,12 @@ useHead({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
   link: [{ rel: 'icon', href: '/favicon.ico' }],
   htmlAttrs: {
-    lang: 'en',
+    lang: 'id',
   },
 })
 
-const title = 'FPCE Job Fair - Event RSVP'
-const description = 'RSVP portal for FPCE Faculty Job Fair'
+const title = 'Bursa Kerja FPCE - RSVP Acara'
+const description = 'Portal RSVP untuk Bursa Kerja Fakultas FPCE'
 
 useSeoMeta({
   title,
@@ -34,17 +34,17 @@ async function handleLogout() {
           to="/"
           class="flex items-center gap-2 font-bold text-on-surface text-base hover:opacity-90 transition-opacity"
         >
-          <span>FPCE Job Fair</span>
+          <span>Bursa Kerja FPCE</span>
         </NuxtLink>
       </template>
 
       <template #right>
         <div class="flex items-center gap-2">
-          <UButton to="/" variant="ghost" color="neutral"> Events </UButton>
+          <UButton to="/" variant="ghost" color="neutral"> Acara </UButton>
 
-          <UButton v-if="user" to="/users" variant="ghost" color="neutral"> My Dashboard </UButton>
+          <UButton v-if="user" to="/users" variant="ghost" color="neutral"> Dasbor Saya </UButton>
 
-          <UButton v-if="!user" to="/login" color="neutral"> Log in </UButton>
+          <UButton v-if="!user" to="/login" color="neutral"> Masuk </UButton>
 
           <UButton
             v-else
@@ -53,7 +53,7 @@ async function handleLogout() {
             icon="i-lucide-log-out"
             @click="handleLogout"
           >
-            Sign Out
+            Keluar
           </UButton>
 
           <UColorModeButton size="sm" />
@@ -70,14 +70,14 @@ async function handleLogout() {
     <UFooter>
       <template #left>
         <p class="text-xs text-on-surface-variant">
-          Faculty Career Center & Job Fair Organizer • ©
+          Pusat Karir Fakultas & Penyelenggara Bursa Kerja • ©
           {{ new Date().getFullYear() }}
         </p>
       </template>
 
       <template #right>
         <span v-if="user" class="text-xs text-on-surface-variant">
-          Signed in as {{ user.email }}
+          Masuk sebagai {{ user.email }}
         </span>
       </template>
     </UFooter>

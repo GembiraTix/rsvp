@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { useUrlSearchParams } from '@vueuse/core'
 
 useSeoMeta({
-  title: 'Sign In / Sign Up - FPCE Job Fair Admin',
+  title: 'Masuk / Daftar - Admin Bursa Kerja FPCE',
 })
 
 const user = useSupabaseUser()
@@ -26,8 +26,8 @@ watch(
 )
 
 const formStateSchema = z.object({
-  email: z.email('Please enter a valid email address.'),
-  password: z.string().min(1, 'Password is required.'),
+  email: z.email('Masukkan alamat email yang valid.'),
+  password: z.string().min(1, 'Kata sandi wajib diisi.'),
 })
 
 type FormState = z.output<typeof formStateSchema>
@@ -77,7 +77,7 @@ async function handleLogin(e: FormSubmitEvent<FormState>) {
     if (err instanceof Error) {
       errorMessage.value = err.message
     } else {
-      errorMessage.value = 'An unexpected error occurred during sign in.'
+      errorMessage.value = 'Terjadi kesalahan saat masuk.'
     }
   } finally {
     isLoading.value = false
@@ -109,13 +109,13 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
       await navigateTo(redirectPath)
     } else {
       successMessage.value =
-        'Account created! Please check your email to confirm your registration.'
+        'Akun berhasil dibuat! Silakan periksa email Anda untuk mengonfirmasi pendaftaran.'
     }
   } catch (err: unknown) {
     if (err instanceof Error) {
       errorMessage.value = err.message
     } else {
-      errorMessage.value = 'An unexpected error occurred during sign up.'
+      errorMessage.value = 'Terjadi kesalahan saat mendaftar.'
     }
   } finally {
     isLoading.value = false
@@ -127,11 +127,11 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
   <div class="flex flex-col justify-center max-w-md mx-auto gap-6 py-12 px-4">
     <header class="text-center space-y-1">
       <h1 class="text-3xl font-bold text-on-surface">
-        {{ isSignUp ? 'Create Account' : 'Welcome Back' }}
+        {{ isSignUp ? 'Buat Akun' : 'Selamat Datang Kembali' }}
       </h1>
       <p class="text-sm text-on-surface-variant">
         {{
-          isSignUp ? 'Sign up for a new account' : 'Get back to your account'
+          isSignUp ? 'Daftar untuk membuat akun baru' : 'Masuk kembali ke akun Anda'
         }}
       </p>
     </header>
@@ -171,7 +171,7 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
           />
         </UFormField>
 
-        <UFormField label="Password" name="password">
+        <UFormField label="Kata Sandi" name="password">
           <UInput
             id="password"
             v-model="formState.password"
@@ -184,7 +184,7 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
         </UFormField>
 
         <UButton
-          :label="isSignUp ? 'Sign Up' : 'Sign In'"
+          :label="isSignUp ? 'Daftar' : 'Masuk'"
           type="submit"
           size="lg"
           class="w-full justify-center"
@@ -202,8 +202,8 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
         >
           {{
             isSignUp
-              ? 'Already have an account? Sign in'
-              : "Don't have an account? Sign up"
+              ? 'Sudah punya akun? Masuk'
+              : 'Belum punya akun? Daftar'
           }}
         </button>
       </div>
@@ -211,7 +211,7 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
 
     <div class="text-center">
       <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
-        Back to home
+        Kembali ke beranda
       </UButton>
     </div>
   </div>

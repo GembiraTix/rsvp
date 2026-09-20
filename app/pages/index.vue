@@ -1,8 +1,8 @@
 <script setup lang="ts">
 useSeoMeta({
-  title: 'FPCE Job Fair - Event RSVP',
+  title: 'Bursa Kerja FPCE - RSVP Acara',
   description:
-    'Browse upcoming FPCE job fair sessions, company presentations, and RSVP directly.',
+    'Jelajahi sesi bursa kerja FPCE mendatang, presentasi perusahaan, dan lakukan RSVP secara langsung.',
 })
 
 const supabase = useSupabaseClient()
@@ -16,11 +16,10 @@ const { data: events, error } = await supabase.from('events').select('*')
       <h1
         class="text-4xl md:text-5xl font-bold tracking-tight text-on-background"
       >
-        Find Opportunities & RSVP Instantly
+        Temukan Peluang & RSVP Instan
       </h1>
       <p class="text-lg text-on-surface-variant">
-        Browse company talks, recruitment sessions, and workshops. Reserve your
-        spot in seconds without account registration.
+        Jelajahi presentasi perusahaan, sesi rekrutmen, dan lokakarya. Amankan tempat Anda dalam hitungan detik tanpa pendaftaran akun.
       </p>
     </section>
 
@@ -28,10 +27,10 @@ const { data: events, error } = await supabase.from('events').select('*')
     <section class="max-w-6xl mx-auto px-4">
       <header class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-on-surface">
-          Available Sessions
+          Sesi Tersedia
         </h2>
         <p class="text-sm text-on-surface-variant">
-          Showing {{ events?.length }} event(s)
+          Menampilkan {{ events?.length }} acara
         </p>
       </header>
 
@@ -87,7 +86,7 @@ const { data: events, error } = await supabase.from('events').select('*')
               class="w-full justify-center"
               trailing-icon="i-lucide-arrow-right"
             >
-              View & RSVP
+              Lihat & RSVP
             </UButton>
           </div>
         </UCard>

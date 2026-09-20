@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'My Dashboard - FPCE Job Fair',
+  title: 'Dasbor Saya - Bursa Kerja FPCE',
 })
 
 const supabase = useSupabaseClient()
@@ -41,7 +41,7 @@ const profileErrorMessage = ref('')
 const profileSuccessMessage = ref('')
 
 const profileFormSchema = z.object({
-  name: z.string().min(1, 'Name is required.'),
+  name: z.string().min(1, 'Nama wajib diisi.'),
 })
 
 type ProfileFormState = z.output<typeof profileFormSchema>
@@ -79,7 +79,7 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
     }
 
     await refreshProfile()
-    profileSuccessMessage.value = 'Profile updated successfully!'
+    profileSuccessMessage.value = 'Profil berhasil diperbarui!'
     setTimeout(() => {
       isProfileModalOpen.value = false
     }, 1000)
@@ -87,7 +87,7 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
     if (err instanceof Error) {
       profileErrorMessage.value = err.message
     } else {
-      profileErrorMessage.value = 'Failed to update profile.'
+      profileErrorMessage.value = 'Gagal memperbarui profil.'
     }
   } finally {
     isUpdatingProfile.value = false
@@ -129,7 +129,7 @@ const { data: joinedRsvps, refresh: refreshJoined } = await useAsyncData(
 )
 
 async function deleteEvent(id: number) {
-  if (!confirm('Are you sure you want to delete this event?')) return
+  if (!confirm('Apakah Anda yakin ingin menghapus acara ini?')) return
   const { error } = await supabase.from('events').delete().eq('id', id)
   if (!error) {
     await refreshOrganized()
@@ -152,7 +152,7 @@ async function deleteEvent(id: number) {
           </div>
           <div>
             <h2 class="text-xl font-bold text-on-surface">
-              {{ profile?.name || 'User Profile' }}
+              {{ profile?.name || 'Profil Pengguna' }}
             </h2>
             <p class="text-sm text-on-surface-variant">
               {{ user?.email }}
@@ -166,7 +166,7 @@ async function deleteEvent(id: number) {
           icon="i-lucide-user-cog"
           @click="openProfileModal"
         >
-          Edit Profile
+          Edit Profil
         </UButton>
       </div>
     </UCard>
@@ -174,8 +174,8 @@ async function deleteEvent(id: number) {
     <!-- edit profile -->
     <UModal
       v-model:open="isProfileModalOpen"
-      title="Edit Profile Settings"
-      description="Update your display name and profile details."
+      title="Pengaturan Edit Profil"
+      description="Perbarui nama tampilan dan detail profil Anda."
     >
       <template #body>
         <div
@@ -204,11 +204,11 @@ async function deleteEvent(id: number) {
             <UInput :model-value="user?.email" disabled class="w-full" />
           </UFormField>
 
-          <UFormField label="Full Name / Display Name" name="name">
+          <UFormField label="Nama Lengkap / Nama Tampilan" name="name">
             <UInput
               id="name"
               v-model="profileFormState.name"
-              placeholder="e.g. Dr. Jane Doe"
+              placeholder="contoh: Dr. Jane Doe"
               name="name"
               class="w-full"
             />
@@ -220,10 +220,10 @@ async function deleteEvent(id: number) {
               variant="ghost"
               @click="isProfileModalOpen = false"
             >
-              Cancel
+              Batal
             </UButton>
             <UButton color="primary" type="submit" :loading="isUpdatingProfile">
-              Save Changes
+              Simpan Perubahan
             </UButton>
           </div>
         </UForm>
@@ -234,12 +234,12 @@ async function deleteEvent(id: number) {
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold text-on-surface flex items-center gap-2">
           <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
-          Events You're Organizing ({{ organizedEvents?.length || 0 }})
+          Acara Yang Anda Organisasi ({{ organizedEvents?.length || 0 }})
         </h2>
 
         <div class="flex items-center gap-3">
           <UButton to="/users/events/new" color="primary" icon="i-lucide-plus">
-            Create New Event
+            Buat Acara Baru
           </UButton>
         </div>
       </div>
@@ -254,10 +254,10 @@ async function deleteEvent(id: number) {
               class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
             >
               <tr>
-                <th class="px-6 py-3">Event Title</th>
-                <th class="px-6 py-3">Date</th>
-                <th class="px-6 py-3">Location</th>
-                <th class="px-6 py-3 text-right">Actions</th>
+                <th class="px-6 py-3">Judul Acara</th>
+                <th class="px-6 py-3">Tanggal</th>
+                <th class="px-6 py-3">Lokasi</th>
+                <th class="px-6 py-3 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-outline">
@@ -284,7 +284,7 @@ async function deleteEvent(id: number) {
                     variant="soft"
                     icon="i-lucide-settings"
                   >
-                    Manage
+                    Kelola
                   </UButton>
                   <UButton
                     :to="`/e/${ev.slug}`"
@@ -292,14 +292,14 @@ async function deleteEvent(id: number) {
                     color="neutral"
                     variant="ghost"
                     icon="i-lucide-external-link"
-                    title="View public page"
+                    title="Lihat halaman publik"
                   />
                   <UButton
                     size="xs"
                     color="error"
                     variant="ghost"
                     icon="i-lucide-trash-2"
-                    title="Delete event"
+                    title="Hapus acara"
                     @click="deleteEvent(ev.id)"
                   />
                 </td>
@@ -314,7 +314,7 @@ async function deleteEvent(id: number) {
             class="w-10 h-10 mx-auto text-on-surface-variant"
           />
           <p class="text-sm text-on-surface-variant">
-            You haven't organized any events yet.
+            Anda belum mengorganisasi acara apa pun.
           </p>
           <UButton
             to="/users/events/new"
@@ -322,7 +322,7 @@ async function deleteEvent(id: number) {
             variant="outline"
             size="sm"
           >
-            Create Your First Event
+            Buat Acara Pertama Anda
           </UButton>
         </div>
       </UCard>
@@ -332,7 +332,7 @@ async function deleteEvent(id: number) {
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold text-on-surface flex items-center gap-2">
           <UIcon name="i-lucide-ticket" class="w-5 h-5 text-primary" />
-          Events You've Joined ({{ joinedRsvps?.length || 0 }})
+          Acara Yang Anda Ikuti ({{ joinedRsvps?.length || 0 }})
         </h2>
       </div>
 
@@ -346,10 +346,10 @@ async function deleteEvent(id: number) {
               class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
             >
               <tr>
-                <th class="px-6 py-3">Event</th>
-                <th class="px-6 py-3">Location</th>
-                <th class="px-6 py-3">RSVP Ref</th>
-                <th class="px-6 py-3 text-right">Actions</th>
+                <th class="px-6 py-3">Acara</th>
+                <th class="px-6 py-3">Lokasi</th>
+                <th class="px-6 py-3">Ref RSVP</th>
+                <th class="px-6 py-3 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-outline">
@@ -359,7 +359,7 @@ async function deleteEvent(id: number) {
                 class="hover:bg-surface-container/50"
               >
                 <td class="px-6 py-4 font-medium text-on-surface">
-                  {{ rsvp.events?.title || 'Event' }}
+                  {{ rsvp.events?.title || 'Acara' }}
                 </td>
                 <td class="px-6 py-4 text-on-surface-variant">
                   {{ rsvp.events?.location || '-' }}
@@ -374,7 +374,7 @@ async function deleteEvent(id: number) {
                     color="neutral"
                     variant="outline"
                   >
-                    View Ticket
+                    Lihat Tiket
                   </UButton>
                   <UButton
                     v-if="rsvp.events?.slug"
@@ -396,10 +396,10 @@ async function deleteEvent(id: number) {
             class="w-10 h-10 mx-auto text-on-surface-variant"
           />
           <p class="text-sm text-on-surface-variant">
-            You haven't joined any events yet.
+            Anda belum mengikuti acara apa pun.
           </p>
           <UButton to="/" color="neutral" variant="outline" size="sm">
-            Explore Public Events
+            Jelajahi Acara Publik
           </UButton>
         </div>
       </UCard>

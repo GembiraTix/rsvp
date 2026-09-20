@@ -22,14 +22,14 @@ const {
 })
 
 useSeoMeta({
-  title: 'Manage RSVP - FPCE Job Fair',
+  title: 'Kelola RSVP - Bursa Kerja FPCE',
 })
 
 const isCancelling = ref(false)
 const errorMessage = ref('')
 
 async function handleCancelRsvp() {
-  if (!confirm('Are you sure you want to cancel your RSVP reservation?')) return
+  if (!confirm('Apakah Anda yakin ingin membatalkan reservasi RSVP Anda?')) return
   isCancelling.value = true
   errorMessage.value = ''
 
@@ -49,7 +49,7 @@ async function handleCancelRsvp() {
     if (err instanceof Error) {
       errorMessage.value = err.message
     } else {
-      errorMessage.value = 'Failed to cancel reservation.'
+      errorMessage.value = 'Gagal membatalkan reservasi.'
     }
   } finally {
     isCancelling.value = false
@@ -60,7 +60,7 @@ async function handleCancelRsvp() {
 <template>
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
     <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left">
-      Back to Home
+      Kembali ke Beranda
     </UButton>
 
     <div
@@ -68,9 +68,9 @@ async function handleCancelRsvp() {
       class="p-6 text-center rounded-xl bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300"
     >
       <UIcon name="i-lucide-alert-circle" class="w-8 h-8 mx-auto mb-2" />
-      <h2 class="text-lg font-bold">Reservation Not Found</h2>
+      <h2 class="text-lg font-bold">Reservasi Tidak Ditemukan</h2>
       <p class="text-xs text-on-surface-variant mt-1">
-        Please check your reservation link and try again.
+        Silakan periksa tautan reservasi Anda dan coba lagi.
       </p>
     </div>
 
@@ -79,7 +79,7 @@ async function handleCancelRsvp() {
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-xl font-bold text-on-surface">
-              Reservation Details
+              Detail Reservasi
             </h1>
             <p class="text-xs text-on-surface-variant font-mono">Ref: {{ token }}</p>
           </div>
@@ -89,7 +89,7 @@ async function handleCancelRsvp() {
             variant="subtle"
             size="md"
           >
-            {{ rsvp.is_attending ? 'Confirmed' : 'Cancelled' }}
+            {{ rsvp.is_attending ? 'Terkonfirmasi' : 'Dibatalkan' }}
           </UBadge>
         </div>
       </template>
@@ -108,7 +108,7 @@ async function handleCancelRsvp() {
           class="p-4 rounded-xl bg-surface-container border border-outline space-y-2"
         >
           <p class="text-xs font-semibold text-primary uppercase tracking-wide">
-            Event Information
+            Informasi Acara
           </p>
           <h2 class="font-bold text-on-surface">
             {{ rsvp.events.title }}
@@ -124,7 +124,7 @@ async function handleCancelRsvp() {
         <!-- Guest Details -->
         <div class="space-y-3 text-sm">
           <div>
-            <span class="text-xs text-on-surface-variant block">Attendee Name</span>
+            <span class="text-xs text-on-surface-variant block">Nama Peserta</span>
             <span class="font-medium text-on-surface">{{
               rsvp.name
             }}</span>
@@ -137,7 +137,7 @@ async function handleCancelRsvp() {
           </div>
           <div v-if="rsvp.organization">
             <span class="text-xs text-on-surface-variant block"
-              >Organization / Background</span
+              >Organisasi / Latar Belakang</span
             >
             <p
               class="text-on-surface-variant text-xs mt-0.5 whitespace-pre-line"
@@ -152,8 +152,7 @@ async function handleCancelRsvp() {
           class="pt-4 border-t border-outline space-y-3"
         >
           <p class="text-xs text-on-surface-variant">
-            Cannot make it? You can cancel your RSVP so organizers know the
-            actual headcount.
+            Halangan hadir? Anda dapat membatalkan RSVP Anda agar penyelenggara mengetahui jumlah pasti peserta.
           </p>
           <UButton
             color="error"
@@ -162,7 +161,7 @@ async function handleCancelRsvp() {
             :loading="isCancelling"
             @click="handleCancelRsvp"
           >
-            Cancel My RSVP
+            Batalkan RSVP Saya
           </UButton>
         </div>
 
@@ -170,7 +169,7 @@ async function handleCancelRsvp() {
           v-else
           class="p-4 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 rounded-lg text-sm text-center"
         >
-          This reservation has been cancelled.
+          Reservasi ini telah dibatalkan.
         </div>
       </div>
     </UCard>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 useSeoMeta({
-  title: 'Confirming Session - FPCE Job Fair',
+  title: 'Konfirmasi Sesi - Bursa Kerja FPCE',
 })
 
 const user = useSupabaseUser()
@@ -29,10 +29,10 @@ watch(
     </div>
     <div class="space-y-1">
       <h2 class="text-xl font-bold text-on-surface">
-        Verifying Authentication...
+        Memverifikasi Autentikasi...
       </h2>
       <p class="text-sm text-on-surface-variant">
-        Please wait while your session is being confirmed.
+        Mohon tunggu sebentar selagi sesi Anda sedang dikonfirmasi.
       </p>
     </div>
   </div>
