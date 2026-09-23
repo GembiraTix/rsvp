@@ -131,7 +131,9 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
       </h1>
       <p class="text-sm text-on-surface-variant">
         {{
-          isSignUp ? 'Daftar untuk membuat akun baru' : 'Masuk kembali ke akun Anda'
+          isSignUp
+            ? 'Daftar untuk membuat akun baru'
+            : 'Masuk kembali ke akun Anda'
         }}
       </p>
     </header>
@@ -192,18 +194,14 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
         />
       </UForm>
 
-      <div
-        class="mt-4 pt-4 border-t border-outline text-center"
-      >
+      <div class="mt-4 pt-4 border-t border-outline text-center">
         <button
           type="button"
           class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
           @click="toggleMode"
         >
           {{
-            isSignUp
-              ? 'Sudah punya akun? Masuk'
-              : 'Belum punya akun? Daftar'
+            isSignUp ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'
           }}
         </button>
       </div>
