@@ -1,25 +1,47 @@
 <script setup lang="ts">
+import type { FormSubmitEvent } from '@nuxt/ui'
+import { z } from 'zod'
+import { useSiteName } from '@/composables/useSiteName'
+
 definePageMeta({
   middleware: 'auth',
 })
 
+const siteName = useSiteName()
 useSeoMeta({
-  title: 'Buat Acara Baru - Bursa Kerja FPCE',
+  title: `Buat Acara Baru - ${siteName}`,
 })
 
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
-const form = reactive({
-  title: '',
-  date: '',
-  time: '',
-  location: '',
-  description: '',
-  image: '',
+const formStateSchema = z.object({
+  title: z.string().min(1, 'Judul acara wajib diisi.'),
+  date: z.object({
+    starts_at: z.string().min(1, 'Tanggal awal wajib diisi.'),
+    ends_at: z.string().optional(),
+  }),
+  is_one_day: z.boolean(),
+  location: z.string().min(1, 'Lokasi wajib diisi.'),
+  image: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
+  description: z.string().optional(),
 })
 
-const isSubmitting = ref(false)
+type FormState = z.output<typeof formStateSchema>
+
+const formState = reactive<FormState>({
+  title: '',
+  date: {
+    starts_at: '',
+    ends_at: '',
+  },
+  is_one_day: true,
+  location: '',
+  image: '',
+  description: '',
+})
+
+const isLoading = ref(false)
 const errorMessage = ref('')
 
 function slugify(text: string) {
@@ -30,28 +52,35 @@ function slugify(text: string) {
     .replace(/(^-|-$)+/g, '')
 }
 
-async function handleCreate() {
-  if (!form.title || !form.date || !form.location || !user.value?.id) return
+async function handleSubmit(e: FormSubmitEvent<FormState>) {
+  const userId = user.value?.sub
+  if (!userId) {
+    errorMessage.value = 'Pengguna tidak terautentikasi.'
+    return
+  }
 
-  isSubmitting.value = true
+  isLoading.value = true
   errorMessage.value = ''
 
   try {
-    const slug = `${slugify(form.title)}-${Math.floor(1000 + Math.random() * 9000)}`
-    const startsAt = form.time
-      ? `${form.date}T${form.time}:00Z`
-      : `${form.date}T00:00:00Z`
+    const slug = `${slugify(e.data.title)}-${Math.floor(1000 + Math.random() * 9000)}`
+    const startsAt = e.data.date.starts_at
+    let endsAt = null
+    if (e.data.is_one_day) {
+      endsAt = e.data.date.ends_at
+    }
 
     const { data, error } = await supabase
       .from('events')
       .insert({
-        title: form.title,
+        title: e.data.title,
         slug,
-        location: form.location,
-        description: form.description || null,
-        image_url: form.image || null,
+        location: e.data.location,
+        description: e.data.description || null,
+        image_url: e.data.image || null,
         starts_at: startsAt,
-        created_by: user.value.sub,
+        ends_at: endsAt,
+        created_by: userId,
       })
       .select('slug')
       .single()
@@ -73,7 +102,7 @@ async function handleCreate() {
       errorMessage.value = 'Gagal membuat acara. Silakan coba lagi.'
     }
   } finally {
-    isSubmitting.value = false
+    isLoading.value = false
   }
 }
 </script>
@@ -92,96 +121,119 @@ async function handleCreate() {
     <UCard class="border-outline shadow-md">
       <template #header>
         <div>
-          <h1 class="text-2xl font-bold text-on-surface">
-            Buat Acara / Sesi Bursa Kerja
-          </h1>
+          <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
           <p class="text-xs text-on-surface-variant">
-            Isi detail di bawah untuk memublikasikan sesi baru untuk RSVP peserta
+            Isi detail di bawah untuk memublikasikan sesi baru untuk RSVP
+            peserta
           </p>
         </div>
       </template>
 
-      <form @submit.prevent="handleCreate" class="space-y-4">
-        <div
-          v-if="errorMessage"
-          class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
-        >
-          <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
-          <span>{{ errorMessage }}</span>
-        </div>
+      <div
+        v-if="errorMessage"
+        class="mb-4 p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
+      >
+        <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
+        <span>{{ errorMessage }}</span>
+      </div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-on-surface-variant">
-            Judul Acara <span class="text-red-500">*</span>
-          </label>
+      <UForm
+        :schema="formStateSchema"
+        :state="formState"
+        class="space-y-4"
+        @submit="handleSubmit"
+      >
+        <UFormField label="Judul Acara" name="title" required>
           <UInput
-            v-model="form.title"
+            id="title"
+            v-model="formState.title"
             placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
-            required
+            name="title"
             class="w-full"
+            required
           />
+        </UFormField>
+
+        <div class="grid gap-4">
+          <UFormField
+            label="Satu hari?"
+            name="is_one_day"
+            help="Nyalakan bila acara hanya berlangsung dalam satu hari"
+          >
+            <UCheckbox
+              id="is_one_day"
+              v-model="formState.is_one_day"
+              name="is_one_day"
+            />
+          </UFormField>
+
+          <UFormField label="Tanggal Awal" name="date.starts_at" required>
+            <UInput
+              id="starts_at"
+              v-model="formState.date.starts_at"
+              type="date"
+              name="starts_at"
+              class="w-full"
+              required
+            />
+          </UFormField>
+
+          <div v-show="!formState.is_one_day">
+            <UFormField label="Tanggal Akhir" name="date.ends_at">
+              <UInput
+                id="ends_at"
+                v-model="formState.date.ends_at"
+                type="date"
+                name="ends_at"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-on-surface-variant">
-              Tanggal <span class="text-red-500">*</span>
-            </label>
-            <UInput v-model="form.date" type="date" required class="w-full" />
-          </div>
-
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-on-surface-variant">
-              Waktu Mulai
-            </label>
-            <UInput v-model="form.time" type="time" class="w-full" />
-          </div>
-        </div>
-
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-on-surface-variant">
-            Lokasi / Ruangan <span class="text-red-500">*</span>
-          </label>
+        <UFormField label="Lokasi" name="location" required>
           <UInput
-            v-model="form.location"
+            id="location"
+            v-model="formState.location"
             placeholder="contoh: Auditorium Utama / Ruang 204"
+            name="location"
+            class="w-full"
             required
-            class="w-full"
           />
-        </div>
+        </UFormField>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-on-surface-variant">
-            URL Gambar Banner
-          </label>
+        <UFormField label="URL Gambar Banner" name="image">
           <UInput
-            v-model="form.image"
+            id="image"
+            v-model="formState.image"
             placeholder="https://images.unsplash.com/photo-..."
+            name="image"
             class="w-full"
           />
-        </div>
+        </UFormField>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-semibold text-on-surface-variant">
-            Deskripsi
-          </label>
+        <UFormField label="Deskripsi" name="description">
           <UTextarea
-            v-model="form.description"
+            id="description"
+            v-model="formState.description"
             :rows="4"
             placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
+            name="description"
             class="w-full"
           />
-        </div>
+        </UFormField>
 
         <div class="pt-4 flex justify-end gap-3 border-t border-outline">
-          <UButton to="/users" variant="ghost" color="neutral">
-            Batal
-          </UButton>
-          <UButton type="submit" color="primary" :loading="isSubmitting">
-            Publikasikan Acara
-          </UButton>
+          <UButton to="/users" variant="ghost" color="neutral"> Batal </UButton>
+          <UButton
+            class="active:translate-y-1"
+            type="submit"
+            color="primary"
+            :loading="isLoading"
+            label="Publikasikan Acara"
+          />
         </div>
-      </form>
+      </UForm>
     </UCard>
   </div>
 </template>
