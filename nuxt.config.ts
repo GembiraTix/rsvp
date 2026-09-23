@@ -1,8 +1,20 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  app: {
+    head: {
+      title: 'RSVP',
+      htmlAttrs: { lang: 'id' },
+    },
+  },
   modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxtjs/supabase'],
   supabase: {
     redirect: false,
+  },
+
+  runtimeConfig: {
+    public: {
+      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Bursa Kerja FPCE',
+    },
   },
 
   devtools: {

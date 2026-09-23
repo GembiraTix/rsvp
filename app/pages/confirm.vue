@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useSiteName } from '@/composables/useSiteName'
+const siteName = useSiteName()
 useSeoMeta({
   title: 'Konfirmasi Sesi - Bursa Kerja FPCE',
 })

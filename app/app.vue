@@ -1,4 +1,5 @@
 <script setup>
+import { useSiteName } from '@/composables/useSiteName'
 useHead({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
   link: [{ rel: 'icon', href: '/favicon.ico' }],
@@ -7,8 +8,9 @@ useHead({
   },
 })
 
-const title = 'Bursa Kerja FPCE - RSVP Acara'
-const description = 'Portal RSVP untuk Bursa Kerja Fakultas FPCE'
+const siteName = useSiteName()
+const title = `${siteName} - RSVP Acara`
+const description = `Portal RSVP untuk ${siteName}`
 
 useSeoMeta({
   title,
@@ -34,7 +36,7 @@ async function handleLogout() {
           to="/"
           class="flex items-center gap-2 font-bold text-on-surface text-base hover:opacity-90 transition-opacity"
         >
-          <span>Bursa Kerja FPCE</span>
+          <span>{{ useSiteName() }}</span>
         </NuxtLink>
       </template>
 
