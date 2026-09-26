@@ -21,8 +21,11 @@ const {
   return data
 })
 
+import { useSiteName } from '@/composables/useSiteName'
+const siteName = useSiteName()
+
 useSeoMeta({
-  title: 'Kelola RSVP - Bursa Kerja FPCE',
+  title: `Kelola RSVP - ${siteName}`,
 })
 
 const isCancelling = ref(false)
