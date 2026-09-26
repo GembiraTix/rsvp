@@ -16,19 +16,17 @@ const { data: events, error } = await supabase.from('events').select('*')
       <h1
         class="text-4xl md:text-5xl font-bold tracking-tight text-on-background"
       >
-        Temukan Peluang & RSVP Instan
+        Acara terbaru
       </h1>
       <p class="text-lg text-on-surface-variant">
-        Jelajahi presentasi perusahaan, sesi rekrutmen, dan lokakarya. Amankan tempat Anda dalam hitungan detik tanpa pendaftaran akun.
+        Acara terbaru dari GembiraTix
       </p>
     </section>
 
     <!-- Event List Grid -->
     <section class="max-w-6xl mx-auto px-4">
       <header class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-on-surface">
-          Sesi Tersedia
-        </h2>
+        <h2 class="text-2xl font-bold text-on-surface">Sesi Tersedia</h2>
         <p class="text-sm text-on-surface-variant">
           Menampilkan {{ events?.length }} acara
         </p>
@@ -55,12 +53,8 @@ const { data: events, error } = await supabase.from('events').select('*')
             />
           </figure>
 
-          <figcaption
-            class="space-y-1.5 text-xs text-on-surface-variant mb-3"
-          >
-            <h3
-              class="text-lg font-bold text-on-surface mb-2 line-clamp-2"
-            >
+          <figcaption class="space-y-1.5 text-xs text-on-surface-variant mb-3">
+            <h3 class="text-lg font-bold text-on-surface mb-2 line-clamp-2">
               {{ event.title }}
             </h3>
 
@@ -70,9 +64,7 @@ const { data: events, error } = await supabase.from('events').select('*')
             </div>
           </figcaption>
 
-          <p
-            class="text-sm text-on-surface-variant line-clamp-3 mb-4"
-          >
+          <p class="text-sm text-on-surface-variant line-clamp-3 mb-4">
             {{ event.description }}
           </p>
 
