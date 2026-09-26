@@ -68,30 +68,30 @@ async function submitRsvp(name: string, email: string, organization?: string) {
   isSubmitting.value = true
 
   try {
-    const token = crypto.randomUUID()
-    const { data: result, error: insertError } = await supabase
-      .from('rsvps')
-      .insert({
-        event_id: event.id,
+    const res = await $fetch<{ success: boolean; token: string }>('/api/rsvp', {
+      method: 'POST',
+      body: {
+        eventId: event.id,
         name,
         email,
-        organization: organization || null,
-        token: token,
-        is_attending: true,
-      })
-      .select('token')
-      .single()
+        organization,
+      },
+    })
 
-    if (insertError) {
-      errorMessage.value = insertError.message
-      return
-    }
-
-    rsvpToken.value = result?.token || token
+    rsvpToken.value = res.token
     rsvpSuccess.value = true
     isConfirmOpen.value = false
   } catch (err: unknown) {
-    if (err instanceof Error) {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'data' in err &&
+      (err as { data?: { statusMessage?: string } }).data?.statusMessage
+    ) {
+      errorMessage.value = (
+        err as { data: { statusMessage: string } }
+      ).data.statusMessage
+    } else if (err instanceof Error) {
       errorMessage.value = err.message
     } else {
       errorMessage.value = 'Gagal mengirim RSVP. Silakan coba lagi.'
@@ -155,18 +155,14 @@ async function handleAuthenticatedRsvp() {
               <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
               <span>{{ formatDate(event.starts_at) }}</span>
             </time>
-            <div
-              class="flex items-center gap-2 text-on-surface-variant"
-            >
+            <div class="flex items-center gap-2 text-on-surface-variant">
               <UIcon name="i-lucide-map-pin" class="w-5 h-5 text-primary" />
               <span>{{ event.location }}</span>
             </div>
           </article>
 
           <article class="space-y-2">
-            <h2 class="text-xl font-bold text-on-surface">
-              Tentang Sesi Ini
-            </h2>
+            <h2 class="text-xl font-bold text-on-surface">Tentang Sesi Ini</h2>
             <p
               class="text-on-surface-variant leading-relaxed whitespace-pre-line"
             >
@@ -182,11 +178,10 @@ async function handleAuthenticatedRsvp() {
           :ui="{ body: 'p-6 space-y-6' }"
         >
           <div v-if="isOwner" class="space-y-4 text-center py-2">
-            <h2 class="text-xl font-bold text-on-surface">
-              Kelola Acara Anda
-            </h2>
+            <h2 class="text-xl font-bold text-on-surface">Kelola Acara Anda</h2>
             <p class="text-xs text-on-surface-variant">
-              Lihat peserta terdaftar, ekspor daftar CSV, atau edit detail acara.
+              Lihat peserta terdaftar, ekspor daftar CSV, atau edit detail
+              acara.
             </p>
             <UButton
               :to="`/e/${event.slug}/manage`"
@@ -243,14 +238,10 @@ async function handleAuthenticatedRsvp() {
           <!-- Authenticated Quick RSVP -->
           <template v-else-if="user">
             <header class="space-y-1">
-              <h2 class="text-xl font-bold text-on-surface">
-                RSVP Cepat
-              </h2>
+              <h2 class="text-xl font-bold text-on-surface">RSVP Cepat</h2>
               <p class="text-on-surface-variant">
                 Masuk sebagai
-                <strong class="text-on-surface">{{
-                  user.email
-                }}</strong>
+                <strong class="text-on-surface">{{ user.email }}</strong>
               </p>
             </header>
 

@@ -15,6 +15,8 @@ export default defineNuxtConfig({
     public: {
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Bursa Kerja FPCE',
     },
+
+    resendApiKey: process.env.NUXT_RESEND_API_KEY,
   },
 
   devtools: {
