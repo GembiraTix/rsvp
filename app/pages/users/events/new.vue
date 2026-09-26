@@ -2,6 +2,13 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useSiteName } from '@/composables/useSiteName'
+import {
+  CalendarDate,
+  CalendarDateTime,
+  getLocalTimeZone,
+  now,
+  ZonedDateTime,
+} from '@internationalized/date'
 
 definePageMeta({
   middleware: 'auth',
@@ -18,8 +25,8 @@ const user = useSupabaseUser()
 const formStateSchema = z.object({
   title: z.string().min(1, 'Judul acara wajib diisi.'),
   date: z.object({
-    starts_at: z.string().min(1, 'Tanggal awal wajib diisi.'),
-    ends_at: z.string().optional(),
+    starts_at: z.instanceof(ZonedDateTime),
+    ends_at: z.instanceof(ZonedDateTime),
   }),
   is_one_day: z.boolean(),
   location: z.string().min(1, 'Lokasi wajib diisi.'),
@@ -29,11 +36,11 @@ const formStateSchema = z.object({
 
 type FormState = z.output<typeof formStateSchema>
 
-const formState = reactive<FormState>({
+const formState = shallowRef<FormState>({
   title: '',
   date: {
-    starts_at: '',
-    ends_at: '',
+    starts_at: now(getLocalTimeZone()),
+    ends_at: now(getLocalTimeZone()),
   },
   is_one_day: true,
   location: '',
@@ -78,8 +85,8 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
         location: e.data.location,
         description: e.data.description || null,
         image_url: e.data.image || null,
-        starts_at: startsAt,
-        ends_at: endsAt,
+        starts_at: startsAt.toDate().toUTCString(),
+        ends_at: endsAt?.toDate().toUTCString(),
         created_by: userId,
       })
       .select('slug')
@@ -120,13 +127,7 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
 
     <UCard class="border-outline shadow-md">
       <template #header>
-        <div>
-          <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
-          <p class="text-xs text-on-surface-variant">
-            Isi detail di bawah untuk memublikasikan sesi baru untuk RSVP
-            peserta
-          </p>
-        </div>
+        <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
       </template>
 
       <div
@@ -168,21 +169,26 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           </UFormField>
 
           <UFormField label="Tanggal Awal" name="date.starts_at" required>
-            <UInput
+            <UInputDate
               id="starts_at"
               v-model="formState.date.starts_at"
               type="date"
               name="starts_at"
               class="w-full"
-              required
             />
           </UFormField>
 
           <div v-show="!formState.is_one_day">
             <UFormField label="Tanggal Akhir" name="date.ends_at">
-              <UInput
+              <UInputDate
                 id="ends_at"
                 v-model="formState.date.ends_at"
+                :defaultValue="now(getLocalTimeZone())"
+                :is-date-unavailable="
+                  () =>
+                    formState.date.ends_at.toDate() <
+                    formState.date.starts_at.toDate()
+                "
                 type="date"
                 name="ends_at"
                 class="w-full"

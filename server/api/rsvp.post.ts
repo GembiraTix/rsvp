@@ -79,7 +79,7 @@ export default defineEventHandler(async (event) => {
             </p>
             <div style="background-color: #f3f4f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
               <p style="margin: 6px 0; font-size: 14px;"><strong>Lokasi:</strong> ${eventData.location || '-'}</p>
-              <p style="margin: 6px 0; font-size: 14px;"><strong>Waktu:</strong> ${eventData.starts_at || '-'}</p>
+              <p style="margin: 6px 0; font-size: 14px;"><strong>Waktu:</strong> ${new Date(eventData.starts_at || '').toLocaleString()}</p>
             </div>
             <p style="font-size: 15px; line-height: 22px; margin-bottom: 24px;">
               Anda dapat melihat detail tiket dan status reservasi Anda kapan saja melalui tautan berikut:

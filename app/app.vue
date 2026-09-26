@@ -1,4 +1,5 @@
 <script setup>
+import { id } from '@nuxt/ui/locale'
 import { useSiteName } from '@/composables/useSiteName'
 useHead({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
@@ -29,7 +30,7 @@ async function handleLogout() {
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="id">
     <UHeader>
       <template #left>
         <NuxtLink
@@ -44,7 +45,9 @@ async function handleLogout() {
         <div class="flex items-center gap-2">
           <UButton to="/" variant="ghost" color="neutral"> Acara </UButton>
 
-          <UButton v-if="user" to="/users" variant="ghost" color="neutral"> Dasbor Saya </UButton>
+          <UButton v-if="user" to="/users" variant="ghost" color="neutral">
+            Dasbor Saya
+          </UButton>
 
           <UButton v-if="!user" to="/login" color="neutral"> Masuk </UButton>
 
