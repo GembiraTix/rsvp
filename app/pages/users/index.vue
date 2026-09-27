@@ -27,7 +27,6 @@ const { fetchProfile, updateProfile: apiUpdateProfile } = useUserProfile()
 const { data: profileRes, refresh: refreshProfile } = await fetchProfile()
 const profile = computed(() => profileRes.value?.data || null)
 
-const isProfileModalOpen = ref(false)
 const isUpdatingProfile = ref(false)
 const profileErrorMessage = ref('')
 const profileSuccessMessage = ref('')
@@ -39,16 +38,8 @@ const profileFormSchema = z.object({
 type ProfileFormState = z.output<typeof profileFormSchema>
 
 const profileFormState = reactive<ProfileFormState>({
-  name: '',
+  name: profile.value?.name || '',
 })
-
-function openProfileModal() {
-  profileFormState.name =
-    profile.value?.name || user.value?.user_metadata?.full_name || ''
-  profileErrorMessage.value = ''
-  profileSuccessMessage.value = ''
-  isProfileModalOpen.value = true
-}
 
 async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
   if (!user.value) return
@@ -60,9 +51,6 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
     await apiUpdateProfile(e.data.name)
     await refreshProfile()
     profileSuccessMessage.value = 'Profil berhasil diperbarui!'
-    setTimeout(() => {
-      isProfileModalOpen.value = false
-    }, 1000)
   } catch (err: unknown) {
     if (err instanceof Error) {
       profileErrorMessage.value = err.message
@@ -115,7 +103,7 @@ async function deleteEvent(id: number) {
 <template>
   <div class="py-8 max-w-6xl mx-auto px-4 space-y-10">
     <UCard class="border-outline bg-surface-container/50">
-      <div
+      <header
         class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
       >
         <div class="flex items-center gap-4">
@@ -124,6 +112,7 @@ async function deleteEvent(id: number) {
           >
             {{ (profile?.name || user?.email || 'U').charAt(0).toUpperCase() }}
           </div>
+
           <div>
             <h2 class="text-xl font-bold text-on-surface">
               {{ profile?.name || 'Profil Pengguna' }}
@@ -134,81 +123,71 @@ async function deleteEvent(id: number) {
           </div>
         </div>
 
-        <UButton
-          color="neutral"
-          variant="outline"
-          icon="i-lucide-user-cog"
-          @click="openProfileModal"
+        <UModal
+          title="Pengaturan Edit Profil"
+          description="Perbarui nama tampilan dan detail profil Anda."
+          :close="{ color: 'primary' }"
         >
-          Edit Profil
-        </UButton>
-      </div>
-    </UCard>
-
-    <!-- edit profile -->
-    <UModal
-      v-model:open="isProfileModalOpen"
-      title="Pengaturan Edit Profil"
-      description="Perbarui nama tampilan dan detail profil Anda."
-    >
-      <template #body>
-        <UAlert
-          v-if="profileErrorMessage"
-          :title="profileErrorMessage"
-          icon="i-lucide-alert-circle"
-          color="error"
-          variant="subtle"
-        />
-
-        <UAlert
-          v-if="profileSuccessMessage"
-          :title="profileSuccessMessage"
-          icon="i-lucide-check-circle"
-          color="success"
-          variant="subtle"
-        />
-
-        <UForm
-          :schema="profileFormSchema"
-          :state="profileFormState"
-          class="space-y-4"
-          @submit="handleUpdateProfile"
-        >
-          <UFormField label="Email">
-            <UInput :model-value="user?.email" disabled class="w-full" />
-          </UFormField>
-
-          <UFormField label="Nama Lengkap / Nama Tampilan" name="name">
-            <UInput
-              id="name"
-              v-model="profileFormState.name"
-              placeholder="contoh: Dr. Jane Doe"
-              name="name"
-              class="w-full"
+          <UButton color="neutral" variant="outline" icon="i-lucide-user-cog">
+            Edit Profil
+          </UButton>
+          <template #body>
+            <UAlert
+              v-if="profileErrorMessage"
+              :title="profileErrorMessage"
+              icon="i-lucide-alert-circle"
+              color="error"
+              variant="subtle"
             />
-          </UFormField>
 
-          <div class="pt-4 flex justify-end gap-2">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              @click="isProfileModalOpen = false"
+            <UAlert
+              v-if="profileSuccessMessage"
+              :title="profileSuccessMessage"
+              icon="i-lucide-check-circle"
+              color="success"
+              variant="subtle"
+            />
+
+            <UForm
+              :schema="profileFormSchema"
+              :state="profileFormState"
+              class="space-y-4"
+              @submit="handleUpdateProfile"
             >
-              Batal
-            </UButton>
-            <UButton color="primary" type="submit" :loading="isUpdatingProfile">
-              Simpan Perubahan
-            </UButton>
-          </div>
-        </UForm>
-      </template>
-    </UModal>
+              <UFormField label="Email">
+                <UInput :model-value="user?.email" disabled class="w-full" />
+              </UFormField>
+
+              <UFormField label="Nama Lengkap / Nama Tampilan" name="name">
+                <UInput
+                  id="name"
+                  v-model="profileFormState.name"
+                  placeholder="contoh: Dr. Jane Doe"
+                  name="name"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <div class="pt-4 flex justify-end gap-2">
+                <UButton
+                  color="primary"
+                  type="submit"
+                  :loading="isUpdatingProfile"
+                >
+                  Simpan Perubahan
+                </UButton>
+              </div>
+            </UForm>
+          </template>
+        </UModal>
+      </header>
+    </UCard>
 
     <section class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold text-on-surface flex items-center gap-2">
           <UIcon name="i-lucide-calendar" class="w-5 h-5 text-primary" />
-          Acara Yang Anda Organisasi ({{ organizedEvents?.length || 0 }})
+          Acara Anda ({{ organizedEvents?.length || 0 }})
         </h2>
 
         <div class="flex items-center gap-3">
