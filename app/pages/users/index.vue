@@ -21,19 +21,11 @@ watch(
   { immediate: true },
 )
 
-const { data: profile, refresh: refreshProfile } = await useAsyncData(
-  `user-profile-${user.value?.sub}`,
-  async () => {
-    if (!user.value) return null
-    const { data } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.value.sub)
-      .single()
+import { useUserProfile } from '@/composables/useUserProfile'
 
-    return data
-  },
-)
+const { fetchProfile, updateProfile: apiUpdateProfile } = useUserProfile()
+const { data: profileRes, refresh: refreshProfile } = await fetchProfile()
+const profile = computed(() => profileRes.value?.data || null)
 
 const isProfileModalOpen = ref(false)
 const isUpdatingProfile = ref(false)
@@ -65,19 +57,7 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
   profileSuccessMessage.value = ''
 
   try {
-    const { error } = await supabase
-      .from('users')
-      .update({
-        email: user.value.email || '',
-        name: e.data.name,
-      })
-      .eq('id', user.value.sub)
-
-    if (error) {
-      profileErrorMessage.value = error.message
-      return
-    }
-
+    await apiUpdateProfile(e.data.name)
     await refreshProfile()
     profileSuccessMessage.value = 'Profil berhasil diperbarui!'
     setTimeout(() => {
@@ -99,7 +79,8 @@ import { useEvents } from '@/composables/useEvents'
 const { fetchCreatedByUser, deleteEvent: apiDeleteEvent } = useEvents()
 const userId = computed(() => user.value?.sub || user.value?.id)
 
-const { data: organizedRes, refresh: refreshOrganized } = await fetchCreatedByUser(userId)
+const { data: organizedRes, refresh: refreshOrganized } =
+  await fetchCreatedByUser(userId)
 const organizedEvents = computed(() => organizedRes.value?.data || [])
 
 // Fetch RSVPs joined by this user
