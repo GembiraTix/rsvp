@@ -1,9 +1,9 @@
-import { serverSupabaseUser } from '#supabase/server'
 import { useUserService } from '../../utils/user-service'
 
 export default defineEventHandler(async (event) => {
-  const user = await serverSupabaseUser(event)
-  if (!user) {
+  const { auth } = event.context
+
+  if (!auth.user) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Pengguna tidak terautentikasi.',
@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const service = await useUserService(event)
-  const profile = await service.getProfile(user.sub)
+  const profile = await service.getProfile(auth.user.sub)
 
   return { success: true, data: profile }
 })

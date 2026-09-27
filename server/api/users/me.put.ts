@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { serverSupabaseUser } from '#supabase/server'
 import { useUserService } from '../../utils/user-service'
 
 const updateProfileSchema = z.object({
@@ -7,8 +6,8 @@ const updateProfileSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  const user = await serverSupabaseUser(event)
-  if (!user) {
+  const { auth } = event.context
+  if (!auth.user) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Pengguna tidak terautentikasi.',
@@ -20,9 +19,9 @@ export default defineEventHandler(async (event) => {
   )
   const service = await useUserService(event)
 
-  const updatedProfile = await service.updateProfile(user.sub || user.id, {
+  const updatedProfile = await service.updateProfile(auth.user.sub, {
     name: body.name,
-    email: user.email,
+    email: auth.user.email,
   })
 
   return { success: true, data: updatedProfile }

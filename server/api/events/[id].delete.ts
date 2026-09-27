@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { serverSupabaseUser } from '#supabase/server'
 import { useEventService } from '../../utils/event-service'
 
 const paramsSchema = z.object({
@@ -7,8 +6,8 @@ const paramsSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  const user = await serverSupabaseUser(event)
-  if (!user) {
+  const { auth } = event.context
+  if (!auth.user) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Pengguna tidak terautentikasi.',
@@ -19,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const service = await useEventService(event)
 
   try {
-    await service.deleteEvent(id, user.sub || user.id)
+    await service.deleteEvent(id, auth.user.sub)
     return { success: true }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Gagal menghapus acara'

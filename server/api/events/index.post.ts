@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { serverSupabaseUser } from '#supabase/server'
 import { useEventService } from '../../utils/event-service'
 
 const createEventSchema = z.object({
@@ -8,12 +7,16 @@ const createEventSchema = z.object({
   startsAt: z.string().min(1, 'Tanggal awal wajib diisi.'),
   endsAt: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  imageUrl: z.string().url('URL gambar tidak valid.').optional().or(z.literal('')).nullable(),
+  imageUrl: z
+    .url('URL gambar tidak valid.')
+    .optional()
+    .or(z.literal(''))
+    .nullable(),
 })
 
 export default defineEventHandler(async (event) => {
-  const user = await serverSupabaseUser(event)
-  if (!user) {
+  const { auth } = event.context
+  if (!auth.user) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Pengguna tidak terautentikasi.',
@@ -30,7 +33,7 @@ export default defineEventHandler(async (event) => {
     endsAt: body.endsAt,
     description: body.description,
     imageUrl: body.imageUrl,
-    createdBy: user.sub || user.id,
+    createdBy: auth.user.sub,
   })
 
   return { success: true, data: createdEvent }
