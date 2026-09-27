@@ -1,17 +1,19 @@
 <script setup lang="ts">
+import { useEvents } from '@/composables/useEvents'
+
 useSeoMeta({
   title: 'Bursa Kerja FPCE - RSVP Acara',
   description:
     'Jelajahi sesi bursa kerja FPCE mendatang, presentasi perusahaan, dan lakukan RSVP secara langsung.',
 })
 
-const supabase = useSupabaseClient()
-const { data: events, error } = await supabase.from('events').select('*')
+const { fetchAll } = useEvents()
+const { data: res, error } = await fetchAll()
+const events = computed(() => res.value?.data || [])
 </script>
 
 <template>
   <div class="py-10 space-y-12">
-    <!-- Hero Banner -->
     <section class="text-center space-y-4 max-w-3xl mx-auto px-4">
       <h1
         class="text-4xl md:text-5xl font-bold tracking-tight text-on-background"
@@ -19,21 +21,24 @@ const { data: events, error } = await supabase.from('events').select('*')
         Acara terbaru
       </h1>
       <p class="text-lg text-on-surface-variant">
-        Acara terbaru dari GembiraTix
+        Lihat berbagai acara terbaru
       </p>
     </section>
 
-    <!-- Event List Grid -->
+    <div v-if="error" class="max-w-6xl mx-auto px-4 text-red-500">
+      Gagal memuat acara: {{ error.message }}
+    </div>
+
     <section class="max-w-6xl mx-auto px-4">
       <header class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-on-surface">Sesi Tersedia</h2>
         <p class="text-sm text-on-surface-variant">
-          Menampilkan {{ events?.length }} acara
+          Menampilkan {{ events.length }} acara
         </p>
       </header>
 
       <div
-        v-if="events && events.length > 0"
+        v-if="events.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
         <UCard
@@ -48,7 +53,7 @@ const { data: events, error } = await supabase.from('events').select('*')
             <img
               v-if="event.image_url"
               :src="event.image_url"
-              :alt="event.title"
+              :alt="event.title || 'Event image'"
               class="w-full h-full object-cover"
             />
           </figure>

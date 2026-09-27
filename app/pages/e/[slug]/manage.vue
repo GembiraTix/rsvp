@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useEvents } from '@/composables/useEvents'
+
 definePageMeta({
   middleware: 'auth',
 })
@@ -9,28 +11,18 @@ const eventSlug = computed(() => route.params.slug as string)
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
-// Fetch event details
-const { data: event, error: eventError } = await useAsyncData(
-  `event-manage-${eventSlug.value}`,
-  async () => {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('slug', eventSlug.value)
-      .single()
+const { fetchBySlug } = useEvents()
+const { data: eventRes, error: eventError } = await fetchBySlug(eventSlug)
 
-    if (error) throw error
-    return data
-  },
-)
-
-if (eventError.value) {
+if (eventError.value || !eventRes.value?.data) {
   throw createError({ statusCode: 404, statusMessage: 'Acara tidak ditemukan' })
 }
 
+const event = computed(() => eventRes.value!.data)
+
 // Check authorization (Must be event creator)
 const isCreator = computed(
-  () => user.value && event.value && event.value.created_by === user.value.sub,
+  () => user.value && event.value && event.value.created_by === (user.value.sub || user.value.id),
 )
 
 if (!isCreator) {

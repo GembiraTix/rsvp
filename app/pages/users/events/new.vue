@@ -2,13 +2,7 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useSiteName } from '@/composables/useSiteName'
-import {
-  CalendarDate,
-  CalendarDateTime,
-  getLocalTimeZone,
-  now,
-  ZonedDateTime,
-} from '@internationalized/date'
+import { getLocalTimeZone, now, ZonedDateTime } from '@internationalized/date'
 
 definePageMeta({
   middleware: 'auth',
@@ -19,7 +13,6 @@ useSeoMeta({
   title: `Buat Acara Baru - ${siteName}`,
 })
 
-const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
 const formStateSchema = z.object({
@@ -51,14 +44,6 @@ const formState = shallowRef<FormState>({
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '')
-}
-
 async function handleSubmit(e: FormSubmitEvent<FormState>) {
   const userId = user.value?.sub
   if (!userId) {
@@ -69,36 +54,28 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
   isLoading.value = true
   errorMessage.value = ''
 
+  const { createEvent } = useEvents()
+
   try {
-    const slug = `${slugify(e.data.title)}-${Math.floor(1000 + Math.random() * 9000)}`
     const startsAt = e.data.date.starts_at
-    let endsAt = null
-    if (e.data.is_one_day) {
-      endsAt = e.data.date.ends_at
-    }
+      ? e.data.date.starts_at.toDate().toUTCString()
+      : ''
+    const endsAt =
+      e.data.is_one_day && e.data.date.ends_at
+        ? e.data.date.ends_at.toDate().toUTCString()
+        : null
 
-    const { data, error } = await supabase
-      .from('events')
-      .insert({
-        title: e.data.title,
-        slug,
-        location: e.data.location,
-        description: e.data.description || null,
-        image_url: e.data.image || null,
-        starts_at: startsAt.toDate().toUTCString(),
-        ends_at: endsAt?.toDate().toUTCString(),
-        created_by: userId,
-      })
-      .select('slug')
-      .single()
+    const res = await createEvent({
+      title: e.data.title,
+      location: e.data.location,
+      startsAt,
+      endsAt,
+      description: e.data.description || null,
+      imageUrl: e.data.image || null,
+    })
 
-    if (error) {
-      errorMessage.value = error.message
-      return
-    }
-
-    if (data?.slug) {
-      await navigateTo(`/e/${data.slug}/manage`)
+    if (res.data?.slug) {
+      await navigateTo(`/e/${res.data.slug}/manage`)
     } else {
       await navigateTo('/users')
     }

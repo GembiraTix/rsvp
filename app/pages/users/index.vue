@@ -94,22 +94,13 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
   }
 }
 
-// Fetch events organized by this user
-const { data: organizedEvents, refresh: refreshOrganized } = await useAsyncData(
-  `organized-events-${user.value?.id}`,
-  async () => {
-    if (!user.value) return []
+import { useEvents } from '@/composables/useEvents'
 
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('created_by', user.value.sub)
-      .order('starts_at', { ascending: true })
+const { fetchCreatedByUser, deleteEvent: apiDeleteEvent } = useEvents()
+const userId = computed(() => user.value?.sub || user.value?.id)
 
-    if (error) throw error
-    return data || []
-  },
-)
+const { data: organizedRes, refresh: refreshOrganized } = await fetchCreatedByUser(userId)
+const organizedEvents = computed(() => organizedRes.value?.data || [])
 
 // Fetch RSVPs joined by this user
 const { data: joinedRsvps, refresh: refreshJoined } = await useAsyncData(
@@ -130,10 +121,12 @@ const { data: joinedRsvps, refresh: refreshJoined } = await useAsyncData(
 
 async function deleteEvent(id: number) {
   if (!confirm('Apakah Anda yakin ingin menghapus acara ini?')) return
-  const { error } = await supabase.from('events').delete().eq('id', id)
-  if (!error) {
+  try {
+    await apiDeleteEvent(id)
     await refreshOrganized()
     await refreshJoined()
+  } catch (err: unknown) {
+    alert(err instanceof Error ? err.message : 'Gagal menghapus acara.')
   }
 }
 </script>

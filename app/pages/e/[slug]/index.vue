@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
+import { useEvents } from '@/composables/useEvents'
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
@@ -8,32 +9,34 @@ const eventSlug = computed(() => route.params.slug as string)
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
-const { data: event, error } = await supabase
-  .from('events')
-  .select(
-    'id, slug, image_url, title, starts_at, ends_at, location, description, created_by',
-  )
-  .eq('slug', eventSlug.value)
-  .single()
+const { fetchBySlug } = useEvents()
+const { data: eventRes, error } = await fetchBySlug(eventSlug)
 
-if (error) throw error
+if (error.value || !eventRes.value?.data) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Acara tidak ditemukan',
+  })
+}
+
+const event = computed(() => eventRes.value!.data)
 
 const isOwner = computed(
-  () => user.value && event && event.created_by === user.value.sub,
+  () => user.value && event.value && event.value.created_by === (user.value.sub || user.value.id),
 )
 
 useSeoMeta({
-  title: () => `${event.title} - RSVP`,
-  description: () => event.description,
+  title: () => `${event.value?.title || 'Acara'} - RSVP`,
+  description: () => event.value?.description || '',
 })
 
 const existingRsvp = ref<{ token: string; is_attending: boolean } | null>(null)
 
-if (user.value && event) {
+if (user.value && event.value) {
   const { data } = await supabase
     .from('rsvps')
     .select('token, is_attending')
-    .eq('event_id', event.id)
+    .eq('event_id', event.value.id)
     .eq('email', user.value.email ?? '')
     .maybeSingle()
 
@@ -63,7 +66,7 @@ const errorMessage = ref('')
 const isConfirmOpen = ref(false)
 
 async function submitRsvp(name: string, email: string, organization?: string) {
-  if (!event) return
+  if (!event.value) return
   errorMessage.value = ''
   isSubmitting.value = true
 
@@ -71,7 +74,7 @@ async function submitRsvp(name: string, email: string, organization?: string) {
     const res = await $fetch<{ success: boolean; token: string }>('/api/rsvp', {
       method: 'POST',
       body: {
-        eventId: event.id,
+        eventId: event.value.id,
         name,
         email,
         organization,
