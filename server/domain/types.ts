@@ -25,3 +25,17 @@ export interface UpdateUserProfileInput {
   name?: string | null
   email?: string
 }
+
+export interface Rsvp {
+  id: number
+  event_id: number | null
+  name: string
+  email: string | null
+  organization: string | null
+  token: string
+  is_attending: boolean
+  created_at: string
+}
+
+export type CreateRsvpInput = Omit<Rsvp, 'id' | 'created_at'>
+export type UpdateRsvpInput = Partial<Omit<Rsvp, 'id' | 'created_at' | 'token'>>

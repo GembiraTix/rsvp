@@ -2,11 +2,11 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useEvents } from '@/composables/useEvents'
+import { useRsvp } from '@/composables/useRsvp'
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
-const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
 const { fetchBySlug } = useEvents()
@@ -35,16 +35,18 @@ useSeoMeta({
 
 const existingRsvp = ref<{ token: string; is_attending: boolean } | null>(null)
 
-if (user.value && event.value) {
-  const { data } = await supabase
-    .from('rsvps')
-    .select('token, is_attending')
-    .eq('event_id', event.value.id)
-    .eq('email', user.value.email ?? '')
-    .maybeSingle()
+const { getRsvpByEventAndEmail, submit } = useRsvp()
 
-  if (data) {
-    existingRsvp.value = data
+if (user.value?.email && event.value) {
+  const existing = await getRsvpByEventAndEmail(
+    event.value.id,
+    user.value.email,
+  )
+  if (existing) {
+    existingRsvp.value = {
+      token: existing.token,
+      is_attending: existing.is_attending,
+    }
   }
 }
 
@@ -74,34 +76,19 @@ async function submitRsvp(name: string, email: string, organization?: string) {
   isSubmitting.value = true
 
   try {
-    const res = await $fetch<{ success: boolean; token: string }>('/api/rsvp', {
-      method: 'POST',
-      body: {
-        eventId: event.value.id,
-        name,
-        email,
-        organization,
-      },
+    const res = await submit({
+      eventId: event.value.id,
+      name,
+      email,
+      organization,
     })
 
     rsvpToken.value = res.token
     rsvpSuccess.value = true
     isConfirmOpen.value = false
   } catch (err: unknown) {
-    if (
-      err &&
-      typeof err === 'object' &&
-      'data' in err &&
-      (err as { data?: { statusMessage?: string } }).data?.statusMessage
-    ) {
-      errorMessage.value = (
-        err as { data: { statusMessage: string } }
-      ).data.statusMessage
-    } else if (err instanceof Error) {
-      errorMessage.value = err.message
-    } else {
-      errorMessage.value = 'Gagal mengirim RSVP. Silakan coba lagi.'
-    }
+    console.log(err)
+    errorMessage.value = 'Gagal mengirim RSVP. Silakan coba lagi.'
   } finally {
     isSubmitting.value = false
   }

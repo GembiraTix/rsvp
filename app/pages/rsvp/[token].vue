@@ -1,25 +1,11 @@
 <script setup lang="ts">
+import { useRsvp } from '@/composables/useRsvp'
+
 const route = useRoute()
 const token = computed(() => route.params.token as string)
 
-const supabase = useSupabaseClient()
-
-const {
-  data: rsvp,
-  error,
-  refresh,
-} = await useAsyncData(`rsvp-${token.value}`, async () => {
-  const { data, error: fetchError } = await supabase
-    .from('rsvps')
-    .select(
-      'id, name, email, organization, token, is_attending, created_at, events (id, title, location, starts_at, ends_at)',
-    )
-    .eq('token', token.value)
-    .single()
-
-  if (fetchError) throw fetchError
-  return data
-})
+const { fetchByToken, cancel: cancelRsvpFn } = useRsvp()
+const { data: rsvp, error, refresh } = await fetchByToken(token)
 
 import { useSiteName } from '@/composables/useSiteName'
 const siteName = useSiteName()
@@ -38,16 +24,7 @@ async function handleCancelRsvp() {
   errorMessage.value = ''
 
   try {
-    const { error: updateError } = await supabase
-      .from('rsvps')
-      .update({ is_attending: false })
-      .eq('token', token.value)
-
-    if (updateError) {
-      errorMessage.value = updateError.message
-      return
-    }
-
+    await cancelRsvpFn(token.value)
     await refresh()
   } catch (err: unknown) {
     if (err instanceof Error) {
@@ -60,6 +37,7 @@ async function handleCancelRsvp() {
   }
 }
 </script>
+
 
 <template>
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
