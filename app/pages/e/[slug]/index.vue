@@ -22,7 +22,10 @@ if (error.value || !eventRes.value?.data) {
 const event = computed(() => eventRes.value!.data)
 
 const isOwner = computed(
-  () => user.value && event.value && event.value.created_by === (user.value.sub || user.value.id),
+  () =>
+    user.value &&
+    event.value &&
+    event.value.created_by === (user.value.sub || user.value.id),
 )
 
 useSeoMeta({
