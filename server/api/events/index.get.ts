@@ -1,4 +1,4 @@
-import { useEventService } from '../../utils/event-service'
+import { useEventService } from '#server/utils/event-service'
 
 export default defineEventHandler(async (event) => {
   const service = await useEventService(event)

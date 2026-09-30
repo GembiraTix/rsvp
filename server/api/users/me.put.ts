@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { useUserService } from '../../utils/user-service'
+import { useUserService } from '#server/utils/user-service'
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi.'),

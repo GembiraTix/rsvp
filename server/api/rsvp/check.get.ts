@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { useRsvpService } from '../../utils/rsvp-service'
+import { useRsvpService } from '#server/utils/rsvp-service'
 
 const querySchema = z.object({
   eventId: z.coerce.number(),

@@ -1,7 +1,11 @@
-import type { IRsvpRepository, IEventRepository, IEmailLogRepository } from '../repositories/interfaces'
-import type { Rsvp } from '../domain/types'
+import type {
+  IRsvpRepository,
+  IEventRepository,
+  IEmailLogRepository,
+} from '#server/repositories/interfaces'
+import type { Rsvp } from '#server/domain/types'
 import type { ILogger } from './logger.service'
-import { useResend } from '../utils/resend'
+import { useResend } from '#server/utils/resend'
 
 export class RsvpService {
   constructor(
@@ -18,7 +22,10 @@ export class RsvpService {
     organization?: string
     origin: string
   }): Promise<Rsvp> {
-    this.logger.info('Creating RSVP', { eventId: input.eventId, email: input.email })
+    this.logger.info('Creating RSVP', {
+      eventId: input.eventId,
+      email: input.email,
+    })
 
     const event = await this.eventRepo.findById(input.eventId)
     if (!event) {
@@ -40,7 +47,9 @@ export class RsvpService {
     const resend = useResend()
 
     if (!resend) {
-      this.logger.warn('Resend not configured, skipping confirmation email', { rsvpId: rsvp.id })
+      this.logger.warn('Resend not configured, skipping confirmation email', {
+        rsvpId: rsvp.id,
+      })
       await this.emailLogRepo.log({
         rsvpId: rsvp.id,
         email: input.email,
@@ -61,7 +70,9 @@ export class RsvpService {
 
     try {
       const result = await resend.emails.send({
-        from: useRuntimeConfig().emailFrom as string || 'Bursa Kerja FPCE <noreply@email.munthe.dev>',
+        from:
+          (useRuntimeConfig().emailFrom as string) ||
+          'Bursa Kerja FPCE <noreply@email.munthe.dev>',
         to: [input.email],
         subject,
         html: emailHtml,
@@ -75,10 +86,16 @@ export class RsvpService {
         messageId: result.data?.id ?? null,
       })
 
-      this.logger.info('Confirmation email sent', { rsvpId: rsvp.id, messageId: result.data?.id })
+      this.logger.info('Confirmation email sent', {
+        rsvpId: rsvp.id,
+        messageId: result.data?.id,
+      })
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      this.logger.error('Failed to send confirmation email', { rsvpId: rsvp.id, error: errorMsg })
+      this.logger.error('Failed to send confirmation email', {
+        rsvpId: rsvp.id,
+        error: errorMsg,
+      })
 
       await this.emailLogRepo.log({
         rsvpId: rsvp.id,
@@ -115,7 +132,10 @@ export class RsvpService {
     return this.rsvpRepo.findByEventId(eventId)
   }
 
-  async getRsvpByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null> {
+  async getRsvpByEventAndEmail(
+    eventId: number,
+    email: string,
+  ): Promise<Rsvp | null> {
     this.logger.info('Checking existing RSVP', { eventId, email })
     return this.rsvpRepo.findByEventAndEmail(eventId, email)
   }

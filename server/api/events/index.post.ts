@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { useEventService } from '../../utils/event-service'
+import { useEventService } from '#server/utils/event-service'
 
 const createEventSchema = z.object({
   title: z.string().min(1, 'Judul acara wajib diisi.'),

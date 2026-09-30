@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { useEventService } from '../../utils/event-service'
+import { useEventService } from '#server/utils/event-service'
 
 const paramsSchema = z.object({
   id: z.coerce.number().int().positive(),

@@ -39,7 +39,10 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
     return data ?? []
   }
 
-  async findByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null> {
+  async findByEventAndEmail(
+    eventId: number,
+    email: string,
+  ): Promise<Rsvp | null> {
     const { data, error } = await this.client
       .from('rsvps')
       .select('*')
@@ -72,10 +75,7 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
   }
 
   async delete(id: number): Promise<void> {
-    const { error } = await this.client
-      .from('rsvps')
-      .delete()
-      .eq('id', id)
+    const { error } = await this.client.from('rsvps').delete().eq('id', id)
 
     if (error) throw error
   }

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { useEventService } from '../../../utils/event-service'
+import { useEventService } from '#server/utils/event-service'
 
 const paramsSchema = z.object({
   userId: z.string().min(1),

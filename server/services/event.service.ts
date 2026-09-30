@@ -1,5 +1,5 @@
-import type { IEventRepository } from '../repositories/interfaces'
-import type { Event, CreateEventInput } from '../domain/types'
+import type { IEventRepository } from '#server/repositories/interfaces'
+import type { Event, CreateEventInput } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 
 function slugify(text: string): string {
@@ -41,7 +41,7 @@ export class EventService {
     createdBy: string
   }): Promise<Event> {
     const slug = `${slugify(input.title)}-${Math.floor(1000 + Math.random() * 9000)}`
-    
+
     const payload: CreateEventInput = {
       title: input.title,
       slug,
@@ -53,7 +53,11 @@ export class EventService {
       created_by: input.createdBy,
     }
 
-    this.logger.info('Creating new event', { title: input.title, slug, createdBy: input.createdBy })
+    this.logger.info('Creating new event', {
+      title: input.title,
+      slug,
+      createdBy: input.createdBy,
+    })
     const createdEvent = await this.eventRepo.create(payload)
     return createdEvent
   }

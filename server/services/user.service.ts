@@ -1,5 +1,5 @@
-import type { IUserRepository } from '../repositories/interfaces'
-import type { UserProfile, UpdateUserProfileInput } from '../domain/types'
+import type { IUserRepository } from '#server/repositories/interfaces'
+import type { UserProfile, UpdateUserProfileInput } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 
 export class UserService {

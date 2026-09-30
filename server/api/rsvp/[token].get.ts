@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { useRsvpService } from '../../utils/rsvp-service'
-import { SupabaseEventRepository } from '../../repositories/supabase-event.repository'
+import { useRsvpService } from '#server/utils/rsvp-service'
+import { SupabaseEventRepository } from '#server/repositories/supabase-event.repository'
 import { serverSupabaseClient } from '#supabase/server'
 
 const paramsSchema = z.object({

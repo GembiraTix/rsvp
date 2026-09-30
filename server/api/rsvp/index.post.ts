@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { useRsvpService } from '../../utils/rsvp-service'
+import { useRsvpService } from '#server/utils/rsvp-service'
 
 const bodySchema = z.object({
   eventId: z.number(),

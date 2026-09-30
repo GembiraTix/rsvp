@@ -1,4 +1,4 @@
-import { useUserService } from '../../utils/user-service'
+import { useUserService } from '#server/utils/user-service'
 
 export default defineEventHandler(async (event) => {
   const { auth } = event.context
