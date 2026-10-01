@@ -139,21 +139,22 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
     </header>
 
     <UCard class="border-outline shadow-md">
-      <div
+      <UAlert
         v-if="errorMessage"
-        class="mb-4 p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
-      >
-        <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
-        <span>{{ errorMessage }}</span>
-      </div>
+        title="Ada kesalahan!"
+        :description="errorMessage"
+        color="error"
+        icon="i-lucide-triangle-alert"
+        variant="subtle"
+      />
 
-      <div
+      <UAlert
         v-if="successMessage"
-        class="mb-4 p-3 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 rounded-lg text-xs flex items-center gap-2"
-      >
-        <UIcon name="i-lucide-check-circle" class="w-4 h-4 shrink-0" />
-        <span>{{ successMessage }}</span>
-      </div>
+        title="Akun berhasil dibuat!"
+        :description="successMessage"
+        color="success"
+        variant="subtle"
+      />
 
       <UForm
         :schema="formStateSchema"
@@ -194,17 +195,16 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
         />
       </UForm>
 
-      <div class="mt-4 pt-4 border-t border-outline text-center">
-        <button
-          type="button"
-          class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+      <template #footer>
+        <UButton
           @click="toggleMode"
-        >
-          {{
+          variant="ghost"
+          class="w-full justify-center"
+          :label="
             isSignUp ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'
-          }}
-        </button>
-      </div>
+          "
+        />
+      </template>
     </UCard>
 
     <div class="text-center">

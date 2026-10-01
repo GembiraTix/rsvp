@@ -130,13 +130,14 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
         <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
       </template>
 
-      <div
+      <UAlert
         v-if="errorMessage"
-        class="mb-4 p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
-      >
-        <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
-        <span>{{ errorMessage }}</span>
-      </div>
+        title="Ada kesalahan!"
+        :description="errorMessage"
+        color="error"
+        icon="i-lucide-triangle-alert"
+        variant="subtle"
+      />
 
       <UForm
         :schema="formStateSchema"
