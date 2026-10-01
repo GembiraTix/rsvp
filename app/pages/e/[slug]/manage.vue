@@ -33,6 +33,10 @@ const isCreator = computed(
   () => user.value && event.value && event.value.created_by === user.value.sub,
 )
 
+if (!isCreator) {
+  navigateTo('/')
+}
+
 // Fetch attendees roster
 const { data: attendees, refresh: refreshAttendees } = await useAsyncData(
   `event-attendees-${event.value?.id}`,
@@ -71,14 +75,7 @@ const filteredAttendees = computed(() => {
 
 function exportCSV() {
   if (!attendees.value || !event.value) return
-  const headers = [
-    'ID',
-    'Nama',
-    'Email',
-    'Organisasi',
-    'Tanggal RSVP',
-    'Hadir',
-  ]
+  const headers = ['ID', 'Nama', 'Email', 'Organisasi', 'Tanggal RSVP', 'Hadir']
   const rows = attendees.value.map((a) => [
     a.id,
     `"${a.name}"`,
@@ -119,42 +116,23 @@ async function removeAttendee(id: number) {
       Kembali ke Dasbor
     </UButton>
 
-    <!-- Unauthorized Banner -->
-    <div
-      v-if="!isCreator"
-      class="p-6 text-center rounded-xl bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 space-y-3"
-    >
-      <UIcon name="i-lucide-shield-alert" class="w-10 h-10 mx-auto" />
-      <h2 class="text-xl font-bold">Akses Tidak Diizinkan</h2>
-      <p>
-        Anda tidak memiliki izin untuk mengelola acara ini karena Anda bukan
-        pembuatnya.
-      </p>
-      <UButton
-        :to="`/e/${eventSlug}`"
-        color="neutral"
-        variant="outline"
-        size="sm"
-      >
-        Lihat Halaman Acara Publik
-      </UButton>
-    </div>
-
-    <!-- Authorized Manager View -->
-    <template v-else-if="event">
-      <!-- Event Header Card -->
+    <template v-if="event">
       <div
         class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-2xl bg-surface-container border border-outline"
       >
         <div>
-          <h1 class="text-2xl font-bold text-on-surface">
+          <h1 class="text-2xl font-bold text-on-surface mb-2">
             {{ event.title }}
           </h1>
-          <p class="text-on-surface-variant mt-1">
-            <span v-if="event.starts_at"
-              >📅 {{ formatDate(event.starts_at) }} •
-            </span>
-            <span>📍 {{ event.location || 'Lokasi belum diatur' }}</span>
+          <time
+            class="text-on-surface-variant"
+            :datetime="event.starts_at"
+            v-if="event.starts_at"
+          >
+            {{ formatDate(event.starts_at) }}
+          </time>
+          <p class="text-on-surface-variant">
+            {{ event.location || 'Lokasi belum diatur' }}
           </p>
         </div>
 
@@ -178,11 +156,7 @@ async function removeAttendee(id: number) {
         </div>
       </div>
 
-      <!-- Attendees Table Card -->
-      <UCard
-        class="border-outline"
-        :ui="{ body: 'p-0 sm:p-0' }"
-      >
+      <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
         <template #header>
           <div
             class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -223,19 +197,13 @@ async function removeAttendee(id: number) {
                 :key="att.id"
                 class="hover:bg-surface-container/50"
               >
-                <td
-                  class="px-6 py-4 font-medium text-on-surface"
-                >
+                <td class="px-6 py-4 font-medium text-on-surface">
                   {{ att.name }}
                 </td>
-                <td
-                  class="px-6 py-4 text-on-surface-variant font-mono text-xs"
-                >
+                <td class="px-6 py-4 text-on-surface-variant font-mono text-xs">
                   {{ att.email || '-' }}
                 </td>
-                <td
-                  class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
-                >
+                <td class="px-6 py-4 text-on-surface-variant max-w-xs truncate">
                   {{ att.organization || '-' }}
                 </td>
                 <td class="px-6 py-4">
@@ -258,7 +226,10 @@ async function removeAttendee(id: number) {
                 </td>
               </tr>
               <tr v-if="filteredAttendees.length === 0">
-                <td colspan="5" class="px-6 py-8 text-center text-on-surface-variant">
+                <td
+                  colspan="5"
+                  class="px-6 py-8 text-center text-on-surface-variant"
+                >
                   Tidak ada peserta yang cocok dengan kriteria pencarian.
                 </td>
               </tr>

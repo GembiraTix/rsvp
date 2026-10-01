@@ -245,13 +245,14 @@ async function handleAuthenticatedRsvp() {
               </p>
             </header>
 
-            <div
+            <UAlert
+              title="ada kesalahan!"
               v-if="errorMessage"
-              class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
-            >
-              <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
-              <span>{{ errorMessage }}</span>
-            </div>
+              :description="errorMessage"
+              icon="i-lucide-triangle-alert"
+              color="error"
+              variant="subtle"
+            />
 
             <UButton
               color="primary"
@@ -302,13 +303,14 @@ async function handleAuthenticatedRsvp() {
               </p>
             </header>
 
-            <div
+            <UAlert
+              title="ada kesalahan!"
               v-if="errorMessage"
-              class="p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
-            >
-              <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
-              <span>{{ errorMessage }}</span>
-            </div>
+              :description="errorMessage"
+              icon="i-lucide-triangle-alert"
+              color="error"
+              variant="subtle"
+            />
 
             <UForm
               :schema="formSchema"

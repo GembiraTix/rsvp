@@ -178,21 +178,21 @@ async function deleteEvent(id: number) {
       description="Perbarui nama tampilan dan detail profil Anda."
     >
       <template #body>
-        <div
+        <UAlert
           v-if="profileErrorMessage"
-          class="mb-4 p-3 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 rounded-lg text-xs flex items-center gap-2"
-        >
-          <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
-          <span>{{ profileErrorMessage }}</span>
-        </div>
+          :title="profileErrorMessage"
+          icon="i-lucide-alert-circle"
+          color="error"
+          variant="subtle"
+        />
 
-        <div
+        <UAlert
           v-if="profileSuccessMessage"
-          class="mb-4 p-3 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 rounded-lg text-xs flex items-center gap-2"
-        >
-          <UIcon name="i-lucide-check-circle" class="w-4 h-4 shrink-0" />
-          <span>{{ profileSuccessMessage }}</span>
-        </div>
+          :title="profileSuccessMessage"
+          icon="i-lucide-check-circle"
+          color="success"
+          variant="subtle"
+        />
 
         <UForm
           :schema="profileFormSchema"
