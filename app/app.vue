@@ -33,6 +33,7 @@ async function handleLogout() {
   <UApp :locale="id">
     <UHeader>
       <template #left>
+        <img src="/logo/gembiratix.svg" width="40" height="40" alt="" />
         <NuxtLink
           to="/"
           class="flex items-center gap-2 font-bold text-on-surface text-base hover:opacity-90 transition-opacity"

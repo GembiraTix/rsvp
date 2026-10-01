@@ -12,6 +12,18 @@
 
   --color-outline: var(--color-slate-200);
   --color-outline-variant: var(--color-slate-100);
+
+  --color-brand-50: #004aad;
+  --color-brand-100: #004aad;
+  --color-brand-200: #004aad;
+  --color-brand-300: #004aad;
+  --color-brand-400: #004aad;
+  --color-brand-500: #004aad;
+  --color-brand-600: #004aad;
+  --color-brand-700: #004aad;
+  --color-brand-800: #004aad;
+  --color-brand-900: #004aad;
+  --color-brand-950: #004aad;
 }
 
 .dark {
