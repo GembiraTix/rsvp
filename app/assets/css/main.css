@@ -27,20 +27,39 @@
   --color-outline-variant: var(--color-slate-900);
 }
 
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
 
-  --color-green-50: #effdf5;
-  --color-green-100: #d9fbe8;
-  --color-green-200: #b3f5d1;
-  --color-green-300: #75edae;
-  --color-green-400: #00dc82;
-  --color-green-500: #00c16a;
-  --color-green-600: #00a155;
-  --color-green-700: #007f45;
-  --color-green-800: #016538;
-  --color-green-900: #0a5331;
-  --color-green-950: #052e16;
+  --color-success-50: #effdf5;
+  --color-success-100: #d9fbe8;
+  --color-success-200: #b3f5d1;
+  --color-success-300: #75edae;
+  --color-success-400: #00dc82;
+  --color-success-500: #00c16a;
+  --color-success-600: #00a155;
+  --color-success-700: #007f45;
+  --color-success-800: #016538;
+  --color-success-900: #0a5331;
+  --color-success-950: #052e16;
+
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+  --color-error-950: #450a0a;
 }
 
 @theme {
@@ -55,4 +74,3 @@
   --color-outline: var(--color-outline);
   --color-outline-variant: var(--color-outline-variant);
 }
-
