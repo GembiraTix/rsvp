@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { IEventRepository } from './interfaces'
-import type { Event, CreateEventInput } from '../domain/types'
+import type { Event, CreateEventInput, UpdateEventInput } from '../domain/types'
 
 export class SupabaseEventRepository implements IEventRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -53,6 +53,18 @@ export class SupabaseEventRepository implements IEventRepository {
     const { data, error } = await this.client
       .from('events')
       .insert(payload)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  async update(id: number, payload: UpdateEventInput): Promise<Event> {
+    const { data, error } = await this.client
+      .from('events')
+      .update(payload)
+      .eq('id', id)
       .select('*')
       .single()
 

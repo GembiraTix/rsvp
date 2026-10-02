@@ -9,6 +9,15 @@ export interface CreateEventBody {
   imageUrl?: string | null
 }
 
+export interface UpdateEventBody {
+  title: string
+  location: string
+  startsAt?: string
+  endsAt?: string | null
+  description?: string | null
+  imageUrl?: string | null
+}
+
 export function useEvents() {
   function fetchAll() {
     return useFetch<{ success: boolean; data: Event[] }>('/api/events')
@@ -42,11 +51,19 @@ export function useEvents() {
     })
   }
 
+  async function updateEvent(id: number, body: UpdateEventBody) {
+    return $fetch<{ success: boolean; data: Event }>(`/api/events/${id}`, {
+      method: 'PUT',
+      body,
+    })
+  }
+
   return {
     fetchAll,
     fetchBySlug,
     fetchCreatedByUser,
     createEvent,
+    updateEvent,
     deleteEvent,
   }
 }
