@@ -172,19 +172,24 @@ async function handleAuthenticatedRsvp() {
         >
           <div v-if="isOwner" class="space-y-4 text-center py-2">
             <h2 class="text-xl font-bold text-on-surface">Kelola Acara Anda</h2>
-            <p class="text-xs text-on-surface-variant">
-              Lihat peserta terdaftar, ekspor daftar CSV, atau edit detail
-              acara.
-            </p>
+            <p>Sunting detil acara, atau kelola peserta</p>
+
+            <UButton
+              :to="`/e/${event.slug}/edit`"
+              variant="outline"
+              size="lg"
+              icon="i-lucide-pencil"
+              class="w-full justify-center font-bold"
+              label="Edit detil acara"
+            />
             <UButton
               :to="`/e/${event.slug}/manage`"
               color="primary"
               size="lg"
               class="w-full justify-center font-bold"
               icon="i-lucide-settings"
-            >
-              Kelola Acara & Peserta
-            </UButton>
+              label="Kelola Acara & Peserta"
+            />
           </div>
 
           <div

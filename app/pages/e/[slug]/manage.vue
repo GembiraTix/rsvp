@@ -22,7 +22,10 @@ const event = computed(() => eventRes.value!.data)
 
 // Check authorization (Must be event creator)
 const isCreator = computed(
-  () => user.value && event.value && event.value.created_by === (user.value.sub || user.value.id),
+  () =>
+    user.value &&
+    event.value &&
+    event.value.created_by === (user.value.sub || user.value.id),
 )
 
 if (!isCreator) {
@@ -144,6 +147,14 @@ async function removeAttendee(id: number) {
             icon="i-lucide-external-link"
           >
             Halaman Publik
+          </UButton>
+          <UButton
+            color="neutral"
+            variant="outline"
+            icon="i-lucide-pencil"
+            :to="`/e/${event.slug}/edit`"
+          >
+            Edit Acara
           </UButton>
         </div>
       </div>
