@@ -5,14 +5,7 @@ import type {
   UpdateEventInput,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '')
-}
+import { nanoid } from 'nanoid'
 
 export class EventService {
   constructor(
@@ -44,7 +37,7 @@ export class EventService {
     imageUrl?: string | null
     createdBy: string
   }): Promise<Event> {
-    const slug = `${slugify(input.title)}-${Math.floor(1000 + Math.random() * 9000)}`
+    const slug = nanoid()
 
     const payload: CreateEventInput = {
       title: input.title,
