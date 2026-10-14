@@ -1,6 +1,3 @@
-CREATE TRIGGER tr_check_filters BEFORE INSERT OR UPDATE ON realtime.subscription FOR EACH ROW EXECUTE FUNCTION realtime.subscription_check_filters();
-
-
   create policy "Give authenticated users admin access 1faluac_0"
   on "storage"."objects"
   as permissive
