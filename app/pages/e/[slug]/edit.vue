@@ -6,6 +6,7 @@ import {
   getLocalTimeZone,
   ZonedDateTime,
   parseAbsolute,
+  parseZonedDateTime,
 } from '@internationalized/date'
 
 definePageMeta({
@@ -27,7 +28,7 @@ const editSuccessMessage = ref('')
 
 import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 
-const editFormSchema = z.object({
+const formStateSchema = z.object({
   title: z.string().min(1, 'Judul acara wajib diisi.'),
   location: z.string().min(1, 'Lokasi wajib diisi.'),
   startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
@@ -68,22 +69,26 @@ const editFormSchema = z.object({
     ),
   imageUrl: z.url().optional(),
 })
-type EditFormState = z.output<typeof editFormSchema>
+type EditFormState = z.output<typeof formStateSchema>
 
 watch(
   () => oldEvent!.data,
   (newEvent) => {
     if (!newEvent) return
-    formState.title = newEvent.title || ''
-    formState.location = newEvent.location || ''
-    formState.startsAt = newEvent.starts_at || undefined
-    formState.endsAt = newEvent.ends_at || undefined
-    formState.description = newEvent.description || undefined
-    formState.imageUrl = newEvent.image_url || undefined
+    formState.value.title = newEvent.title || ''
+    formState.value.location = newEvent.location || ''
+    formState.value.startsAt = newEvent.starts_at
+      ? parseZonedDateTime(newEvent.starts_at)
+      : undefined
+    formState.value.endsAt = newEvent.ends_at
+      ? parseZonedDateTime(newEvent.ends_at)
+      : undefined
+    formState.value.description = newEvent.description || undefined
+    formState.value.imageUrl = newEvent.image_url || undefined
   },
 )
 
-const formState = reactive<EditFormState>({
+const formState = shallowRef<EditFormState>({
   title: oldEvent?.data.title || '',
   location: oldEvent?.data.location || '',
   startsAt: oldEvent?.data.starts_at
@@ -98,10 +103,10 @@ const formState = reactive<EditFormState>({
 })
 
 watch(
-  () => formState.image,
+  () => formState.value.image,
   async (newImage) => {
     if (!newImage) {
-      console.log('deleted')
+      console.log('no image')
       return
     }
 
@@ -110,7 +115,7 @@ watch(
       if (!res.success) {
         throw Error('gagal mengunggah gambar. coba lagi')
       }
-      formState.imageUrl = res.data.url
+      formState.value.imageUrl = res.data.url
     } catch (err: unknown) {
       editErrorMessage.value = // TODO: make error res nicer
         err instanceof Error ? err.message : 'Gagal mengunggah gambar.'
@@ -182,7 +187,7 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
     />
 
     <UForm
-      :schema="editFormSchema"
+      :schema="formStateSchema"
       :state="formState"
       class="space-y-4"
       @submit="handleUpdateEvent"
