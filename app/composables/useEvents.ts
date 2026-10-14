@@ -58,6 +58,19 @@ export function useEvents() {
     })
   }
 
+  async function uploadEventImage(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return $fetch<{ success: boolean; data: { url: string } }>(
+      '/api/events/upload',
+      {
+        method: 'POST',
+        body: formData,
+      },
+    )
+  }
+
   return {
     fetchAll,
     fetchBySlug,
@@ -65,5 +78,6 @@ export function useEvents() {
     createEvent,
     updateEvent,
     deleteEvent,
+    uploadEventImage,
   }
 }

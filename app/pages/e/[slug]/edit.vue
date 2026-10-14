@@ -15,14 +15,17 @@ definePageMeta({
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
-const { fetchBySlug, updateEvent } = useEvents()
+const { fetchBySlug, updateEvent, uploadEventImage } = useEvents()
 const {
   data: { value: oldEvent },
 } = await fetchBySlug(eventSlug)
 
 const isUpdatingEvent = ref(false)
+const isUploadingImage = ref(false)
 const editErrorMessage = ref('')
 const editSuccessMessage = ref('')
+
+import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 
 const editFormSchema = z.object({
   title: z.string().min(1, 'Judul acara wajib diisi.'),
@@ -30,12 +33,45 @@ const editFormSchema = z.object({
   startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
   endsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
   description: z.string().optional(),
-  imageUrl: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
+  image: z
+    .instanceof(File, { message: 'URL gambar tidak valid.' })
+    .optional()
+    .refine(
+      (file) => {
+        const maxBytes = 5 * 1024 * 1024 // 5MB
+        return file && file.size < maxBytes
+      },
+      { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
+    )
+    .refine(
+      (file) => {
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'image/gif',
+        ]
+        return file && allowedTypes.includes(file.type)
+      },
+      {
+        message:
+          'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
+      },
+    )
+    .refine(
+      async (file) => {
+        if (!file) return false
+        const buffer = await file.slice(0, 32).arrayBuffer()
+        return isValidImageBuffer(buffer)
+      },
+      { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
+    ),
+  imageUrl: z.url().optional(),
 })
 type EditFormState = z.output<typeof editFormSchema>
 
 watch(
-  oldEvent!.data,
+  () => oldEvent!.data,
   (newEvent) => {
     if (!newEvent) return
     formState.title = newEvent.title || ''
@@ -45,7 +81,6 @@ watch(
     formState.description = newEvent.description || undefined
     formState.imageUrl = newEvent.image_url || undefined
   },
-  { immediate: true },
 )
 
 const formState = reactive<EditFormState>({
@@ -59,7 +94,31 @@ const formState = reactive<EditFormState>({
     : undefined,
   description: oldEvent?.data.description || undefined,
   imageUrl: oldEvent?.data.image_url || undefined,
+  image: undefined,
 })
+
+watch(
+  () => formState.image,
+  async (newImage) => {
+    if (!newImage) {
+      console.log('deleted')
+      return
+    }
+
+    try {
+      const res = await uploadEventImage(newImage)
+      if (!res.success) {
+        throw Error('gagal mengunggah gambar. coba lagi')
+      }
+      formState.imageUrl = res.data.url
+    } catch (err: unknown) {
+      editErrorMessage.value = // TODO: make error res nicer
+        err instanceof Error ? err.message : 'Gagal mengunggah gambar.'
+    } finally {
+      isUploadingImage.value = false
+    }
+  },
+)
 
 async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
   if (!oldEvent) return
@@ -180,14 +239,22 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
         />
       </UFormField>
 
-      <UFormField label="URL Gambar Banner" name="imageUrl">
-        <UInput
-          id="edit-imageUrl"
-          v-model="formState.imageUrl"
-          placeholder="https://images.unsplash.com/photo-..."
-          name="imageUrl"
-          class="w-full"
-        />
+      <UFormField
+        label="Gambar Banner Acara"
+        name="imageUrl"
+        description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+      >
+        <div class="space-y-3">
+          <UFileUpload
+            v-model="formState.image"
+            accept="image/*"
+            :loading="isUploadingImage"
+            icon="i-lucide-upload-cloud"
+            label="Pilih atau seret gambar banner baru ke sini"
+            description="PNG, JPG, WEBP hingga 5MB"
+            class="w-full"
+          />
+        </div>
       </UFormField>
 
       <UFormField label="Deskripsi" name="description">

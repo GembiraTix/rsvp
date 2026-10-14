@@ -2,6 +2,7 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useSiteName } from '@/composables/useSiteName'
+import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 import { getLocalTimeZone, now, ZonedDateTime } from '@internationalized/date'
 
 definePageMeta({
@@ -23,7 +24,40 @@ const formStateSchema = z.object({
   }),
   is_one_day: z.boolean(),
   location: z.string().min(1, 'Lokasi wajib diisi.'),
-  image: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
+  imageUrl: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
+  image: z
+    .instanceof(File, { message: 'URL gambar tidak valid.' })
+    .optional()
+    .refine(
+      (file) => {
+        const maxBytes = 5 * 1024 * 1024 // 5MB
+        return file && file.size < maxBytes
+      },
+      { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
+    )
+    .refine(
+      (file) => {
+        const allowedTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/webp',
+          'image/gif',
+        ]
+        return file && allowedTypes.includes(file.type)
+      },
+      {
+        message:
+          'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
+      },
+    )
+    .refine(
+      async (file) => {
+        if (!file) return false
+        const buffer = await file.slice(0, 32).arrayBuffer()
+        return isValidImageBuffer(buffer)
+      },
+      { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
+    ),
   description: z.string().optional(),
 })
 
@@ -37,12 +71,36 @@ const formState = shallowRef<FormState>({
   },
   is_one_day: true,
   location: '',
-  image: '',
+  image: undefined,
+  imageUrl: '',
   description: '',
 })
 
+watch(
+  () => formState.value.image,
+  async (newImage) => {
+    if (!newImage) {
+      console.log('no image')
+      return
+    }
+
+    try {
+      const res = await uploadEventImage(newImage)
+      formState.value.imageUrl = res.data.url
+    } catch (err: unknown) {
+      errorMessage.value =
+        err instanceof Error ? err.message : 'Gagal mengunggah gambar.'
+    } finally {
+      isUploadingImage.value = false
+    }
+  },
+)
+
 const isLoading = ref(false)
+const isUploadingImage = ref(false)
 const errorMessage = ref('')
+
+const { createEvent, uploadEventImage } = useEvents()
 
 async function handleSubmit(e: FormSubmitEvent<FormState>) {
   const userId = user.value?.sub
@@ -53,8 +111,6 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
 
   isLoading.value = true
   errorMessage.value = ''
-
-  const { createEvent } = useEvents()
 
   try {
     const startsAt = e.data.date.starts_at
@@ -71,7 +127,7 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
       startsAt,
       endsAt,
       description: e.data.description || null,
-      imageUrl: e.data.image || null,
+      imageUrl: e.data.imageUrl || null,
     })
 
     if (res.data?.slug) {
@@ -186,14 +242,22 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           />
         </UFormField>
 
-        <UFormField label="URL Gambar Banner" name="image">
-          <UInput
-            id="image"
-            v-model="formState.image"
-            placeholder="https://images.unsplash.com/photo-..."
-            name="image"
-            class="w-full"
-          />
+        <UFormField
+          label="Gambar Banner Acara"
+          name="image"
+          description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+        >
+          <div class="space-y-3">
+            <UFileUpload
+              v-model="formState.image"
+              accept="image/*"
+              :loading="isUploadingImage"
+              icon="i-lucide-upload-cloud"
+              label="Pilih atau seret gambar banner ke sini"
+              description="PNG, JPG, WEBP hingga 5MB"
+              class="w-full"
+            />
+          </div>
         </UFormField>
 
         <UFormField label="Deskripsi" name="description">
