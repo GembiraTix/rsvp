@@ -33,12 +33,14 @@ const profileSuccessMessage = ref('')
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi.'),
+  profile: z.instanceof(File).optional(), // TODO: implement in the future
 })
 
 type ProfileFormState = z.output<typeof profileFormSchema>
 
 const profileFormState = reactive<ProfileFormState>({
   name: profile.value?.name || '',
+  profile: undefined,
 })
 
 async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
@@ -126,54 +128,62 @@ async function handleLogout() {
       class="gap-y-6"
     >
       <template #content="{ item }">
-        <h2 class="font-bold">Profil pengguna</h2>
-
         <div v-if="item.value === 'akun'" class="space-y-6">
-          <UCard class="border-outline bg-surface-container/50">
-            <header
-              class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-            >
+          <UCard>
+            <template #header>
+              <h2 class="font-bold">Profil pengguna</h2>
+            </template>
+
+            <UToast
+              v-if="profileErrorMessage"
+              :title="profileErrorMessage"
+              icon="i-lucide-alert-circle"
+              color="error"
+              variant="subtle"
+            />
+
+            <UToast
+              v-if="profileSuccessMessage"
+              :title="profileSuccessMessage"
+              icon="i-lucide-check-circle"
+              color="success"
+              variant="subtle"
+            />
+
+            <div class="grid gap-4 md:grid-cols-3">
               <div class="flex items-center gap-4">
-                <div
-                  class="w-14 h-14 rounded-full bg-primary/20 text-primary font-bold text-xl flex items-center justify-center shrink-0"
+                <UFileUpload
+                  v-model="profileFormState.profile"
+                  accept="image/*"
+                  icon="i-lucide-upload-cloud"
+                  label="Pilih atau seret gambar foto profil baru ke sini"
+                  description="PNG, JPG, WEBP hingga 5MB"
+                  class="w-full"
+                  v-slot="{ open }"
+                  disabled
                 >
-                  {{
-                    (profile?.name || user?.email || 'U')
-                      .charAt(0)
-                      .toUpperCase()
-                  }}
-                </div>
-
-                <div>
-                  <span class="text-xl font-bold text-on-surface">
-                    {{ profile?.name || 'Profil Pengguna' }}
-                  </span>
-                  <p class="text-sm text-on-surface-variant">
-                    {{ user?.email }}
-                  </p>
-                </div>
+                  <div class="flex flex-col gap-4 items-center">
+                    <UAvatar
+                      :text="
+                        (profile?.name || user?.email || 'U')
+                          .charAt(0)
+                          .toUpperCase()
+                      "
+                      class="size-36 aspect-square"
+                    />
+                    <UButton
+                      variant="outline"
+                      @click="open()"
+                      label="Unggah foto baru"
+                    />
+                  </div>
+                </UFileUpload>
               </div>
-
-              <UToast
-                v-if="profileErrorMessage"
-                :title="profileErrorMessage"
-                icon="i-lucide-alert-circle"
-                color="error"
-                variant="subtle"
-              />
-
-              <UToast
-                v-if="profileSuccessMessage"
-                :title="profileSuccessMessage"
-                icon="i-lucide-check-circle"
-                color="success"
-                variant="subtle"
-              />
 
               <UForm
                 :schema="profileFormSchema"
                 :state="profileFormState"
-                class="space-y-4"
+                class="space-y-4 col-span-2"
                 @submit="handleUpdateProfile"
               >
                 <UFormField label="Email">
@@ -200,7 +210,7 @@ async function handleLogout() {
                   </UButton>
                 </div>
               </UForm>
-            </header>
+            </div>
           </UCard>
 
           <UCard>
