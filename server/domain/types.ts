@@ -9,6 +9,7 @@ export interface Event {
   image_url: string | null
   created_by: string
   created_at: string
+  deleted_at?: string | null
 }
 
 export type CreateEventInput = Omit<Event, 'id' | 'created_at'>

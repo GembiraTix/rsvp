@@ -21,12 +21,6 @@ useSeoMeta({
 })
 
 const user = useSupabaseUser()
-const supabase = useSupabaseClient()
-
-async function handleLogout() {
-  await supabase.auth.signOut()
-  await navigateTo('/login')
-}
 </script>
 
 <template>
@@ -51,16 +45,6 @@ async function handleLogout() {
           </UButton>
 
           <UButton v-if="!user" to="/login" color="neutral"> Masuk </UButton>
-
-          <UButton
-            v-else
-            variant="ghost"
-            color="error"
-            icon="i-lucide-log-out"
-            @click="handleLogout"
-          >
-            Keluar
-          </UButton>
 
           <UColorModeButton size="sm" />
         </div>
