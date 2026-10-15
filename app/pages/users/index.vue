@@ -64,15 +64,13 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
 
 import { useEvents } from '@/composables/useEvents'
 
-const { fetchCreatedByUser, deleteEvent: apiDeleteEvent } = useEvents()
+const { fetchCreatedByUser } = useEvents()
 const userId = computed(() => user.value?.sub || user.value?.id)
 
-const { data: organizedRes, refresh: refreshOrganized } =
-  await fetchCreatedByUser(userId)
+const { data: organizedRes } = await fetchCreatedByUser(userId)
 const organizedEvents = computed(() => organizedRes.value?.data || [])
 
-// Fetch RSVPs joined by this user
-const { data: joinedRsvps, refresh: refreshJoined } = await useAsyncData(
+const { data: joinedRsvps } = await useAsyncData(
   `joined-rsvps-${user.value?.email}`,
   async () => {
     if (!user.value?.email) return []
@@ -87,17 +85,6 @@ const { data: joinedRsvps, refresh: refreshJoined } = await useAsyncData(
     return data || []
   },
 )
-
-async function deleteEvent(id: number) {
-  if (!confirm('Apakah Anda yakin ingin menghapus acara ini?')) return
-  try {
-    await apiDeleteEvent(id)
-    await refreshOrganized()
-    await refreshJoined()
-  } catch (err: unknown) {
-    alert(err instanceof Error ? err.message : 'Gagal menghapus acara.')
-  }
-}
 </script>
 
 <template>
@@ -246,14 +233,6 @@ async function deleteEvent(id: number) {
                     variant="ghost"
                     icon="i-lucide-external-link"
                     title="Lihat halaman publik"
-                  />
-                  <UButton
-                    size="xs"
-                    color="error"
-                    variant="ghost"
-                    icon="i-lucide-trash-2"
-                    title="Hapus acara"
-                    @click="deleteEvent(ev.id)"
                   />
                 </td>
               </tr>

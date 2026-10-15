@@ -1,17 +1,47 @@
 <script setup lang="ts">
 import { useEvents } from '@/composables/useEvents'
+import type { Event } from '~~/server/domain/types'
 
 definePageMeta({
   middleware: 'auth',
 })
 
 const route = useRoute()
+const router = useRouter()
 const eventSlug = computed(() => route.params.slug as string)
+
+const tabItems = [
+  {
+    label: 'Overview',
+    value: 'overview',
+    icon: 'i-lucide-layout-dashboard',
+  },
+  {
+    label: 'More',
+    value: 'more',
+    icon: 'i-lucide-settings-2',
+  },
+]
+
+const selectedTab = computed({
+  get() {
+    const tab = route.query.tab as string
+    return tabItems.some((item) => item.value === tab) ? tab : 'overview'
+  },
+  set(val: string) {
+    router.push({
+      query: {
+        ...route.query,
+        tab: val === 'overview' ? undefined : val,
+      },
+    })
+  },
+})
 
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
-const { fetchBySlug } = useEvents()
+const { fetchBySlug, deleteEvent: apiDeleteEvent } = useEvents()
 const { data: eventRes, error: eventError } = await fetchBySlug(eventSlug)
 
 if (eventError.value || !eventRes.value?.data) {
@@ -30,6 +60,20 @@ const isCreator = computed(
 
 if (!isCreator) {
   navigateTo('/')
+}
+
+const isDeletingEvent = ref(false)
+
+async function handleDeleteEvent(event: Event) {
+  isDeletingEvent.value = true
+  try {
+    await apiDeleteEvent(event.id)
+    await navigateTo('/users')
+  } catch (err: unknown) {
+    alert(err instanceof Error ? err.message : 'Gagal menghapus acara.')
+  } finally {
+    isDeletingEvent.value = false
+  }
 }
 
 // Fetch attendees roster
@@ -159,87 +203,141 @@ async function removeAttendee(id: number) {
         </div>
       </div>
 
-      <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-        <template #header>
-          <div
-            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+      <UTabs v-model="selectedTab" :items="tabItems" class="w-full" />
+
+      <section v-if="selectedTab === 'overview'" class="space-y-6">
+        <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+          <template #header>
+            <div
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            >
+              <div>
+                <h2 class="text-lg font-bold text-on-surface">
+                  Peserta Terdaftar ({{ attendees?.length || 0 }})
+                </h2>
+              </div>
+              <div class="w-full sm:w-72">
+                <UInput
+                  v-model="attendeeSearch"
+                  placeholder="Cari berdasarkan nama, email, organisasi..."
+                  icon="i-lucide-search"
+                  size="sm"
+                  class="w-full"
+                />
+              </div>
+            </div>
+          </template>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead
+                class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
+              >
+                <tr>
+                  <th class="px-6 py-3">Nama Peserta</th>
+                  <th class="px-6 py-3">Email</th>
+                  <th class="px-6 py-3">Organisasi / Catatan</th>
+                  <th class="px-6 py-3">Status</th>
+                  <th class="px-6 py-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline">
+                <tr
+                  v-for="att in filteredAttendees"
+                  :key="att.id"
+                  class="hover:bg-surface-container/50"
+                >
+                  <td class="px-6 py-4 font-medium text-on-surface">
+                    {{ att.name }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-on-surface-variant font-mono text-xs"
+                  >
+                    {{ att.email || '-' }}
+                  </td>
+                  <td
+                    class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
+                  >
+                    {{ att.organization || '-' }}
+                  </td>
+                  <td class="px-6 py-4">
+                    <UBadge
+                      :color="att.is_attending ? 'primary' : 'neutral'"
+                      variant="subtle"
+                    >
+                      {{ att.is_attending ? 'Terkonfirmasi' : 'Dibatalkan' }}
+                    </UBadge>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <UButton
+                      size="xs"
+                      color="error"
+                      variant="ghost"
+                      icon="i-lucide-trash-2"
+                      title="Hapus peserta"
+                      @click="removeAttendee(att.id)"
+                    />
+                  </td>
+                </tr>
+                <tr v-if="filteredAttendees.length === 0">
+                  <td
+                    colspan="5"
+                    class="px-6 py-8 text-center text-on-surface-variant"
+                  >
+                    Tidak ada peserta yang cocok dengan kriteria pencarian.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </UCard>
+      </section>
+
+      <!-- Tab: More -->
+      <section v-else-if="selectedTab === 'more'" class="space-y-6">
+        <UCard>
+          <template #header>
+            <div class="flex items-center gap-2 text-error">
+              <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
+              <h2 class="text-lg font-bold">Zona Bahaya</h2>
+            </div>
+          </template>
+
+          <article
+            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           >
             <div>
-              <h2 class="text-lg font-bold text-on-surface">
-                Peserta Terdaftar ({{ attendees?.length || 0 }})
-              </h2>
+              <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
+              <p class="text-sm text-on-surface-variant">
+                Acara ini akan dihapus dari daftar publik dan dasbor Anda.
+                Tindakan ini dapat dibatalkan hanya oleh administrator sistem.
+              </p>
             </div>
-            <div class="w-full sm:w-72">
-              <UInput
-                v-model="attendeeSearch"
-                placeholder="Cari berdasarkan nama, email, organisasi..."
-                icon="i-lucide-search"
-                size="sm"
-                class="w-full"
-              />
-            </div>
-          </div>
-        </template>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-left">
-            <thead
-              class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
+            <UModal
+              title="Hapus Acara"
+              :description="`Apakah Anda yakin ingin menghapus acara '${event.title}'? Acara ini tidak akan lagi ditampilkan kepada publik.`"
             >
-              <tr>
-                <th class="px-6 py-3">Nama Peserta</th>
-                <th class="px-6 py-3">Email</th>
-                <th class="px-6 py-3">Organisasi / Catatan</th>
-                <th class="px-6 py-3">Status</th>
-                <th class="px-6 py-3 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-outline">
-              <tr
-                v-for="att in filteredAttendees"
-                :key="att.id"
-                class="hover:bg-surface-container/50"
-              >
-                <td class="px-6 py-4 font-medium text-on-surface">
-                  {{ att.name }}
-                </td>
-                <td class="px-6 py-4 text-on-surface-variant font-mono text-xs">
-                  {{ att.email || '-' }}
-                </td>
-                <td class="px-6 py-4 text-on-surface-variant max-w-xs truncate">
-                  {{ att.organization || '-' }}
-                </td>
-                <td class="px-6 py-4">
-                  <UBadge
-                    :color="att.is_attending ? 'primary' : 'neutral'"
-                    variant="subtle"
-                  >
-                    {{ att.is_attending ? 'Terkonfirmasi' : 'Dibatalkan' }}
-                  </UBadge>
-                </td>
-                <td class="px-6 py-4 text-right">
+              <UButton variant="outline" color="error" icon="i-lucide-trash-2">
+                Hapus Acara
+              </UButton>
+              <template #footer>
+                <div class="flex justify-end gap-2">
+                  <UButton color="neutral" variant="ghost">Batal</UButton>
                   <UButton
-                    size="xs"
                     color="error"
-                    variant="ghost"
                     icon="i-lucide-trash-2"
-                    title="Hapus peserta"
-                    @click="removeAttendee(att.id)"
-                  />
-                </td>
-              </tr>
-              <tr v-if="filteredAttendees.length === 0">
-                <td
-                  colspan="5"
-                  class="px-6 py-8 text-center text-on-surface-variant"
-                >
-                  Tidak ada peserta yang cocok dengan kriteria pencarian.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </UCard>
+                    :loading="isDeletingEvent"
+                    @click="() => handleDeleteEvent(event)"
+                  >
+                    Ya, Hapus Acara
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+          </article>
+        </UCard>
+      </section>
     </template>
   </div>
 </template>
