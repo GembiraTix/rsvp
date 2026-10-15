@@ -10,6 +10,7 @@ export class SupabaseEventRepository implements IEventRepository {
     const { data, error } = await this.client
       .from('events')
       .select('*')
+      .is('deleted_at', null)
       .order('starts_at', { ascending: true })
 
     if (error) throw error
@@ -21,6 +22,7 @@ export class SupabaseEventRepository implements IEventRepository {
       .from('events')
       .select('*')
       .eq('slug', slug)
+      .is('deleted_at', null)
       .maybeSingle()
 
     if (error) throw error
@@ -32,6 +34,7 @@ export class SupabaseEventRepository implements IEventRepository {
       .from('events')
       .select('*')
       .eq('id', id)
+      .is('deleted_at', null)
       .maybeSingle()
 
     if (error) throw error
@@ -43,6 +46,7 @@ export class SupabaseEventRepository implements IEventRepository {
       .from('events')
       .select('*')
       .eq('created_by', userId)
+      .is('deleted_at', null)
       .order('starts_at', { ascending: true })
 
     if (error) throw error
@@ -75,7 +79,7 @@ export class SupabaseEventRepository implements IEventRepository {
   async delete(id: number): Promise<void> {
     const { error } = await this.client
       .from('events')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) throw error
