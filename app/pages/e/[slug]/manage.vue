@@ -26,14 +26,11 @@ const tabItems = [
 const selectedTab = computed({
   get() {
     const tab = route.query.tab as string
-    return tabItems.some((item) => item.value === tab) ? tab : 'overview'
+    return tab || 'overview'
   },
   set(val: string) {
     router.push({
-      query: {
-        ...route.query,
-        tab: val === 'overview' ? undefined : val,
-      },
+      query: { ...route.query, tab: val },
     })
   },
 })
@@ -156,188 +153,202 @@ async function removeAttendee(id: number) {
     </UButton>
 
     <template v-if="event">
-      <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-2xl bg-surface-container border border-outline"
+      <UTabs
+        v-model="selectedTab"
+        :items="tabItems"
+        variant="link"
+        class="w-full gap-y-6"
       >
-        <div>
-          <h1 class="text-2xl font-bold text-on-surface mb-2">
-            {{ event.title }}
-          </h1>
-          <time
-            class="text-on-surface-variant"
-            :datetime="event.starts_at"
-            v-if="event.starts_at"
-          >
-            {{ formatDate(event.starts_at) }}
-          </time>
-          <p class="text-on-surface-variant">
-            {{ event.location || 'Lokasi belum diatur' }}
-          </p>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <UButton
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-download"
-            @click="exportCSV"
-          >
-            Ekspor CSV
-          </UButton>
-          <UButton
-            :to="`/e/${event.slug}`"
-            color="primary"
-            variant="soft"
-            icon="i-lucide-external-link"
-          >
-            Halaman Publik
-          </UButton>
-          <UButton
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-pencil"
-            :to="`/e/${event.slug}/edit`"
-          >
-            Edit Acara
-          </UButton>
-        </div>
-      </div>
-
-      <UTabs v-model="selectedTab" :items="tabItems" class="w-full" />
-
-      <section v-if="selectedTab === 'overview'" class="space-y-6">
-        <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-          <template #header>
+        <template #content="{ item }">
+          <section v-if="item.value === 'overview'" class="space-y-6">
             <div
-              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-2xl bg-surface-container border border-outline"
             >
               <div>
-                <h2 class="text-lg font-bold text-on-surface">
-                  Peserta Terdaftar ({{ attendees?.length || 0 }})
-                </h2>
-              </div>
-              <div class="w-full sm:w-72">
-                <UInput
-                  v-model="attendeeSearch"
-                  placeholder="Cari berdasarkan nama, email, organisasi..."
-                  icon="i-lucide-search"
-                  size="sm"
-                  class="w-full"
-                />
-              </div>
-            </div>
-          </template>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-left">
-              <thead
-                class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-              >
-                <tr>
-                  <th class="px-6 py-3">Nama Peserta</th>
-                  <th class="px-6 py-3">Email</th>
-                  <th class="px-6 py-3">Organisasi / Catatan</th>
-                  <th class="px-6 py-3">Status</th>
-                  <th class="px-6 py-3 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-outline">
-                <tr
-                  v-for="att in filteredAttendees"
-                  :key="att.id"
-                  class="hover:bg-surface-container/50"
+                <h1 class="text-2xl font-bold text-on-surface mb-2">
+                  {{ event.title }}
+                </h1>
+                <time
+                  class="text-on-surface-variant"
+                  :datetime="event.starts_at"
+                  v-if="event.starts_at"
                 >
-                  <td class="px-6 py-4 font-medium text-on-surface">
-                    {{ att.name }}
-                  </td>
-                  <td
-                    class="px-6 py-4 text-on-surface-variant font-mono text-xs"
-                  >
-                    {{ att.email || '-' }}
-                  </td>
-                  <td
-                    class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
-                  >
-                    {{ att.organization || '-' }}
-                  </td>
-                  <td class="px-6 py-4">
-                    <UBadge
-                      :color="att.is_attending ? 'primary' : 'neutral'"
-                      variant="subtle"
-                    >
-                      {{ att.is_attending ? 'Terkonfirmasi' : 'Dibatalkan' }}
-                    </UBadge>
-                  </td>
-                  <td class="px-6 py-4 text-right">
-                    <UButton
-                      size="xs"
-                      color="error"
-                      variant="ghost"
-                      icon="i-lucide-trash-2"
-                      title="Hapus peserta"
-                      @click="removeAttendee(att.id)"
+                  {{ formatDate(event.starts_at) }}
+                </time>
+                <p class="text-on-surface-variant">
+                  {{ event.location || 'Lokasi belum diatur' }}
+                </p>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-download"
+                  @click="exportCSV"
+                >
+                  Ekspor CSV
+                </UButton>
+                <UButton
+                  :to="`/e/${event.slug}`"
+                  color="primary"
+                  variant="soft"
+                  icon="i-lucide-external-link"
+                >
+                  Halaman Publik
+                </UButton>
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-pencil"
+                  :to="`/e/${event.slug}/edit`"
+                >
+                  Edit Acara
+                </UButton>
+              </div>
+            </div>
+
+            <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+              <template #header>
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                >
+                  <div>
+                    <h2 class="text-lg font-bold text-on-surface">
+                      Peserta Terdaftar ({{ attendees?.length || 0 }})
+                    </h2>
+                  </div>
+                  <div class="w-full sm:w-72">
+                    <UInput
+                      v-model="attendeeSearch"
+                      placeholder="Cari berdasarkan nama, email, organisasi..."
+                      icon="i-lucide-search"
+                      size="sm"
+                      class="w-full"
                     />
-                  </td>
-                </tr>
-                <tr v-if="filteredAttendees.length === 0">
-                  <td
-                    colspan="5"
-                    class="px-6 py-8 text-center text-on-surface-variant"
-                  >
-                    Tidak ada peserta yang cocok dengan kriteria pencarian.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </UCard>
-      </section>
-
-      <!-- Tab: More -->
-      <section v-else-if="selectedTab === 'more'" class="space-y-6">
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2 text-error">
-              <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
-              <h2 class="text-lg font-bold">Zona Bahaya</h2>
-            </div>
-          </template>
-
-          <article
-            class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-          >
-            <div>
-              <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
-              <p class="text-sm text-on-surface-variant">
-                Acara ini akan dihapus dari daftar publik dan dasbor Anda.
-                Tindakan ini dapat dibatalkan hanya oleh administrator sistem.
-              </p>
-            </div>
-
-            <UModal
-              title="Hapus Acara"
-              :description="`Apakah Anda yakin ingin menghapus acara '${event.title}'? Acara ini tidak akan lagi ditampilkan kepada publik.`"
-            >
-              <UButton variant="outline" color="error" icon="i-lucide-trash-2">
-                Hapus Acara
-              </UButton>
-              <template #footer>
-                <div class="flex justify-end gap-2">
-                  <UButton color="neutral" variant="ghost">Batal</UButton>
-                  <UButton
-                    color="error"
-                    icon="i-lucide-trash-2"
-                    :loading="isDeletingEvent"
-                    @click="() => handleDeleteEvent(event)"
-                  >
-                    Ya, Hapus Acara
-                  </UButton>
+                  </div>
                 </div>
               </template>
-            </UModal>
-          </article>
-        </UCard>
-      </section>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead
+                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
+                  >
+                    <tr>
+                      <th class="px-6 py-3">Nama Peserta</th>
+                      <th class="px-6 py-3">Email</th>
+                      <th class="px-6 py-3">Organisasi / Catatan</th>
+                      <th class="px-6 py-3">Status</th>
+                      <th class="px-6 py-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-outline">
+                    <tr
+                      v-for="att in filteredAttendees"
+                      :key="att.id"
+                      class="hover:bg-surface-container/50"
+                    >
+                      <td class="px-6 py-4 font-medium text-on-surface">
+                        {{ att.name }}
+                      </td>
+                      <td
+                        class="px-6 py-4 text-on-surface-variant font-mono text-xs"
+                      >
+                        {{ att.email || '-' }}
+                      </td>
+                      <td
+                        class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
+                      >
+                        {{ att.organization || '-' }}
+                      </td>
+                      <td class="px-6 py-4">
+                        <UBadge
+                          :color="att.is_attending ? 'primary' : 'neutral'"
+                          variant="subtle"
+                        >
+                          {{
+                            att.is_attending ? 'Terkonfirmasi' : 'Dibatalkan'
+                          }}
+                        </UBadge>
+                      </td>
+                      <td class="px-6 py-4 text-right">
+                        <UButton
+                          size="xs"
+                          color="error"
+                          variant="ghost"
+                          icon="i-lucide-trash-2"
+                          title="Hapus peserta"
+                          @click="removeAttendee(att.id)"
+                        />
+                      </td>
+                    </tr>
+                    <tr v-if="filteredAttendees.length === 0">
+                      <td
+                        colspan="5"
+                        class="px-6 py-8 text-center text-on-surface-variant"
+                      >
+                        Tidak ada peserta yang cocok dengan kriteria pencarian.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </UCard>
+          </section>
+
+          <section v-else-if="item.value === 'more'" class="space-y-6">
+            <UCard>
+              <template #header>
+                <div class="flex items-center gap-2 text-error">
+                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
+                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
+                </div>
+              </template>
+
+              <article
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+              >
+                <div>
+                  <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
+                  <p class="text-sm text-on-surface-variant">
+                    Acara ini akan dihapus dari daftar publik dan dasbor Anda.
+                    Tindakan ini dapat dibatalkan hanya oleh administrator
+                    sistem.
+                  </p>
+                </div>
+
+                <UModal
+                  title="Hapus Acara"
+                  :description="`Apakah Anda yakin ingin menghapus acara '${event.title}'? Acara ini tidak akan lagi ditampilkan kepada publik.`"
+                >
+                  <UButton
+                    variant="outline"
+                    color="error"
+                    icon="i-lucide-trash-2"
+                  >
+                    Hapus Acara
+                  </UButton>
+
+                  <template #footer>
+                    <div class="flex w-full justify-end gap-2">
+                      <UButton color="neutral" variant="ghost">Batal</UButton>
+                      <UButton
+                        color="error"
+                        icon="i-lucide-trash-2"
+                        :loading="isDeletingEvent"
+                        @click="() => handleDeleteEvent(event)"
+                      >
+                        Ya, Hapus Acara
+                      </UButton>
+                    </div>
+                  </template>
+                </UModal>
+              </article>
+            </UCard>
+          </section>
+        </template>
+      </UTabs>
     </template>
   </div>
 </template>
