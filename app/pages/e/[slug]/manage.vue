@@ -311,7 +311,7 @@ async function removeAttendee(id: number) {
               >
                 <div>
                   <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
-                  <p class="text-sm text-on-surface-variant">
+                  <p class="text-on-surface-variant">
                     Acara ini akan dihapus dari daftar publik dan dasbor Anda.
                     Tindakan ini dapat dibatalkan hanya oleh administrator
                     sistem.
