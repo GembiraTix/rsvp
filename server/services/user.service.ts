@@ -1,5 +1,5 @@
 import type { IUserRepository } from '#server/repositories/interfaces'
-import type { UserProfile, UpdateUserProfileInput } from '#server/domain/types'
+import type { UserProfile, UpdateUserProfileInput, UserRole } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 
 export class UserService {
@@ -15,6 +15,11 @@ export class UserService {
     return profile
   }
 
+  async getAllUsers(): Promise<UserProfile[]> {
+    this.logger.info('Fetching all users')
+    return this.userRepo.findAll()
+  }
+
   async updateProfile(
     userId: string,
     input: UpdateUserProfileInput,
@@ -22,5 +27,10 @@ export class UserService {
     this.logger.info('Updating user profile', { userId, input })
     const profile = await this.userRepo.update(userId, input)
     return profile
+  }
+
+  async updateRole(userId: string, role: UserRole): Promise<UserProfile> {
+    this.logger.info('Updating user role', { userId, role })
+    return this.userRepo.updateRole(userId, role)
   }
 }

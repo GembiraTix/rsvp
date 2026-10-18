@@ -17,6 +17,16 @@ export class SupabaseUserRepository implements IUserRepository {
     return data
   }
 
+  async findAll(): Promise<UserProfile[]> {
+    const { data, error } = await this.client
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data ?? []
+  }
+
   async update(id: string, payload: UpdateUserProfileInput): Promise<UserProfile> {
     const { data, error } = await this.client
       .from('users')
@@ -29,7 +39,19 @@ export class SupabaseUserRepository implements IUserRepository {
     return data
   }
 
-  async upsert(payload: { id: string; email: string; name?: string | null }): Promise<UserProfile> {
+  async updateRole(id: string, role: UserRole): Promise<UserProfile> {
+    const { data, error } = await this.client
+      .from('users')
+      .update({ role })
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  async upsert(payload: { id: string; email: string; name?: string | null; role?: UserRole }): Promise<UserProfile> {
     const { data, error } = await this.client
       .from('users')
       .upsert(payload)

@@ -1,12 +1,15 @@
 import { serverSupabaseUser } from '#supabase/server'
+import type { UserRole } from '#server/domain/types'
 
 export default defineEventHandler(async (e) => {
-  // TODO: block unauthed requests that come here
-  // const blocked = [
-  //   '/api/events/',
-  //   '/api/user/',
-  // ]
   const user = await serverSupabaseUser(e)
 
-  e.context.auth = { user: user || null }
+  const role = (user?.app_metadata?.role ||
+    user?.user_metadata?.role ||
+    'user') as UserRole
+
+  e.context.auth = {
+    user: user || null,
+    role: user ? role : null,
+  }
 })

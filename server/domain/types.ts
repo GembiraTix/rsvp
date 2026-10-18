@@ -15,16 +15,22 @@ export interface Event {
 export type CreateEventInput = Omit<Event, 'id' | 'created_at'>
 export type UpdateEventInput = Partial<Omit<Event, 'id' | 'created_at' | 'created_by'>>
 
+import type { Database } from '~/types/database.types'
+
+export type UserRole = Database['public']['Enums']['user_role']
+
 export interface UserProfile {
   id: string
   email: string
   name: string | null
+  role: UserRole
   created_at: string
 }
 
 export interface UpdateUserProfileInput {
   name?: string | null
   email?: string
+  role?: UserRole
 }
 
 export interface Rsvp {

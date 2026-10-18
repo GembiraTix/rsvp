@@ -249,6 +249,15 @@ async function handleLogout() {
 
               <div class="flex items-center gap-3">
                 <UButton
+                  v-if="profile?.role === 'super_admin'"
+                  to="/admin/users"
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-users"
+                >
+                  Kelola Pengguna
+                </UButton>
+                <UButton
                   to="/users/events/new"
                   color="primary"
                   icon="i-lucide-plus"

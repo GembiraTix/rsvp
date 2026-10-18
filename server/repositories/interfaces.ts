@@ -12,8 +12,10 @@ export interface IEventRepository {
 
 export interface IUserRepository {
   findById(id: string): Promise<UserProfile | null>
+  findAll(): Promise<UserProfile[]>
   update(id: string, payload: UpdateUserProfileInput): Promise<UserProfile>
-  upsert(payload: { id: string; email: string; name?: string | null }): Promise<UserProfile>
+  updateRole(id: string, role: UserRole): Promise<UserProfile>
+  upsert(payload: { id: string; email: string; name?: string | null; role?: UserRole }): Promise<UserProfile>
 }
 
 export interface IRsvpRepository {
