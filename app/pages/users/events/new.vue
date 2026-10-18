@@ -30,6 +30,8 @@ const formStateSchema = z.object({
     .optional()
     .refine(
       (file) => {
+        if (!file) return true
+
         const maxBytes = 5 * 1024 * 1024 // 5MB
         return file && file.size < maxBytes
       },
@@ -37,6 +39,8 @@ const formStateSchema = z.object({
     )
     .refine(
       (file) => {
+        if (!file) return true
+
         const allowedTypes = [
           'image/jpeg',
           'image/png',
@@ -52,7 +56,8 @@ const formStateSchema = z.object({
     )
     .refine(
       async (file) => {
-        if (!file) return false
+        if (!file) return true
+
         const buffer = await file.slice(0, 32).arrayBuffer()
         return isValidImageBuffer(buffer)
       },
