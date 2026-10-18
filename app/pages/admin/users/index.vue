@@ -140,9 +140,20 @@ const roleOptions: { label: string; value: UserRole }[] = [
 ]
 
 function getRoleBadgeColor(role: UserRole) {
-  const roleColors = new Map<string, string>()
+  const roleColors = new Map<
+    string,
+    | 'success'
+    | 'error'
+    | 'primary'
+    | 'warning'
+    | 'info'
+    | 'neutral'
+    | 'secondary'
+    | undefined
+  >()
   roleColors.set('super_admin', 'primary')
-  roleColors.set('admin', 'warning')
+  roleColors.set('admin', 'neutral')
+  roleColors.set('user', 'neutral')
 
   const color = roleColors.get(role)
 
@@ -183,9 +194,6 @@ function getRoleBadgeColor(role: UserRole) {
               <UIcon name="i-lucide-users" class="w-6 h-6 text-primary" />
               Manajemen Pengguna
             </h1>
-            <p class="text-sm text-on-surface-variant">
-              Kelola pengguna dan tetapkan role administrator.
-            </p>
           </div>
 
           <div class="w-full sm:w-72">
@@ -193,7 +201,6 @@ function getRoleBadgeColor(role: UserRole) {
               v-model="searchQuery"
               placeholder="Cari nama, email, role..."
               icon="i-lucide-search"
-              size="sm"
               class="w-full"
             />
           </div>
@@ -226,7 +233,7 @@ function getRoleBadgeColor(role: UserRole) {
                 {{ u.email }}
               </td>
               <td class="px-6 py-4">
-                <UBadge :color="getRoleBadgeColor(u.role)" variant="subtle">
+                <UBadge :color="getRoleBadgeColor(u.role)" variant="outline">
                   {{ u.role }}
                 </UBadge>
               </td>
@@ -240,12 +247,7 @@ function getRoleBadgeColor(role: UserRole) {
                 }}
               </td>
               <td class="px-6 py-4 text-right">
-                <UButton
-                  size="xs"
-                  variant="outline"
-                  icon="i-lucide-shield-check"
-                  @click="openRoleModal(u)"
-                >
+                <UButton size="sm" variant="outline" @click="openRoleModal(u)">
                   Ubah Role
                 </UButton>
               </td>
@@ -263,7 +265,6 @@ function getRoleBadgeColor(role: UserRole) {
       </div>
     </UCard>
 
-    <!-- Modal: Create New User -->
     <UModal
       v-model:open="isCreateModalOpen"
       title="Tambah Pengguna Baru"
@@ -351,7 +352,6 @@ function getRoleBadgeColor(role: UserRole) {
       </template>
     </UModal>
 
-    <!-- Modal: Change Role -->
     <UModal
       v-model:open="isRoleModalOpen"
       title="Ubah Role Pengguna"

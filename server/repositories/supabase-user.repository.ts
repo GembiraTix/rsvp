@@ -27,7 +27,10 @@ export class SupabaseUserRepository implements IUserRepository {
     return data ?? []
   }
 
-  async update(id: string, payload: UpdateUserProfileInput): Promise<UserProfile> {
+  async update(
+    id: string,
+    payload: UpdateUserProfileInput,
+  ): Promise<UserProfile> {
     const { data, error } = await this.client
       .from('users')
       .update(payload)
@@ -51,7 +54,12 @@ export class SupabaseUserRepository implements IUserRepository {
     return data
   }
 
-  async upsert(payload: { id: string; email: string; name?: string | null; role?: UserRole }): Promise<UserProfile> {
+  async upsert(payload: {
+    id: string
+    email: string
+    name?: string | null
+    role?: UserRole
+  }): Promise<UserProfile> {
     const { data, error } = await this.client
       .from('users')
       .upsert(payload)
