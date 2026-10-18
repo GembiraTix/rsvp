@@ -10,18 +10,25 @@ const route = useRoute()
 const router = useRouter()
 const eventSlug = computed(() => route.params.slug as string)
 
-const tabItems = [
-  {
-    label: 'Overview',
-    value: 'overview',
-    icon: 'i-lucide-layout-dashboard',
-  },
-  {
-    label: 'More',
-    value: 'more',
-    icon: 'i-lucide-settings-2',
-  },
-]
+const tabItems = computed(() => {
+  const items = [
+    {
+      label: 'Overview',
+      value: 'overview',
+      icon: 'i-lucide-layout-dashboard',
+    },
+  ]
+
+  if (isSuperAdmin.value) {
+    items.push({
+      label: 'More',
+      value: 'more',
+      icon: 'i-lucide-settings-2',
+    })
+  }
+
+  return items
+})
 
 const selectedTab = computed({
   get() {
@@ -47,12 +54,20 @@ if (eventError.value || !eventRes.value?.data) {
 
 const event = computed(() => eventRes.value!.data)
 
-// Check authorization (Must be event creator)
+import { useUserProfile } from '@/composables/useUserProfile'
+
+const { fetchProfile } = useUserProfile()
+const { data: profileRes } = await fetchProfile()
+const profile = computed(() => profileRes.value?.data || null)
+const isSuperAdmin = computed(() => profile.value?.role === 'super_admin')
+
+// Check authorization (Must be event creator or super_admin)
 const isCreator = computed(
   () =>
-    user.value &&
-    event.value &&
-    event.value.created_by === (user.value.sub || user.value.id),
+    (user.value &&
+      event.value &&
+      event.value.created_by === (user.value.sub || user.value.id)) ||
+    isSuperAdmin.value,
 )
 
 if (!isCreator) {

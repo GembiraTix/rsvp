@@ -29,15 +29,6 @@ export function useEvents() {
     )
   }
 
-  function fetchCreatedByUser(userId: MaybeRefOrGetter<string | undefined>) {
-    return useFetch<{ success: boolean; data: Event[] }>(
-      () => `/api/events/user/${toValue(userId)}`,
-      {
-        immediate: Boolean(toValue(userId)),
-      },
-    )
-  }
-
   async function createEvent(body: CreateEventBody) {
     return $fetch<{ success: boolean; data: Event }>('/api/events', {
       method: 'POST',
@@ -74,7 +65,6 @@ export function useEvents() {
   return {
     fetchAll,
     fetchBySlug,
-    fetchCreatedByUser,
     createEvent,
     updateEvent,
     deleteEvent,

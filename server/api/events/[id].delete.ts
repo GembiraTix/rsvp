@@ -18,12 +18,17 @@ export default defineEventHandler(async (event) => {
   const service = await useEventService(event)
 
   try {
-    await service.deleteEvent(id, auth.user.sub)
+    await service.deleteEvent(id, {
+      id: auth.user.sub,
+      role: auth.role,
+    })
     return { success: true }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Gagal menghapus acara'
+    const statusCode =
+      message.includes('izin') || message.includes('super admin') ? 403 : 400
     throw createError({
-      statusCode: message.includes('izin') ? 403 : 400,
+      statusCode,
       statusMessage: message,
     })
   }

@@ -54,17 +54,22 @@ export class EventService {
     return createdEvent
   }
 
-  async deleteEvent(id: number, userId: string): Promise<void> {
+  async deleteEvent(
+    id: number,
+    currentUser: { id: string; role?: string | null },
+  ): Promise<void> {
+    if (currentUser.role !== 'super_admin') {
+      throw new Error(
+        'Hanya super admin yang memiliki izin untuk menghapus acara.',
+      )
+    }
+
     const existing = await this.eventRepo.findById(id)
     if (!existing) {
       throw new Error('Acara tidak ditemukan')
     }
 
-    if (existing.created_by !== userId) {
-      throw new Error('Anda tidak memiliki izin untuk menghapus acara ini')
-    }
-
-    this.logger.info('Deleting event', { id, userId })
+    this.logger.info('Deleting event', { id, userId: currentUser.id })
     await this.eventRepo.delete(id)
   }
 

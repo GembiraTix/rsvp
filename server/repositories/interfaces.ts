@@ -22,7 +22,12 @@ export interface IUserRepository {
   findAll(): Promise<UserProfile[]>
   update(id: string, payload: UpdateUserProfileInput): Promise<UserProfile>
   updateRole(id: string, role: UserRole): Promise<UserProfile>
-  upsert(payload: { id: string; email: string; name?: string | null; role?: UserRole }): Promise<UserProfile>
+  upsert(payload: {
+    id: string
+    email: string
+    name?: string | null
+    role?: UserRole
+  }): Promise<UserProfile>
 }
 
 export interface IRsvpRepository {
