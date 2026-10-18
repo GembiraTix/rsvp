@@ -7,7 +7,9 @@ import { useRsvp } from '@/composables/useRsvp'
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
-const user = useSupabaseUser()
+const { fetchProfile } = useUserProfile()
+const { data: profileRes } = await fetchProfile()
+const profile = computed(() => profileRes.value?.data || null)
 
 const { fetchBySlug } = useEvents()
 const { data: eventRes, error } = await fetchBySlug(eventSlug)
@@ -21,11 +23,8 @@ if (error.value || !eventRes.value?.data) {
 
 const event = computed(() => eventRes.value!.data)
 
-const isOwner = computed(
-  () =>
-    user.value &&
-    event.value &&
-    event.value.created_by === (user.value.sub || user.value.id),
+const isAdmin = computed(
+  () => profile.value && ['admin', 'super_admin'].includes(profile.value.role),
 )
 
 useSeoMeta({
@@ -37,10 +36,10 @@ const existingRsvp = ref<{ token: string; is_attending: boolean } | null>(null)
 
 const { getRsvpByEventAndEmail, submit } = useRsvp()
 
-if (user.value?.email && event.value) {
+if (profile.value?.email && event.value) {
   const existing = await getRsvpByEventAndEmail(
     event.value.id,
-    user.value.email,
+    profile.value.email,
   )
   if (existing) {
     existingRsvp.value = {
@@ -59,8 +58,8 @@ const formSchema = z.object({
 type RSVPForm = z.output<typeof formSchema>
 
 const form = reactive<RSVPForm>({
-  name: user.value?.user_metadata?.full_name || '',
-  email: user.value?.email || '',
+  name: profile.value?.name || '',
+  email: profile.value?.email || '',
   organization: '',
 })
 
@@ -99,10 +98,9 @@ async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
 }
 
 async function handleAuthenticatedRsvp() {
-  if (!user.value?.email) return
-  const userName =
-    user.value.user_metadata?.full_name || user.value.email.split('@')[0]
-  await submitRsvp(userName, user.value.email)
+  if (!profile.value?.email) return
+  const userName = profile.value.name || profile.value.email.split('@')[0]
+  await submitRsvp(userName, profile.value.email)
 }
 </script>
 
@@ -170,7 +168,7 @@ async function handleAuthenticatedRsvp() {
           class="sticky top-20 shadow-xl border-outline"
           :ui="{ body: 'p-6 space-y-6' }"
         >
-          <div v-if="isOwner" class="space-y-4 text-center py-2">
+          <div v-if="isAdmin" class="space-y-4 text-center py-2">
             <h2 class="text-xl font-bold text-on-surface">Kelola Acara Anda</h2>
             <p>Sunting detil acara, atau kelola peserta</p>
 
@@ -234,12 +232,12 @@ async function handleAuthenticatedRsvp() {
           </div>
 
           <!-- Authenticated Quick RSVP -->
-          <template v-else-if="user">
+          <template v-else-if="profile && !isAdmin">
             <header class="space-y-1">
               <h2 class="text-xl font-bold text-on-surface">RSVP Cepat</h2>
               <p class="text-on-surface-variant">
                 Masuk sebagai
-                <strong class="text-on-surface">{{ user.email }}</strong>
+                <strong class="text-on-surface">{{ profile.email }}</strong>
               </p>
             </header>
 
@@ -266,7 +264,7 @@ async function handleAuthenticatedRsvp() {
             <UModal
               v-model:open="isConfirmOpen"
               title="Konfirmasi RSVP Anda"
-              :description="`Pesan 1 tempat untuk ${user.email} pada acara ${event.title}?`"
+              :description="`Pesan 1 tempat untuk ${profile.email} pada acara ${event.title}?`"
             >
               <template #footer>
                 <div class="flex justify-end gap-2">

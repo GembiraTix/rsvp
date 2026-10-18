@@ -23,11 +23,6 @@ export class EventService {
     return this.eventRepo.findBySlug(slug)
   }
 
-  async getEventsByCreator(userId: string): Promise<Event[]> {
-    this.logger.info('Fetching events by creator', { userId })
-    return this.eventRepo.findByCreator(userId)
-  }
-
   async createEvent(input: {
     title: string
     location: string

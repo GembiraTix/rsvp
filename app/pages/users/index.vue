@@ -66,11 +66,14 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
 
 import { useEvents } from '@/composables/useEvents'
 
-const { fetchCreatedByUser } = useEvents()
-const userId = computed(() => user.value?.sub || user.value?.id)
+const { fetchAll } = useEvents()
 
-const { data: organizedRes } = await fetchCreatedByUser(userId)
-const organizedEvents = computed(() => organizedRes.value?.data || [])
+const { data: organizedRes } = await fetchAll()
+const organizedEvents = computed(() =>
+  ['admin', 'super_admin'].includes(profile.value?.role!)
+    ? organizedRes.value?.data
+    : [],
+)
 
 const { data: joinedRsvps } = await useAsyncData(
   `joined-rsvps-${user.value?.email}`,
