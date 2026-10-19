@@ -4,8 +4,8 @@ import { useRsvp } from '@/composables/useRsvp'
 const route = useRoute()
 const token = computed(() => route.params.token as string)
 
-const { fetchByToken, cancel: cancelRsvpFn } = useRsvp()
-const { data: rsvp, error, refresh } = await fetchByToken(token)
+const { fetchByToken } = useRsvp()
+const { data: rsvp, error } = await fetchByToken(token)
 
 import { useSiteName } from '@/composables/useSiteName'
 const siteName = useSiteName()
@@ -13,31 +13,7 @@ const siteName = useSiteName()
 useSeoMeta({
   title: `Kelola RSVP - ${siteName}`,
 })
-
-const isCancelling = ref(false)
-const errorMessage = ref('')
-
-async function handleCancelRsvp() {
-  if (!confirm('Apakah Anda yakin ingin membatalkan reservasi RSVP Anda?'))
-    return
-  isCancelling.value = true
-  errorMessage.value = ''
-
-  try {
-    await cancelRsvpFn(token.value)
-    await refresh()
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      errorMessage.value = err.message
-    } else {
-      errorMessage.value = 'Gagal membatalkan reservasi.'
-    }
-  } finally {
-    isCancelling.value = false
-  }
-}
 </script>
-
 
 <template>
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
@@ -77,16 +53,6 @@ async function handleCancelRsvp() {
       </template>
 
       <div class="space-y-6">
-        <UAlert
-          title="ada kesalahan!"
-          v-if="errorMessage"
-          :description="errorMessage"
-          icon="i-lucide-triangle-alert"
-          color="error"
-          variant="subtle"
-        />
-
-        <!-- Event Summary -->
         <div
           v-if="rsvp.events"
           class="p-4 rounded-xl bg-surface-container border border-outline space-y-2"
@@ -108,7 +74,6 @@ async function handleCancelRsvp() {
           </div>
         </div>
 
-        <!-- Guest Details -->
         <div class="space-y-3 text-sm">
           <div>
             <span class="text-on-surface-variant block">Nama Peserta</span>
@@ -130,26 +95,5 @@ async function handleCancelRsvp() {
         </div>
       </div>
     </UCard>
-
-    <div v-if="rsvp?.is_attending" class="pt-4 space-y-3">
-      <p>
-        Berhalangan hadir? Jangan khawatir, Anda dapat membatalkan RSVP Anda.
-      </p>
-      <UButton
-        color="error"
-        variant="soft"
-        class="w-full justify-center"
-        :loading="isCancelling"
-        @click="handleCancelRsvp"
-      >
-        Batalkan RSVP Saya
-      </UButton>
-    </div>
-
-    <UAlert v-else color="error" variant="solid">
-      <template #title>
-        <p class="text-center">Reservasi ini telah dibatalkan.</p>
-      </template>
-    </UAlert>
   </div>
 </template>

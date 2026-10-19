@@ -115,18 +115,6 @@ export class RsvpService {
     return this.rsvpRepo.findByToken(token)
   }
 
-  async cancelRsvp(token: string): Promise<void> {
-    this.logger.info('Cancelling RSVP', { token })
-
-    const rsvp = await this.rsvpRepo.findByToken(token)
-    if (!rsvp) {
-      throw new Error('Reservasi tidak ditemukan')
-    }
-
-    await this.rsvpRepo.cancel(token)
-    this.logger.info('RSVP cancelled', { rsvpId: rsvp.id })
-  }
-
   async listRsvpsByEvent(eventId: number): Promise<Rsvp[]> {
     this.logger.info('Listing RSVPs for event', { eventId })
     return this.rsvpRepo.findByEventId(eventId)

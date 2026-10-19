@@ -36,7 +36,6 @@ export interface IRsvpRepository {
   findByEmail(email: string): Promise<Rsvp[]>
   findByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null>
   create(payload: CreateRsvpInput): Promise<Rsvp>
-  cancel(token: string): Promise<void>
   delete(id: number): Promise<void>
 }
 

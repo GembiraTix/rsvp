@@ -34,10 +34,6 @@ export function useRsvp() {
     }
   }
 
-  function cancel(token: string) {
-    return $fetch(`/api/rsvp/${token}/cancel`, { method: 'POST' })
-  }
-
   const submit = (payload: {
     eventId: number
     name: string
@@ -49,5 +45,5 @@ export function useRsvp() {
       body: payload,
     })
 
-  return { fetchByToken, getRsvpByEventAndEmail, cancel, submit }
+  return { fetchByToken, getRsvpByEventAndEmail, , submit }
 }

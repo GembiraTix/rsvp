@@ -65,15 +65,6 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
     return data
   }
 
-  async cancel(token: string): Promise<void> {
-    const { error } = await this.client
-      .from('rsvps')
-      .update({ is_attending: false })
-      .eq('token', token)
-
-    if (error) throw error
-  }
-
   async delete(id: number): Promise<void> {
     const { error } = await this.client.from('rsvps').delete().eq('id', id)
 
