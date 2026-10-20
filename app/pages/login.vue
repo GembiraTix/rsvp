@@ -25,8 +25,23 @@ watch(
   { immediate: true },
 )
 
+type AuthState = 'login' | 'signup' | 'waiting_confirmation' | 'confirmed'
+const currentAuthState = ref<AuthState>('login')
+const authStateFlow: Record<AuthState, AuthState[]> = {
+  signup: [
+    'login',
+    'waiting_confirmation',
+    'confirmed' /* only possible if confirmation email is turned off */,
+  ],
+  login: ['signup', 'confirmed'],
+  waiting_confirmation: ['confirmed'],
+  confirmed: [],
+}
+
+const authStateMachine = new StateMachine<AuthState>('login', authStateFlow)
+
 const formStateSchema = z.object({
-  name: z.string().nonempty(),
+  name: z.string().optional(),
   email: z.email('Masukkan alamat email yang valid.'),
   password: z.string().min(1, 'Kata sandi wajib diisi.'),
 })
@@ -176,7 +191,6 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
             name="name"
             type="text"
             class="w-full"
-            required
           />
         </UFormField>
         <UFormField label="Email" name="email">
