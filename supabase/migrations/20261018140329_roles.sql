@@ -23,10 +23,10 @@ AS $function$
       -- inject role into claim
       claims := jsonb_set(claims, '{user_role}', to_jsonb(user_role));
       -- Also mirror into app_metadata so standard libraries / context pick it up
-      -- claims := jsonb_set(claims, '{app_metadata,role}', to_jsonb(user_role));
+      claims := jsonb_set(claims, '{app_metadata,role}', to_jsonb(user_role));
     ELSE
       claims := jsonb_set(claims, '{user_role}', '"user"');
-      -- claims := jsonb_set(claims, '{app_metadata,role}', '"user"');
+      claims := jsonb_set(claims, '{app_metadata,role}', '"user"');
     END IF;
 
     event := jsonb_set(event, '{claims}', claims);
