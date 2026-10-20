@@ -26,6 +26,7 @@ watch(
 )
 
 const formStateSchema = z.object({
+  name: z.string().nonempty(),
   email: z.email('Masukkan alamat email yang valid.'),
   password: z.string().min(1, 'Kata sandi wajib diisi.'),
 })
@@ -33,6 +34,7 @@ const formStateSchema = z.object({
 type FormState = z.output<typeof formStateSchema>
 
 const formState = reactive<FormState>({
+  name: '',
   email: '',
   password: '',
 })
@@ -95,6 +97,10 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
       email: e.data.email,
       password: e.data.password,
       options: {
+        data: {
+          name: formState.name,
+          role: 'user',
+        },
         emailRedirectTo: `${url.origin}/confirm`,
       },
     })
@@ -162,11 +168,22 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
         class="space-y-4"
         @submit="handleSubmit"
       >
+        <UFormField v-show="isSignUp" label="Nama lengkap" name="name">
+          <UInput
+            id="name"
+            v-model="formState.name"
+            placeholder="Andi Johan"
+            name="name"
+            type="text"
+            class="w-full"
+            required
+          />
+        </UFormField>
         <UFormField label="Email" name="email">
           <UInput
             id="email"
             v-model="formState.email"
-            placeholder="admin@university.edu"
+            placeholder="andi@johan.com"
             name="email"
             type="email"
             class="w-full"
