@@ -60,15 +60,9 @@ const user = useSupabaseUser()
     <UFooter>
       <template #left>
         <p class="text-xs text-on-surface-variant">
-          Pusat Karir Fakultas & Penyelenggara Bursa Kerja • ©
+          GembiraTix • ©
           {{ new Date().getFullYear() }}
         </p>
-      </template>
-
-      <template #right>
-        <span v-if="user" class="text-xs text-on-surface-variant">
-          Masuk sebagai {{ user.email }}
-        </span>
       </template>
     </UFooter>
   </UApp>
