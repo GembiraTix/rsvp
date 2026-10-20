@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
-import { useUrlSearchParams } from '@vueuse/core'
+import { StateMachine } from '~/utils/statemachine'
 
 useSeoMeta({
   title: 'Masuk / Daftar - Admin Bursa Kerja FPCE',
@@ -10,9 +10,6 @@ useSeoMeta({
 const user = useSupabaseUser()
 const supabase = useSupabaseClient()
 const route = useRoute()
-
-const params = useUrlSearchParams<{ mode?: string }>('history')
-const isSignUp = computed(() => params.mode === 'signup')
 
 watch(
   user,
@@ -56,16 +53,17 @@ const formState = reactive<FormState>({
 
 const isLoading = ref(false)
 const errorMessage = ref('')
-const successMessage = ref('')
 
-function toggleMode() {
-  params.mode = isSignUp.value ? 'login' : 'signup'
+function toggleForms() {
+  const newMode = currentAuthState.value === 'signup' ? 'login' : 'signup'
+  currentAuthState.value = newMode
+  authStateMachine.advance(currentAuthState.value)
+
   errorMessage.value = ''
-  successMessage.value = ''
 }
 
 async function handleSubmit(e: FormSubmitEvent<FormState>) {
-  if (isSignUp.value) {
+  if (currentAuthState.value === 'signup') {
     await handleSignUp(e)
   } else {
     await handleLogin(e)
@@ -74,7 +72,6 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
 
 async function handleLogin(e: FormSubmitEvent<FormState>) {
   errorMessage.value = ''
-  successMessage.value = ''
   isLoading.value = true
 
   try {
@@ -101,13 +98,12 @@ async function handleLogin(e: FormSubmitEvent<FormState>) {
   }
 }
 
+const url = useRequestURL()
 async function handleSignUp(e: FormSubmitEvent<FormState>) {
   errorMessage.value = ''
-  successMessage.value = ''
   isLoading.value = true
 
   try {
-    const url = useRequestURL()
     const { data, error } = await supabase.auth.signUp({
       email: e.data.email,
       password: e.data.password,
@@ -127,11 +123,11 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
 
     if (data.session) {
       const redirectPath = (route.query.redirectTo as string) || '/'
-      await navigateTo(redirectPath)
-    } else {
-      successMessage.value =
-        'Akun berhasil dibuat! Silakan periksa email Anda untuk mengonfirmasi pendaftaran.'
+      return await navigateTo(redirectPath)
     }
+
+    currentAuthState.value = 'waiting_confirmation'
+    authStateMachine.advance(currentAuthState.value)
   } catch (err: unknown) {
     if (err instanceof Error) {
       errorMessage.value = err.message
@@ -142,24 +138,77 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
     isLoading.value = false
   }
 }
+
+async function handleResendConfirmation() {
+  isLoading.value = true
+
+  // should we wrap this in a try?
+  // nah i'd win
+  const { data, error } = await supabase.auth.resend({
+    type: 'signup',
+    email: formState.email,
+    options: {
+      emailRedirectTo: `${url.origin}/confirm`,
+    },
+  })
+
+  if (error) {
+    errorMessage.value = error.message
+    return
+  }
+
+  if (data.session) {
+    const redirectPath = (route.query.redirectTo as string) || '/'
+    return await navigateTo(redirectPath)
+  }
+
+  isLoading.value = false
+}
 </script>
 
 <template>
-  <div class="flex flex-col justify-center max-w-md mx-auto gap-6 py-12 px-4">
-    <header class="text-center space-y-1">
-      <h1 class="text-3xl font-bold text-on-surface">
-        {{ isSignUp ? 'Buat Akun' : 'Selamat Datang Kembali' }}
-      </h1>
-      <p class="text-sm text-on-surface-variant">
-        {{
-          isSignUp
-            ? 'Daftar untuk membuat akun baru'
-            : 'Masuk kembali ke akun Anda'
-        }}
+  <div class="flex flex-col justify-center max-w-xl mx-auto gap-6 py-12 px-4">
+    <header
+      v-if="currentAuthState === 'waiting_confirmation'"
+      class="text-center space-y-1 bg-surface-container px-16 py-12 rounded-md"
+    >
+      <h1 class="text-3xl font-bold text-on-surface">Akun berhasil dibuat!</h1>
+      <p class="text-on-surface mt-2">
+        Silahkan cek email anda. Jika tidak ada di inbox, cek spam ya
       </p>
+
+      <div class="my-4 space-y-2">
+        <p class="text-on-surface-variant">Tidak mendapatkan email?</p>
+
+        <UButton
+          @click="handleResendConfirmation"
+          size="lg"
+          variant="outline"
+          label="kirimkan ulang email konfirmasi"
+        />
+      </div>
     </header>
 
-    <UCard class="border-outline shadow-md">
+    <UCard v-else class="border-outline shadow-md">
+      <template #header>
+        <div class="text-center space-y-1">
+          <h1 class="text-2xl font-bold text-on-surface">
+            {{
+              currentAuthState === 'signup'
+                ? 'Buat Akun'
+                : 'Selamat Datang Kembali'
+            }}
+          </h1>
+          <p class="text-on-surface-variant">
+            {{
+              currentAuthState === 'signup'
+                ? 'Daftar untuk membuat akun baru'
+                : 'Masuk kembali ke akun Anda'
+            }}
+          </p>
+        </div>
+      </template>
+
       <UAlert
         v-if="errorMessage"
         title="Ada kesalahan!"
@@ -169,21 +218,17 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
         variant="subtle"
       />
 
-      <UAlert
-        v-if="successMessage"
-        title="Akun berhasil dibuat!"
-        :description="successMessage"
-        color="success"
-        variant="subtle"
-      />
-
       <UForm
         :schema="formStateSchema"
         :state="formState"
         class="space-y-4"
         @submit="handleSubmit"
       >
-        <UFormField v-show="isSignUp" label="Nama lengkap" name="name">
+        <UFormField
+          v-show="currentAuthState === 'signup'"
+          label="Nama lengkap"
+          name="name"
+        >
           <UInput
             id="name"
             v-model="formState.name"
@@ -218,7 +263,7 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
         </UFormField>
 
         <UButton
-          :label="isSignUp ? 'Daftar' : 'Masuk'"
+          :label="currentAuthState === 'signup' ? 'Daftar' : 'Masuk'"
           type="submit"
           size="lg"
           class="w-full justify-center"
@@ -228,11 +273,13 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
 
       <template #footer>
         <UButton
-          @click="toggleMode"
+          @click="toggleForms"
           variant="ghost"
           class="w-full justify-center"
           :label="
-            isSignUp ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'
+            currentAuthState === 'signup'
+              ? 'Sudah punya akun? Masuk'
+              : 'Belum punya akun? Daftar'
           "
         />
       </template>
