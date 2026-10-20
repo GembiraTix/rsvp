@@ -45,5 +45,5 @@ export function useRsvp() {
       body: payload,
     })
 
-  return { fetchByToken, getRsvpByEventAndEmail, , submit }
+  return { fetchByToken, getRsvpByEventAndEmail, submit }
 }

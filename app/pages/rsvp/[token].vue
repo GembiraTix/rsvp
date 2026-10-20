@@ -41,14 +41,6 @@ useSeoMeta({
               Ref: {{ token }}
             </p>
           </div>
-
-          <UBadge
-            :color="rsvp.is_attending ? 'primary' : 'error'"
-            variant="subtle"
-            size="md"
-          >
-            {{ rsvp.is_attending ? 'Terkonfirmasi' : 'Dibatalkan' }}
-          </UBadge>
         </div>
       </template>
 

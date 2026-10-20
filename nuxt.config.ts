@@ -20,6 +20,7 @@ export default defineNuxtConfig({
     },
 
     resendApiKey: process.env.NUXT_RESEND_API_KEY,
+    emailFrom: process.env.NUXT_EMAIL_FROM,
   },
 
   devtools: {

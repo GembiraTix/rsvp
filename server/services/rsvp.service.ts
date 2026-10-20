@@ -69,10 +69,16 @@ export class RsvpService {
     })
 
     try {
+      const from = useRuntimeConfig().emailFrom
+      const fromFallback = 'GembiraTix <noreply@info.gembiratix.my.id>'
+      if (!from) {
+        this.logger.warn(
+          `email: sender email address is not defined falling back to ${fromFallback}`,
+        )
+      }
+
       const result = await resend.emails.send({
-        from:
-          (useRuntimeConfig().emailFrom as string) ||
-          'Bursa Kerja FPCE <noreply@email.munthe.dev>',
+        from: from || fromFallback,
         to: [input.email],
         subject,
         html: emailHtml,
