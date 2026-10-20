@@ -355,7 +355,7 @@ async function handleLogout() {
                   class="w-10 h-10 mx-auto text-on-surface-variant"
                 />
                 <p class="text-sm text-on-surface-variant">
-                  Anda belum mengorganisasi acara apa pun.
+                  Anda belum menggelar acara apa pun.
                 </p>
                 <UButton
                   to="/users/events/new"
