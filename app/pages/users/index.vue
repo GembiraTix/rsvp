@@ -178,6 +178,7 @@ async function handleLogout() {
                       variant="outline"
                       @click="open()"
                       label="Unggah foto baru"
+                      disabled
                     />
                   </div>
                 </UFileUpload>
@@ -242,7 +243,10 @@ async function handleLogout() {
         </div>
 
         <template v-if="item.value === 'acara'">
-          <section class="space-y-4">
+          <section
+            v-if="['admin', 'super_admin'].includes(profile?.role || 'user')"
+            class="space-y-4"
+          >
             <div class="flex items-center justify-between">
               <h2
                 class="text-xl font-bold text-on-surface flex items-center gap-2"
@@ -346,7 +350,7 @@ async function handleLogout() {
             </UCard>
           </section>
 
-          <section class="space-y-4">
+          <section v-else class="space-y-4">
             <div class="flex items-center justify-between">
               <h2
                 class="text-xl font-bold text-on-surface flex items-center gap-2"
