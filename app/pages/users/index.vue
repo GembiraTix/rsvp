@@ -137,20 +137,26 @@ async function handleLogout() {
               <h2 class="font-bold">Profil pengguna</h2>
             </template>
 
-            <UToast
+            <UAlert
               v-if="profileErrorMessage"
               :title="profileErrorMessage"
+              @update:open="profileErrorMessage = ''"
               icon="i-lucide-alert-circle"
               color="error"
               variant="subtle"
+              class="my-4"
+              close
             />
 
-            <UToast
+            <UAlert
               v-if="profileSuccessMessage"
               :title="profileSuccessMessage"
+              @update:open="profileSuccessMessage = ''"
               icon="i-lucide-check-circle"
               color="success"
+              class="my-4"
               variant="subtle"
+              close
             />
 
             <div class="grid gap-4 md:grid-cols-3">
@@ -215,6 +221,19 @@ async function handleLogout() {
                 </div>
               </UForm>
             </div>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <h2 class="text-lg font-bold">Preferensi</h2>
+            </template>
+
+            <article
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            >
+              <p class="text-on-surface">Mode warna aplikasi</p>
+              <UColorModeSelect size="lg" />
+            </article>
           </UCard>
 
           <UCard>

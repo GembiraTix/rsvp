@@ -45,8 +45,6 @@ const user = useSupabaseUser()
           </UButton>
 
           <UButton v-if="!user" to="/login" color="neutral"> Masuk </UButton>
-
-          <UColorModeButton size="sm" />
         </div>
       </template>
     </UHeader>
