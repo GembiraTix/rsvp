@@ -14,7 +14,9 @@ export interface Event {
 }
 
 export type CreateEventInput = Omit<Event, 'id' | 'created_at'>
-export type UpdateEventInput = Partial<Omit<Event, 'id' | 'created_at' | 'created_by'>>
+export type UpdateEventInput = Partial<
+  Omit<Event, 'id' | 'created_at' | 'created_by'>
+>
 
 import type { Database } from '~/types/database.types'
 
@@ -47,7 +49,6 @@ export interface Rsvp {
 
 export type CreateRsvpInput = Omit<Rsvp, 'id' | 'created_at'>
 export type UpdateRsvpInput = Partial<Omit<Rsvp, 'id' | 'created_at' | 'token'>>
-
 export type TicketTypeKind = 'single' | 'couple' | 'berempat'
 
 export type TicketType = {

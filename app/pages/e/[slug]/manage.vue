@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useEvents } from '@/composables/useEvents'
-import type { Event } from '~~/server/domain/types'
 import { useUserProfile } from '@/composables/useUserProfile'
-import z from 'zod'
+import { useTicketTypes } from '@/composables/useTicketTypes'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import type { Event, TicketTypeKind } from '~~/server/domain/types'
+import { z } from 'zod'
 
 definePageMeta({
   middleware: 'auth',
@@ -214,6 +215,33 @@ async function removeAttendee(id: number) {
     await refreshAttendees()
   }
 }
+
+const ticketTypeFormSchema = z.object({
+  name: z.string().nonempty('Nama tiket wajib diisi.'),
+  description: z.string().optional(),
+  is_active: z.boolean().default(false),
+  capacity: z.number().optional(),
+})
+
+type TicketTypeForm = z.output<typeof ticketTypeFormSchema>
+
+const ticketTypeFormState = reactive<TicketTypeForm>({
+  name: '',
+  description: '',
+  kind: 'single',
+  price: 0,
+  capacity: undefined,
+  min_qty: 1,
+  max_qty: 10,
+  multiple_of: 1,
+  is_active: true,
+})
+
+function handleAddTicketType(e: FormSubmitEvent<TicketTypeForm>) {
+  console.log(e.data)
+}
+
+const ticketTypes = ref<TicketType[]>([])
 </script>
 
 <template>
@@ -372,57 +400,6 @@ async function removeAttendee(id: number) {
             </UCard>
           </section>
 
-          <section v-else-if="item.value === 'more'" class="space-y-6">
-            <UCard>
-              <template #header>
-                <div class="flex items-center gap-2 text-error">
-                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
-                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
-                </div>
-              </template>
-
-              <article
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-              >
-                <div>
-                  <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
-                  <p class="text-on-surface-variant">
-                    Acara ini akan dihapus dari daftar publik dan dasbor Anda.
-                    Tindakan ini dapat dibatalkan hanya oleh administrator
-                    sistem.
-                  </p>
-                </div>
-
-                <UModal
-                  title="Hapus Acara"
-                  :description="`Apakah Anda yakin ingin menghapus acara '${event.title}'? Acara ini tidak akan lagi ditampilkan kepada publik.`"
-                >
-                  <UButton
-                    variant="outline"
-                    color="error"
-                    icon="i-lucide-trash-2"
-                  >
-                    Hapus Acara
-                  </UButton>
-
-                  <template #footer>
-                    <div class="flex w-full justify-end gap-2">
-                      <UButton color="neutral" variant="ghost">Batal</UButton>
-                      <UButton
-                        color="error"
-                        icon="i-lucide-trash-2"
-                        :loading="isDeletingEvent"
-                        @click="() => handleDeleteEvent(event)"
-                      >
-                        Ya, Hapus Acara
-                      </UButton>
-                    </div>
-                  </template>
-                </UModal>
-              </article>
-            </UCard>
-          </section>
-
           <section v-else-if="item.value === 'registrasi'" class="space-y-6">
             <UCard>
               <template #header>
@@ -520,6 +497,152 @@ async function removeAttendee(id: number) {
                     </template>
                   </UModal>
                 </div>
+              </article>
+            </UCard>
+
+            <UCard>
+              <template #header>
+                <header class="flex items-center justify-between">
+                  <h2 class="text-lg font-bold">Tiket</h2>
+                  <UButton
+                    variant="outline"
+                    label="Buat tipe tiket baru"
+                    icon="i-lucide-plus"
+                    @click="isTicketTypeModalOpen = true"
+                  />
+                </header>
+              </template>
+
+              <p v-if="ticketTypes.length === 0" class="text-on-surface">
+                Belum ada tiket.
+              </p>
+
+              <UModal title="Buat tipe tiket baru">
+                <template #body>
+                  <UAlert
+                    v-if="ticketTypeError"
+                    title="Ada kesalahan!"
+                    :description="ticketTypeError"
+                    color="error"
+                    icon="i-lucide-triangle-alert"
+                    variant="subtle"
+                    class="mb-4"
+                  />
+
+                  <UForm
+                    class="space-y-4"
+                    :schema="ticketTypeFormSchema"
+                    :state="ticketTypeFormState"
+                    @submit="handleAddTicketType"
+                  >
+                    <UFormField label="Nama tiket" name="name">
+                      <UInput
+                        v-model="ticketTypeFormState.name"
+                        type="text"
+                        name="name"
+                        class="w-full"
+                        required
+                      />
+                    </UFormField>
+
+                    <UFormField
+                      label="Deskripsi"
+                      name="description"
+                      hint="opsional"
+                    >
+                      <UInput
+                        v-model="ticketTypeFormState.description"
+                        type="text"
+                        name="description"
+                        class="w-full"
+                      />
+                    </UFormField>
+
+                    <UFormField
+                      label="Kapasitas"
+                      name="capacity"
+                      hint="default: tak terbatas"
+                    >
+                      <UInput
+                        v-model="ticketTypeFormState.capacity"
+                        type="number"
+                        name="capacity"
+                        class="w-full"
+                        placeholder="∞"
+                      />
+                    </UFormField>
+
+                    <UFormField
+                      label="Tampilkan di halaman acara"
+                      name="is_active"
+                      orientation="horizontal"
+                    >
+                      <USwitch
+                        uncheckedIcon="i-lucide-x"
+                        checkedIcon="i-lucide-check"
+                        v-model="ticketTypeFormState.is_active"
+                        name="is_active"
+                      />
+                    </UFormField>
+
+                    <UButton
+                      type="submit"
+                      label="Simpan"
+                      :loading="isSavingTicketType"
+                    />
+                  </UForm>
+                </template>
+              </UModal>
+            </UCard>
+          </section>
+
+          <section v-else-if="item.value === 'more'" class="space-y-6">
+            <UCard>
+              <template #header>
+                <div class="flex items-center gap-2 text-error">
+                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
+                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
+                </div>
+              </template>
+
+              <article
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+              >
+                <div>
+                  <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
+                  <p class="text-on-surface-variant">
+                    Acara ini akan dihapus dari daftar publik dan dasbor Anda.
+                    Tindakan ini dapat dibatalkan hanya oleh administrator
+                    sistem.
+                  </p>
+                </div>
+
+                <UModal
+                  title="Hapus Acara"
+                  :description="`Apakah Anda yakin ingin menghapus acara '${event.title}'? Acara ini tidak akan lagi ditampilkan kepada publik.`"
+                >
+                  <UButton
+                    variant="outline"
+                    color="error"
+                    icon="i-lucide-trash-2"
+                  >
+                    Hapus Acara
+                  </UButton>
+
+                  <template #footer>
+                    <div class="flex w-full justify-end gap-2">
+                      <UButton color="neutral" variant="ghost">Batal</UButton>
+                      <UButton
+                        color="error"
+                        icon="i-lucide-trash-2"
+                        :loading="isDeletingEvent"
+                        @click="() => handleDeleteEvent(event)"
+                      >
+                        Ya, Hapus Acara
+                      </UButton>
+                    </div>
+                  </template>
+                </UModal>
               </article>
             </UCard>
           </section>

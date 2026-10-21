@@ -4,8 +4,11 @@ import type {
   UpdateEventInput,
   UserProfile,
   UpdateUserProfileInput,
+  UserRole,
   Rsvp,
   CreateRsvpInput,
+  TicketType,
+  CreateTicketTypeInput,
 } from '../domain/types'
 
 export interface IEventRepository {
@@ -49,4 +52,10 @@ export interface IEmailLogRepository {
     messageId?: string | null
     error?: string
   }): Promise<void>
+}
+
+export interface ITicketTypeRepository {
+  findByEventId(eventId: number): Promise<TicketType[]>
+  findById(id: number): Promise<TicketType | null>
+  create(payload: CreateTicketTypeInput): Promise<TicketType>
 }
