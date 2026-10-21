@@ -47,3 +47,27 @@ export interface Rsvp {
 
 export type CreateRsvpInput = Omit<Rsvp, 'id' | 'created_at'>
 export type UpdateRsvpInput = Partial<Omit<Rsvp, 'id' | 'created_at' | 'token'>>
+
+export type TicketTypeKind = 'single' | 'couple' | 'berempat'
+
+export type TicketType = {
+  capacity: number | null
+  created_at: string
+  description: string | null
+  event_id: number
+  id: number
+  is_active: boolean
+  kind: TicketTypeKind
+  max_qty: number
+  min_qty: number
+  multiple_of: number
+  name: string
+  price: number
+  sort_order: number
+  updated_at: string
+}
+
+export type CreateTicketTypeInput = Omit<
+  TicketType,
+  'id' | 'created_at' | 'updated_at'
+>

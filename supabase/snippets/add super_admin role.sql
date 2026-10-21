@@ -1,0 +1,2 @@
+update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role": "super_admin"}' where auth.users.email = 'email';
+update auth.users set raw_user_meta_data = raw_user_meta_data || '{"role": "super_admin"}' where auth.users.email = 'email';
