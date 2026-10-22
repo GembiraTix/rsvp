@@ -122,9 +122,10 @@ async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
 }
 
 async function handleAuthenticatedRsvp() {
-  if (!profile.value?.email) return
-  const userName = profile.value.name || profile.value.email.split('@')[0]
-  await submitRsvp(userName, profile.value.email)
+  const email = profile.value?.email
+  if (!email) return
+  const userName = profile.value?.name || email.split('@')[0] || email
+  await submitRsvp(userName, email)
 }
 </script>
 
