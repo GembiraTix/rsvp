@@ -317,7 +317,7 @@ async function handleAuthenticatedRsvp() {
               <UFormField class="space-y-1.5" label="Nama lengkap">
                 <UInput
                   v-model="form.name"
-                  placeholder="contoh: Jane Doe"
+                  placeholder="Andi Johan"
                   required
                   class="w-full"
                 />
@@ -327,7 +327,7 @@ async function handleAuthenticatedRsvp() {
                 <UInput
                   v-model="form.email"
                   type="email"
-                  placeholder="nama@university.edu"
+                  placeholder="andi@example.com"
                   required
                   class="w-full"
                 />
@@ -340,7 +340,7 @@ async function handleAuthenticatedRsvp() {
               >
                 <UTextarea
                   v-model="form.organization"
-                  placeholder="contoh: Mahasiswa Ilmu Komputer tingkat akhir yang tertarik dengan magang Rekayasa Perangkat Lunak."
+                  placeholder="Mahasiswa Ilmu Komputer"
                   :rows="3"
                   class="w-full"
                 />
