@@ -1,6 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { id } from '@nuxt/ui/locale'
 import { useSiteName } from '@/composables/useSiteName'
+import { ref } from 'vue'
+import type { NavigationMenuItem } from '@nuxt/ui'
+
 useHead({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
   link: [{ rel: 'icon', href: '/favicon.ico' }],
@@ -21,11 +24,29 @@ useSeoMeta({
 })
 
 const user = useSupabaseUser()
+const navItems: NavigationMenuItem[] = [
+  {
+    label: 'Beranda',
+    to: '/',
+  },
+  {
+    label: 'Dasbor',
+    to: '/users',
+  },
+]
+
+if (!user.value) {
+  navItems.push({
+    label: 'Masuk',
+    to: '/login',
+    type: 'link',
+  })
+}
 </script>
 
 <template>
   <UApp :locale="id">
-    <UHeader>
+    <UHeader :title="useSiteName()">
       <template #left>
         <img src="/logo/gembiratix.svg" width="40" height="40" alt="" />
         <NuxtLink
@@ -37,17 +58,15 @@ const user = useSupabaseUser()
       </template>
 
       <template #right>
-        <div class="flex items-center gap-2">
-          <UButton to="/" variant="ghost" color="neutral"> Acara </UButton>
+        <UNavigationMenu
+          orientation="horizontal"
+          class="max-sm:hidden"
+          :items="navItems"
+        />
+      </template>
 
-          <UButton v-if="user" to="/users" variant="ghost" color="neutral">
-            Dasbor Saya
-          </UButton>
-
-          <UButton v-if="!user" to="/login" color="neutral"> Masuk </UButton>
-
-          <UColorModeButton size="sm" />
-        </div>
+      <template #body>
+        <UNavigationMenu orientation="vertical" :items="navItems" />
       </template>
     </UHeader>
 
@@ -60,15 +79,9 @@ const user = useSupabaseUser()
     <UFooter>
       <template #left>
         <p class="text-xs text-on-surface-variant">
-          Pusat Karir Fakultas & Penyelenggara Bursa Kerja • ©
+          GembiraTix • ©
           {{ new Date().getFullYear() }}
         </p>
-      </template>
-
-      <template #right>
-        <span v-if="user" class="text-xs text-on-surface-variant">
-          Masuk sebagai {{ user.email }}
-        </span>
       </template>
     </UFooter>
   </UApp>

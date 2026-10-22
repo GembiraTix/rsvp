@@ -2,7 +2,7 @@
 import { useSiteName } from '@/composables/useSiteName'
 const siteName = useSiteName()
 useSeoMeta({
-  title: 'Konfirmasi Sesi - Bursa Kerja FPCE',
+  title: `Konfirmasi Sesi - ${siteName}`,
 })
 
 const user = useSupabaseUser()

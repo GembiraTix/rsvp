@@ -137,20 +137,26 @@ async function handleLogout() {
               <h2 class="font-bold">Profil pengguna</h2>
             </template>
 
-            <UToast
+            <UAlert
               v-if="profileErrorMessage"
               :title="profileErrorMessage"
+              @update:open="profileErrorMessage = ''"
               icon="i-lucide-alert-circle"
               color="error"
               variant="subtle"
+              class="my-4"
+              close
             />
 
-            <UToast
+            <UAlert
               v-if="profileSuccessMessage"
               :title="profileSuccessMessage"
+              @update:open="profileSuccessMessage = ''"
               icon="i-lucide-check-circle"
               color="success"
+              class="my-4"
               variant="subtle"
+              close
             />
 
             <div class="grid gap-4 md:grid-cols-3">
@@ -178,6 +184,7 @@ async function handleLogout() {
                       variant="outline"
                       @click="open()"
                       label="Unggah foto baru"
+                      disabled
                     />
                   </div>
                 </UFileUpload>
@@ -218,6 +225,19 @@ async function handleLogout() {
 
           <UCard>
             <template #header>
+              <h2 class="text-lg font-bold">Preferensi</h2>
+            </template>
+
+            <article
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            >
+              <p class="text-on-surface">Mode warna aplikasi</p>
+              <UColorModeSelect size="lg" />
+            </article>
+          </UCard>
+
+          <UCard>
+            <template #header>
               <h2 class="text-lg font-bold">Otentikasi</h2>
             </template>
 
@@ -242,7 +262,10 @@ async function handleLogout() {
         </div>
 
         <template v-if="item.value === 'acara'">
-          <section class="space-y-4">
+          <section
+            v-if="['admin', 'super_admin'].includes(profile?.role || 'user')"
+            class="space-y-4"
+          >
             <div class="flex items-center justify-between">
               <h2
                 class="text-xl font-bold text-on-surface flex items-center gap-2"
@@ -332,7 +355,7 @@ async function handleLogout() {
                   class="w-10 h-10 mx-auto text-on-surface-variant"
                 />
                 <p class="text-sm text-on-surface-variant">
-                  Anda belum mengorganisasi acara apa pun.
+                  Anda belum menggelar acara apa pun.
                 </p>
                 <UButton
                   to="/users/events/new"
@@ -346,7 +369,7 @@ async function handleLogout() {
             </UCard>
           </section>
 
-          <section class="space-y-4">
+          <section v-else class="space-y-4">
             <div class="flex items-center justify-between">
               <h2
                 class="text-xl font-bold text-on-surface flex items-center gap-2"
