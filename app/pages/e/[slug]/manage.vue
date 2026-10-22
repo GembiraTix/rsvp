@@ -280,7 +280,7 @@ async function handleAddTicketType(e: FormSubmitEvent<TicketTypeForm>) {
   ticketTypeError.value = ''
 
   try {
-    await createTicketType(eventSlug.value, {
+    await createTicketType(event.value.id, {
       name: e.data.name,
       description: e.data.description || null,
       kind: e.data.kind,

@@ -19,12 +19,9 @@ export function useTicketTypes() {
     )
   }
 
-  async function createTicketType(
-    slug: string,
-    body: CreateTicketTypeBody,
-  ) {
+  async function createTicketType(id: number, body: CreateTicketTypeBody) {
     return $fetch<{ success: boolean; data: TicketType }>(
-      `/api/events/${slug}/ticket-types`,
+      `/api/events/${id}/ticket-types`,
       {
         method: 'POST',
         body,

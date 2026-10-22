@@ -50,7 +50,7 @@ export class TicketTypeService {
   }
 
   async createTicketType(
-    slug: string,
+    id: number,
     currentUser: CurrentUser,
     input: {
       name: string
@@ -64,7 +64,7 @@ export class TicketTypeService {
       isActive: boolean
     },
   ): Promise<TicketType> {
-    const event = await this.eventRepo.findBySlug(slug)
+    const event = await this.eventRepo.findById(id)
     if (!event) {
       throw new Error('Acara tidak ditemukan')
     }
