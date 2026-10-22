@@ -90,10 +90,6 @@ export class EventService {
       throw new Error('Acara tidak ditemukan')
     }
 
-    if (existing.created_by !== userId) {
-      throw new Error('Anda tidak memiliki izin untuk memperbarui acara ini')
-    }
-
     const payload: UpdateEventInput = {
       title: input.title,
       location: input.location,
