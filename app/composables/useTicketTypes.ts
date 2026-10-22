@@ -12,6 +12,14 @@ export interface CreateTicketTypeBody {
   isActive?: boolean
 }
 
+export type UpdateTicketTypeBody = CreateTicketTypeBody
+
+export interface DeleteTicketTypeResult {
+  id: number
+  deleted: boolean
+  deactivated: boolean
+}
+
 export function useTicketTypes() {
   function fetchByEvent(slug: MaybeRefOrGetter<string>) {
     return useFetch<{ success: boolean; data: TicketType[] }>(
@@ -29,8 +37,33 @@ export function useTicketTypes() {
     )
   }
 
+  async function updateTicketType(
+    id: number,
+    ticketTypeId: number,
+    body: UpdateTicketTypeBody,
+  ) {
+    return $fetch<{ success: boolean; data: TicketType }>(
+      `/api/events/${id}/ticket-types/${ticketTypeId}`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
+  async function deleteTicketType(id: number, ticketTypeId: number) {
+    return $fetch<{ success: boolean; data: DeleteTicketTypeResult }>(
+      `/api/events/${id}/ticket-types/${ticketTypeId}`,
+      {
+        method: 'DELETE',
+      },
+    )
+  }
+
   return {
     fetchByEvent,
     createTicketType,
+    updateTicketType,
+    deleteTicketType,
   }
 }

@@ -52,7 +52,6 @@ const selectedTab = computed({
 })
 
 const supabase = useSupabaseClient()
-const user = useSupabaseUser()
 
 const {
   fetchBySlug,
@@ -71,19 +70,6 @@ const { fetchProfile } = useUserProfile()
 const { data: profileRes } = await fetchProfile()
 const profile = computed(() => profileRes.value?.data || null)
 const isSuperAdmin = computed(() => profile.value?.role === 'super_admin')
-
-// Check authorization (Must be event creator or super_admin)
-const isCreator = computed(
-  () =>
-    (user.value &&
-      event.value &&
-      event.value.created_by === (user.value.sub || user.value.id)) ||
-    isSuperAdmin.value,
-)
-
-if (!isCreator) {
-  navigateTo('/')
-}
 
 const isSavingRegistration = ref(false)
 

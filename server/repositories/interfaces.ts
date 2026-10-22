@@ -9,6 +9,7 @@ import type {
   CreateRsvpInput,
   TicketType,
   CreateTicketTypeInput,
+  UpdateTicketTypeInput,
 } from '../domain/types'
 
 export interface IEventRepository {
@@ -58,4 +59,7 @@ export interface ITicketTypeRepository {
   findByEventId(eventId: number): Promise<TicketType[]>
   findById(id: number): Promise<TicketType | null>
   create(payload: CreateTicketTypeInput): Promise<TicketType>
+  update(id: number, payload: UpdateTicketTypeInput): Promise<TicketType>
+  delete(id: number): Promise<void>
+  hasOrders(ticketTypeId: number): Promise<boolean>
 }

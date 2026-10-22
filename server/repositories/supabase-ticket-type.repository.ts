@@ -1,7 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { ITicketTypeRepository } from './interfaces'
-import type { TicketType, CreateTicketTypeInput } from '../domain/types'
+import type {
+  TicketType,
+  CreateTicketTypeInput,
+  UpdateTicketTypeInput,
+} from '../domain/types'
 
 export class SupabaseTicketTypeRepository implements ITicketTypeRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -38,5 +42,33 @@ export class SupabaseTicketTypeRepository implements ITicketTypeRepository {
 
     if (error) throw error
     return data
+  }
+
+  async update(id: number, payload: UpdateTicketTypeInput): Promise<TicketType> {
+    const { data, error } = await this.client
+      .from('ticket_types')
+      .update(payload)
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) throw error
+    return data
+  }
+
+  async delete(id: number): Promise<void> {
+    const { error } = await this.client.from('ticket_types').delete().eq('id', id)
+
+    if (error) throw error
+  }
+
+  async hasOrders(ticketTypeId: number): Promise<boolean> {
+    const { count, error } = await this.client
+      .from('order_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('ticket_type_id', ticketTypeId)
+
+    if (error) throw error
+    return (count ?? 0) > 0
   }
 }
