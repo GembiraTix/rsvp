@@ -219,8 +219,13 @@ async function removeAttendee(id: number) {
 const ticketTypeFormSchema = z.object({
   name: z.string().nonempty('Nama tiket wajib diisi.'),
   description: z.string().optional(),
-  is_active: z.boolean().default(false),
-  capacity: z.number().optional(),
+  kind: z.enum(['single', 'couple', 'berempat']),
+  price: z.coerce.number().int().min(0, 'Harga tidak valid.'),
+  capacity: z.coerce.number().int().positive().optional(),
+  min_qty: z.number().int().min(1, 'Jumlah minimal harus minimal 1.'),
+  max_qty: z.number().int().min(1, 'Jumlah maksimal harus minimal 1.'),
+  multiple_of: z.number().int().min(1, 'Kelipatan harus minimal 1.'),
+  is_active: z.boolean(),
 })
 
 type TicketTypeForm = z.output<typeof ticketTypeFormSchema>
@@ -237,11 +242,82 @@ const ticketTypeFormState = reactive<TicketTypeForm>({
   is_active: true,
 })
 
-function handleAddTicketType(e: FormSubmitEvent<TicketTypeForm>) {
-  console.log(e.data)
+const { fetchByEvent: fetchTicketTypes, createTicketType } = useTicketTypes()
+const { data: ticketTypesRes, refresh: refreshTicketTypes } =
+  await fetchTicketTypes(eventSlug)
+
+const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
+
+const isTicketTypeModalOpen = ref(false)
+const isSavingTicketType = ref(false)
+const ticketTypeError = ref('')
+
+function resetTicketTypeForm() {
+  ticketTypeFormState.name = ''
+  ticketTypeFormState.description = ''
+  ticketTypeFormState.kind = 'single'
+  ticketTypeFormState.price = 0
+  ticketTypeFormState.capacity = undefined
+  ticketTypeFormState.min_qty = 1
+  ticketTypeFormState.max_qty = 10
+  ticketTypeFormState.multiple_of = 1
+  ticketTypeFormState.is_active = true
 }
 
-const ticketTypes = ref<TicketType[]>([])
+function getErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object' && 'data' in err) {
+    const data = (err as { data?: { statusMessage?: string } }).data
+    if (data?.statusMessage) {
+      return data.statusMessage
+    }
+  }
+
+  return err instanceof Error ? err.message : fallback
+}
+
+async function handleAddTicketType(e: FormSubmitEvent<TicketTypeForm>) {
+  isSavingTicketType.value = true
+  ticketTypeError.value = ''
+
+  try {
+    await createTicketType(eventSlug.value, {
+      name: e.data.name,
+      description: e.data.description || null,
+      kind: e.data.kind,
+      price: e.data.price,
+      capacity: e.data.capacity ?? null,
+      minQty: e.data.min_qty,
+      maxQty: e.data.max_qty,
+      multipleOf: e.data.multiple_of,
+      isActive: e.data.is_active,
+    })
+
+    await refreshTicketTypes()
+    resetTicketTypeForm()
+    isTicketTypeModalOpen.value = false
+  } catch (err: unknown) {
+    ticketTypeError.value = getErrorMessage(
+      err,
+      'Gagal membuat tipe tiket. Silakan coba lagi.',
+    )
+  } finally {
+    isSavingTicketType.value = false
+  }
+}
+
+const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
+  single: 'Single',
+  couple: 'Couple',
+  berempat: 'Berempat',
+}
+
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(value)
+}
 </script>
 
 <template>
@@ -517,7 +593,68 @@ const ticketTypes = ref<TicketType[]>([])
                 Belum ada tiket.
               </p>
 
-              <UModal title="Buat tipe tiket baru">
+              <div v-else class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead
+                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
+                  >
+                    <tr>
+                      <th class="px-6 py-3">Nama Tiket</th>
+                      <th class="px-6 py-3">Tipe</th>
+                      <th class="px-6 py-3">Harga</th>
+                      <th class="px-6 py-3">Kapasitas</th>
+                      <th class="px-6 py-3">Jumlah</th>
+                      <th class="px-6 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-outline">
+                    <tr
+                      v-for="ticket in ticketTypes"
+                      :key="ticket.id"
+                      class="hover:bg-surface-container/50"
+                    >
+                      <td class="px-6 py-4 font-medium text-on-surface">
+                        {{ ticket.name }}
+                        <span
+                          v-if="ticket.description"
+                          class="block text-xs font-normal text-on-surface-variant"
+                        >
+                          {{ ticket.description }}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 text-on-surface-variant">
+                        {{ ticketTypeKindLabels[ticket.kind] }}
+                      </td>
+                      <td
+                        class="px-6 py-4 text-on-surface-variant font-mono text-xs"
+                      >
+                        {{ formatRupiah(ticket.price) }}
+                      </td>
+                      <td class="px-6 py-4 text-on-surface-variant">
+                        {{ ticket.capacity ?? '∞' }}
+                      </td>
+                      <td class="px-6 py-4 text-on-surface-variant">
+                        {{ ticket.min_qty }}–{{ ticket.max_qty }} (×{{
+                          ticket.multiple_of
+                        }})
+                      </td>
+                      <td class="px-6 py-4">
+                        <UBadge
+                          :color="ticket.is_active ? 'primary' : 'neutral'"
+                          variant="subtle"
+                        >
+                          {{ ticket.is_active ? 'Aktif' : 'Disembunyikan' }}
+                        </UBadge>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <UModal
+                v-model:open="isTicketTypeModalOpen"
+                title="Buat tipe tiket baru"
+              >
                 <template #body>
                   <UAlert
                     v-if="ticketTypeError"
@@ -558,6 +695,29 @@ const ticketTypes = ref<TicketType[]>([])
                       />
                     </UFormField>
 
+                    <UFormField label="Tipe tiket" name="kind">
+                      <USelect
+                        v-model="ticketTypeFormState.kind"
+                        name="kind"
+                        :items="[
+                          { label: 'Single (1 orang)', value: 'single' },
+                          { label: 'Couple (2 orang)', value: 'couple' },
+                          { label: 'Berempat (4 orang)', value: 'berempat' },
+                        ]"
+                        class="w-full"
+                      />
+                    </UFormField>
+
+                    <UFormField label="Harga" name="price" required>
+                      <UInput
+                        v-model="ticketTypeFormState.price"
+                        type="number"
+                        name="price"
+                        class="w-full"
+                        :min="0"
+                      />
+                    </UFormField>
+
                     <UFormField
                       label="Kapasitas"
                       name="capacity"
@@ -571,6 +731,46 @@ const ticketTypes = ref<TicketType[]>([])
                         placeholder="∞"
                       />
                     </UFormField>
+
+                    <div class="grid gap-4 sm:grid-cols-3">
+                      <UFormField
+                        label="Jumlah minimal"
+                        name="min_qty"
+                        required
+                      >
+                        <UInput
+                          v-model="ticketTypeFormState.min_qty"
+                          type="number"
+                          name="min_qty"
+                          class="w-full"
+                          :min="1"
+                        />
+                      </UFormField>
+
+                      <UFormField
+                        label="Jumlah maksimal"
+                        name="max_qty"
+                        required
+                      >
+                        <UInput
+                          v-model="ticketTypeFormState.max_qty"
+                          type="number"
+                          name="max_qty"
+                          class="w-full"
+                          :min="1"
+                        />
+                      </UFormField>
+
+                      <UFormField label="Kelipatan" name="multiple_of" required>
+                        <UInput
+                          v-model="ticketTypeFormState.multiple_of"
+                          type="number"
+                          name="multiple_of"
+                          class="w-full"
+                          :min="1"
+                        />
+                      </UFormField>
+                    </div>
 
                     <UFormField
                       label="Tampilkan di halaman acara"
