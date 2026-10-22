@@ -27,6 +27,12 @@ export function useTicketTypes() {
     )
   }
 
+  function fetchPublicByEvent(slug: MaybeRefOrGetter<string>) {
+    return useFetch<{ success: boolean; data: TicketType[] }>(
+      () => `/api/public/events/${toValue(slug)}/ticket-types`,
+    )
+  }
+
   async function createTicketType(id: number, body: CreateTicketTypeBody) {
     return $fetch<{ success: boolean; data: TicketType }>(
       `/api/events/${id}/ticket-types`,
@@ -62,6 +68,7 @@ export function useTicketTypes() {
 
   return {
     fetchByEvent,
+    fetchPublicByEvent,
     createTicketType,
     updateTicketType,
     deleteTicketType,

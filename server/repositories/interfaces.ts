@@ -57,6 +57,7 @@ export interface IEmailLogRepository {
 
 export interface ITicketTypeRepository {
   findByEventId(eventId: number): Promise<TicketType[]>
+  findActiveByEventId(eventId: number): Promise<TicketType[]>
   findById(id: number): Promise<TicketType | null>
   create(payload: CreateTicketTypeInput): Promise<TicketType>
   update(id: number, payload: UpdateTicketTypeInput): Promise<TicketType>

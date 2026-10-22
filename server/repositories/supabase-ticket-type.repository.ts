@@ -22,6 +22,19 @@ export class SupabaseTicketTypeRepository implements ITicketTypeRepository {
     return data ?? []
   }
 
+  async findActiveByEventId(eventId: number): Promise<TicketType[]> {
+    const { data, error } = await this.client
+      .from('ticket_types')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('id', { ascending: true })
+
+    if (error) throw error
+    return data ?? []
+  }
+
   async findById(id: number): Promise<TicketType | null> {
     const { data, error } = await this.client
       .from('ticket_types')

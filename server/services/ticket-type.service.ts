@@ -69,6 +69,17 @@ export class TicketTypeService {
     return this.ticketTypeRepo.findByEventId(event.id)
   }
 
+  async getPublicTicketTypesByEventSlug(slug: string): Promise<TicketType[]> {
+    const event = await this.eventRepo.findBySlug(slug)
+    if (!event) {
+      throw new Error('Acara tidak ditemukan')
+    }
+
+    this.logger.info('Fetching public ticket types', { eventId: event.id })
+
+    return this.ticketTypeRepo.findActiveByEventId(event.id)
+  }
+
   async createTicketType(
     eventId: number,
     currentUser: CurrentUser,
