@@ -80,20 +80,20 @@ watch(
   () => oldEvent!.data,
   (newEvent) => {
     if (!newEvent) return
-    formState.value.title = newEvent.title || ''
-    formState.value.location = newEvent.location || ''
-    formState.value.startsAt = newEvent.starts_at
+    formState.title = newEvent.title || ''
+    formState.location = newEvent.location || ''
+    formState.startsAt = newEvent.starts_at
       ? parseZonedDateTime(newEvent.starts_at)
       : undefined
-    formState.value.endsAt = newEvent.ends_at
+    formState.endsAt = newEvent.ends_at
       ? parseZonedDateTime(newEvent.ends_at)
       : undefined
-    formState.value.description = newEvent.description || undefined
-    formState.value.imageUrl = newEvent.image_url || undefined
+    formState.description = newEvent.description || undefined
+    formState.imageUrl = newEvent.image_url || undefined
   },
 )
 
-const formState = shallowRef<EditFormState>({
+const formState = shallowReactive<EditFormState>({
   title: oldEvent?.data.title || '',
   location: oldEvent?.data.location || '',
   startsAt: oldEvent?.data.starts_at
@@ -108,7 +108,7 @@ const formState = shallowRef<EditFormState>({
 })
 
 watch(
-  () => formState.value.image,
+  () => formState.image,
   async (newImage) => {
     if (!newImage) {
       console.log('no image')
@@ -120,7 +120,7 @@ watch(
       if (!res.success) {
         throw Error('gagal mengunggah gambar. coba lagi')
       }
-      formState.value.imageUrl = res.data.url
+      formState.imageUrl = res.data.url
     } catch (err: unknown) {
       editErrorMessage.value = // TODO: make error res nicer
         err instanceof Error ? err.message : 'Gagal mengunggah gambar.'
@@ -259,9 +259,10 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
             v-model="formState.image"
             accept="image/*"
             :loading="isUploadingImage"
-            icon="i-lucide-upload-cloud"
+            icon="i-lucide-image"
             label="Pilih atau seret gambar banner baru ke sini"
             description="PNG, JPG, WEBP hingga 5MB"
+            size="lg"
             class="w-full"
           />
         </div>

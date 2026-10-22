@@ -68,7 +68,7 @@ const formStateSchema = z.object({
 
 type FormState = z.output<typeof formStateSchema>
 
-const formState = shallowRef<FormState>({
+const formState = shallowReactive<FormState>({
   title: '',
   date: {
     starts_at: now(getLocalTimeZone()),
@@ -82,7 +82,7 @@ const formState = shallowRef<FormState>({
 })
 
 watch(
-  () => formState.value.image,
+  () => formState.image,
   async (newImage) => {
     if (!newImage) {
       console.log('no image')
@@ -91,7 +91,7 @@ watch(
 
     try {
       const res = await uploadEventImage(newImage)
-      formState.value.imageUrl = res.data.url
+      formState.imageUrl = res.data.url
     } catch (err: unknown) {
       errorMessage.value =
         err instanceof Error ? err.message : 'Gagal mengunggah gambar.'
