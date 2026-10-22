@@ -7,6 +7,7 @@ import type {
   TicketTypeKind,
   UserRole,
   CreateTicketTypeInput,
+  UpdateTicketTypeInput,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 
@@ -21,6 +22,25 @@ const DEFAULT_MAX_QTY = 10
 export interface CurrentUser {
   id: string
   role?: UserRole | null
+}
+
+export interface DeleteTicketTypeResult {
+  deleted: boolean
+  deactivated: boolean
+  ticketType: TicketType
+}
+
+function isForeignKeyViolation(err: unknown): boolean {
+  if (!err || typeof err !== 'object') {
+    return false
+  }
+
+  const { code, message } = err as { code?: string; message?: string }
+
+  return (
+    code === '23503' ||
+    (typeof message === 'string' && message.includes('foreign key'))
+  )
 }
 
 export class TicketTypeService {
@@ -50,28 +70,28 @@ export class TicketTypeService {
   }
 
   async createTicketType(
-    id: number,
+    eventId: number,
     currentUser: CurrentUser,
     input: {
       name: string
       description?: string | null
-      kind: TicketTypeKind
-      price: number
+      kind?: TicketTypeKind
+      price?: number
       capacity?: number | null
       minQty?: number
       maxQty?: number
       multipleOf?: number
-      isActive: boolean
+      isActive?: boolean
     },
   ): Promise<TicketType> {
-    const event = await this.eventRepo.findById(id)
+    const event = await this.eventRepo.findById(eventId)
     if (!event) {
       throw new Error('Acara tidak ditemukan')
     }
 
     this.assertCanManage(event.created_by, currentUser)
 
-    const kind = input.kind
+    const kind: TicketTypeKind = input.kind ?? 'single'
     const name = input.name.trim()
 
     if (!name) {
@@ -84,31 +104,7 @@ export class TicketTypeService {
     const capacity = input.capacity ?? null
     const price = input.price ?? 0
 
-    if (minQty < 1) {
-      throw new Error('Jumlah minimum harus minimal 1.')
-    }
-
-    if (maxQty < minQty) {
-      throw new Error(
-        'Jumlah maksimum harus lebih besar atau sama dengan minimum.',
-      )
-    }
-
-    if (multipleOf < 1) {
-      throw new Error('Kelipatan harus minimal 1.')
-    }
-
-    if (capacity !== null && capacity < 1) {
-      throw new Error('Kapasitas harus lebih besar dari 0.')
-    }
-
-    if (capacity !== null && maxQty > capacity) {
-      throw new Error('Jumlah maksimum tidak boleh melebihi kapasitas.')
-    }
-
-    if (price < 0) {
-      throw new Error('Harga tidak boleh negatif.')
-    }
+    this.assertValidQuantity({ minQty, maxQty, multipleOf, capacity, price })
 
     const existing = await this.ticketTypeRepo.findByEventId(event.id)
 
@@ -122,7 +118,7 @@ export class TicketTypeService {
       min_qty: minQty,
       max_qty: maxQty,
       multiple_of: multipleOf,
-      is_active: input.isActive,
+      is_active: input.isActive ?? true,
       sort_order: existing.length,
     }
 
@@ -133,6 +129,170 @@ export class TicketTypeService {
     })
 
     return this.ticketTypeRepo.create(payload)
+  }
+
+  async updateTicketType(
+    eventId: number,
+    ticketTypeId: number,
+    currentUser: CurrentUser,
+    input: {
+      name?: string
+      description?: string | null
+      kind?: TicketTypeKind
+      price?: number
+      capacity?: number | null
+      minQty?: number
+      maxQty?: number
+      multipleOf?: number
+      isActive?: boolean
+    },
+  ): Promise<TicketType> {
+    const event = await this.eventRepo.findById(eventId)
+    if (!event) {
+      throw new Error('Acara tidak ditemukan')
+    }
+
+    this.assertCanManage(event.created_by, currentUser)
+
+    const ticketType = await this.ticketTypeRepo.findById(ticketTypeId)
+    if (!ticketType || ticketType.event_id !== event.id) {
+      throw new Error('Tipe tiket tidak ditemukan pada acara ini')
+    }
+
+    const kind = input.kind ?? ticketType.kind
+    const name = input.name?.trim() ?? ticketType.name
+
+    if (!name) {
+      throw new Error('Nama tiket wajib diisi.')
+    }
+
+    const minQty = input.minQty ?? ticketType.min_qty
+    const maxQty = input.maxQty ?? ticketType.max_qty
+    const multipleOf = input.multipleOf ?? ticketType.multiple_of
+    const capacity =
+      input.capacity === undefined ? ticketType.capacity : input.capacity
+    const price = input.price ?? ticketType.price
+
+    this.assertValidQuantity({ minQty, maxQty, multipleOf, capacity, price })
+
+    const payload: UpdateTicketTypeInput = {
+      name,
+      description:
+        input.description === undefined
+          ? ticketType.description
+          : input.description?.trim() || null,
+      kind,
+      price,
+      capacity,
+      min_qty: minQty,
+      max_qty: maxQty,
+      multiple_of: multipleOf,
+      is_active: input.isActive ?? ticketType.is_active,
+    }
+
+    this.logger.info('Updating ticket type', {
+      eventId: event.id,
+      ticketTypeId,
+      userId: currentUser.id,
+    })
+
+    return this.ticketTypeRepo.update(ticketTypeId, payload)
+  }
+
+  async deleteTicketType(
+    eventId: number,
+    ticketTypeId: number,
+    currentUser: CurrentUser,
+  ): Promise<DeleteTicketTypeResult> {
+    const event = await this.eventRepo.findById(eventId)
+    if (!event) {
+      throw new Error('Acara tidak ditemukan')
+    }
+
+    this.assertCanManage(event.created_by, currentUser)
+
+    const ticketType = await this.ticketTypeRepo.findById(ticketTypeId)
+    if (!ticketType || ticketType.event_id !== event.id) {
+      throw new Error('Tipe tiket tidak ditemukan pada acara ini')
+    }
+
+    const sold = await this.ticketTypeRepo.hasOrders(ticketTypeId)
+
+    if (sold) {
+      this.logger.info('Deactivating sold ticket type', {
+        eventId: event.id,
+        ticketTypeId,
+        userId: currentUser.id,
+      })
+
+      const updated = await this.ticketTypeRepo.update(ticketTypeId, {
+        is_active: false,
+      })
+
+      return { deleted: false, deactivated: true, ticketType: updated }
+    }
+
+    this.logger.info('Deleting ticket type', {
+      eventId: event.id,
+      ticketTypeId,
+      userId: currentUser.id,
+    })
+
+    try {
+      await this.ticketTypeRepo.delete(ticketTypeId)
+
+      return { deleted: true, deactivated: false, ticketType }
+    } catch (err: unknown) {
+      if (!isForeignKeyViolation(err)) {
+        throw err
+      }
+
+      this.logger.info('Ticket type is referenced by orders, deactivating', {
+        eventId: event.id,
+        ticketTypeId,
+        userId: currentUser.id,
+      })
+
+      const updated = await this.ticketTypeRepo.update(ticketTypeId, {
+        is_active: false,
+      })
+
+      return { deleted: false, deactivated: true, ticketType: updated }
+    }
+  }
+
+  private assertValidQuantity(input: {
+    minQty: number
+    maxQty: number
+    multipleOf: number
+    capacity: number | null
+    price: number
+  }): void {
+    if (input.minQty < 1) {
+      throw new Error('Jumlah minimum harus minimal 1.')
+    }
+
+    if (input.maxQty < input.minQty) {
+      throw new Error(
+        'Jumlah maksimum harus lebih besar atau sama dengan minimum.',
+      )
+    }
+
+    if (input.multipleOf < 1) {
+      throw new Error('Kelipatan harus minimal 1.')
+    }
+
+    if (input.capacity !== null && input.capacity < 1) {
+      throw new Error('Kapasitas harus lebih besar dari 0.')
+    }
+
+    if (input.capacity !== null && input.maxQty > input.capacity) {
+      throw new Error('Jumlah maksimum tidak boleh melebihi kapasitas.')
+    }
+
+    if (input.price < 0) {
+      throw new Error('Harga tidak boleh negatif.')
+    }
   }
 
   private assertCanManage(createdBy: string, currentUser: CurrentUser): void {

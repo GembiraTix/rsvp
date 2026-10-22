@@ -72,3 +72,7 @@ export type CreateTicketTypeInput = Omit<
   TicketType,
   'id' | 'created_at' | 'updated_at'
 >
+
+export type UpdateTicketTypeInput = Partial<
+  Omit<CreateTicketTypeInput, 'event_id' | 'sort_order'>
+>

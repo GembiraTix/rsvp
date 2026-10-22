@@ -3,7 +3,7 @@ import { useEvents } from '@/composables/useEvents'
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useTicketTypes } from '@/composables/useTicketTypes'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { Event, TicketTypeKind } from '~~/server/domain/types'
+import type { Event, TicketType, TicketTypeKind } from '~~/server/domain/types'
 import { z } from 'zod'
 
 definePageMeta({
@@ -207,7 +207,11 @@ const ticketTypeFormSchema = z.object({
   description: z.string().optional(),
   kind: z.enum(['single', 'couple', 'berempat']),
   price: z.coerce.number().int().min(0, 'Harga tidak valid.'),
-  capacity: z.coerce.number().int().positive().optional(),
+  capacity: z.preprocess(
+    (value) =>
+      value === '' || value === null || value === undefined ? undefined : value,
+    z.coerce.number().int().positive().optional(),
+  ),
   min_qty: z.number().int().min(1, 'Jumlah minimal harus minimal 1.'),
   max_qty: z.number().int().min(1, 'Jumlah maksimal harus minimal 1.'),
   multiple_of: z.number().int().min(1, 'Kelipatan harus minimal 1.'),
@@ -228,7 +232,12 @@ const ticketTypeFormState = reactive<TicketTypeForm>({
   is_active: true,
 })
 
-const { fetchByEvent: fetchTicketTypes, createTicketType } = useTicketTypes()
+const {
+  fetchByEvent: fetchTicketTypes,
+  createTicketType,
+  updateTicketType,
+  deleteTicketType,
+} = useTicketTypes()
 const { data: ticketTypesRes, refresh: refreshTicketTypes } =
   await fetchTicketTypes(eventSlug)
 
@@ -237,6 +246,11 @@ const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 const isTicketTypeModalOpen = ref(false)
 const isSavingTicketType = ref(false)
 const ticketTypeError = ref('')
+const editingTicketTypeId = ref<number | null>(null)
+const ticketTypeToDelete = ref<TicketType | null>(null)
+const isDeleteTicketTypeModalOpen = ref(false)
+const isDeletingTicketType = ref(false)
+const ticketTypeNotice = ref('')
 
 function resetTicketTypeForm() {
   ticketTypeFormState.name = ''
@@ -261,33 +275,86 @@ function getErrorMessage(err: unknown, fallback: string) {
   return err instanceof Error ? err.message : fallback
 }
 
-async function handleAddTicketType(e: FormSubmitEvent<TicketTypeForm>) {
+function openCreateTicketTypeModal() {
+  editingTicketTypeId.value = null
+  ticketTypeError.value = ''
+  resetTicketTypeForm()
+  isTicketTypeModalOpen.value = true
+}
+
+function openEditTicketTypeModal(ticket: TicketType) {
+  editingTicketTypeId.value = ticket.id
+  ticketTypeError.value = ''
+  ticketTypeFormState.name = ticket.name
+  ticketTypeFormState.description = ticket.description ?? ''
+  ticketTypeFormState.kind = ticket.kind
+  ticketTypeFormState.price = ticket.price
+  ticketTypeFormState.capacity = ticket.capacity ?? undefined
+  ticketTypeFormState.min_qty = ticket.min_qty
+  ticketTypeFormState.max_qty = ticket.max_qty
+  ticketTypeFormState.multiple_of = ticket.multiple_of
+  ticketTypeFormState.is_active = ticket.is_active
+  isTicketTypeModalOpen.value = true
+}
+
+function askDeleteTicketType(ticket: TicketType) {
+  ticketTypeToDelete.value = ticket
+  ticketTypeError.value = ''
+  isDeleteTicketTypeModalOpen.value = true
+}
+
+async function handleSubmitTicketType({
+  data: body,
+}: FormSubmitEvent<TicketTypeForm>) {
   isSavingTicketType.value = true
   ticketTypeError.value = ''
 
   try {
-    await createTicketType(event.value.id, {
-      name: e.data.name,
-      description: e.data.description || null,
-      kind: e.data.kind,
-      price: e.data.price,
-      capacity: e.data.capacity ?? null,
-      minQty: e.data.min_qty,
-      maxQty: e.data.max_qty,
-      multipleOf: e.data.multiple_of,
-      isActive: e.data.is_active,
-    })
+    if (editingTicketTypeId.value !== null) {
+      await updateTicketType(event.value.id, editingTicketTypeId.value, body)
+      ticketTypeNotice.value = 'Tipe tiket berhasil diperbarui.'
+    } else {
+      await createTicketType(event.value.id, body)
+      ticketTypeNotice.value = 'Tipe tiket berhasil dibuat.'
+    }
 
     await refreshTicketTypes()
     resetTicketTypeForm()
+    editingTicketTypeId.value = null
     isTicketTypeModalOpen.value = false
   } catch (err: unknown) {
     ticketTypeError.value = getErrorMessage(
       err,
-      'Gagal membuat tipe tiket. Silakan coba lagi.',
+      'Gagal menyimpan tipe tiket. Silakan coba lagi.',
     )
   } finally {
     isSavingTicketType.value = false
+  }
+}
+
+async function handleDeleteTicketType() {
+  const ticket = ticketTypeToDelete.value
+  if (!ticket) return
+
+  isDeletingTicketType.value = true
+  ticketTypeError.value = ''
+
+  try {
+    const res = await deleteTicketType(event.value.id, ticket.id)
+
+    await refreshTicketTypes()
+    isDeleteTicketTypeModalOpen.value = false
+    ticketTypeToDelete.value = null
+    ticketTypeNotice.value = res.data.deactivated
+      ? `Tipe tiket '${ticket.name}' sudah pernah terjual, tipe tiket akan dinonaktifkan.`
+      : `Tipe tiket '${ticket.name}' berhasil dihapus.`
+  } catch (err: unknown) {
+    ticketTypeError.value = getErrorMessage(
+      err,
+      'Gagal menghapus tipe tiket. Silakan coba lagi.',
+    )
+  } finally {
+    isDeletingTicketType.value = false
   }
 }
 
@@ -570,10 +637,21 @@ function formatRupiah(value: number) {
                     variant="outline"
                     label="Buat tipe tiket baru"
                     icon="i-lucide-plus"
-                    @click="isTicketTypeModalOpen = true"
+                    @click="openCreateTicketTypeModal"
                   />
                 </header>
               </template>
+
+              <UAlert
+                v-if="ticketTypeNotice"
+                :title="ticketTypeNotice"
+                color="success"
+                icon="i-lucide-circle-check"
+                variant="subtle"
+                class="mb-4"
+                close
+                @update:open="ticketTypeNotice = ''"
+              />
 
               <p v-if="ticketTypes.length === 0" class="text-on-surface">
                 Belum ada tiket.
@@ -591,6 +669,7 @@ function formatRupiah(value: number) {
                       <th class="px-6 py-3">Kapasitas</th>
                       <th class="px-6 py-3">Jumlah</th>
                       <th class="px-6 py-3">Status</th>
+                      <th class="px-6 py-3 text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-outline">
@@ -632,6 +711,24 @@ function formatRupiah(value: number) {
                           {{ ticket.is_active ? 'Aktif' : 'Disembunyikan' }}
                         </UBadge>
                       </td>
+                      <td class="px-6 py-4 text-right">
+                        <UButton
+                          size="xs"
+                          color="neutral"
+                          variant="ghost"
+                          icon="i-lucide-pencil"
+                          title="Ubah tipe tiket"
+                          @click="openEditTicketTypeModal(ticket)"
+                        />
+                        <UButton
+                          size="xs"
+                          color="error"
+                          variant="ghost"
+                          icon="i-lucide-trash-2"
+                          title="Hapus tipe tiket"
+                          @click="askDeleteTicketType(ticket)"
+                        />
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -639,7 +736,11 @@ function formatRupiah(value: number) {
 
               <UModal
                 v-model:open="isTicketTypeModalOpen"
-                title="Buat tipe tiket baru"
+                :title="
+                  editingTicketTypeId !== null
+                    ? 'Ubah tipe tiket'
+                    : 'Buat tipe tiket baru'
+                "
               >
                 <template #body>
                   <UAlert
@@ -656,7 +757,7 @@ function formatRupiah(value: number) {
                     class="space-y-4"
                     :schema="ticketTypeFormSchema"
                     :state="ticketTypeFormState"
-                    @submit="handleAddTicketType"
+                    @submit="handleSubmitTicketType"
                   >
                     <UFormField label="Nama tiket" name="name">
                       <UInput
@@ -773,10 +874,50 @@ function formatRupiah(value: number) {
 
                     <UButton
                       type="submit"
-                      label="Simpan"
+                      :label="
+                        editingTicketTypeId !== null
+                          ? 'Simpan Perubahan'
+                          : 'Simpan'
+                      "
                       :loading="isSavingTicketType"
                     />
                   </UForm>
+                </template>
+              </UModal>
+
+              <UModal
+                v-model:open="isDeleteTicketTypeModalOpen"
+                title="Hapus tipe tiket"
+                :description="`Apakah Anda yakin ingin menghapus tipe tiket '${ticketTypeToDelete?.name}'? Tipe tiket yang sudah pernah terjual akan dinonaktifkan, bukan dihapus.`"
+              >
+                <template v-if="ticketTypeError" #body>
+                  <UAlert
+                    title="Ada kesalahan!"
+                    :description="ticketTypeError"
+                    color="error"
+                    icon="i-lucide-triangle-alert"
+                    variant="subtle"
+                  />
+                </template>
+
+                <template #footer>
+                  <div class="flex w-full justify-end gap-2">
+                    <UButton
+                      color="neutral"
+                      variant="ghost"
+                      @click="isDeleteTicketTypeModalOpen = false"
+                    >
+                      Batal
+                    </UButton>
+                    <UButton
+                      color="error"
+                      icon="i-lucide-trash-2"
+                      :loading="isDeletingTicketType"
+                      @click="handleDeleteTicketType"
+                    >
+                      Ya, Hapus
+                    </UButton>
+                  </div>
                 </template>
               </UModal>
             </UCard>
