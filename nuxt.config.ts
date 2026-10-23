@@ -21,6 +21,10 @@ export default defineNuxtConfig({
 
     resendApiKey: process.env.NUXT_RESEND_API_KEY,
     emailFrom: process.env.NUXT_EMAIL_FROM,
+
+    midtransServerKey: process.env.MIDTRANS_SERVER_KEY,
+    midtransClientKey: process.env.MIDTRANS_CLIENT_KEY,
+    midtransIsProduction: process.env.MIDTRANS_IS_PRODUCTION,
   },
 
   devtools: {
