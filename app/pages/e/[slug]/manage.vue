@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useEvents } from '@/composables/useEvents'
 import type { Event } from '~~/server/domain/types'
+import { useUserProfile } from '@/composables/useUserProfile'
+import z from 'zod'
+import type { FormSubmitEvent } from '@nuxt/ui'
 
 definePageMeta({
   middleware: 'auth',
@@ -16,6 +19,11 @@ const tabItems = computed(() => {
       label: 'Overview',
       value: 'overview',
       icon: 'i-lucide-layout-dashboard',
+    },
+    {
+      label: 'Registrasi',
+      value: 'registrasi',
+      icon: 'i-lucide-ticket',
     },
   ]
 
@@ -45,7 +53,11 @@ const selectedTab = computed({
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
-const { fetchBySlug, deleteEvent: apiDeleteEvent } = useEvents()
+const {
+  fetchBySlug,
+  updateRegistrationLimit: apiUpdateRegistrationLimit,
+  deleteEvent: apiDeleteEvent,
+} = useEvents()
 const { data: eventRes, error: eventError } = await fetchBySlug(eventSlug)
 
 if (eventError.value || !eventRes.value?.data) {
@@ -53,8 +65,6 @@ if (eventError.value || !eventRes.value?.data) {
 }
 
 const event = computed(() => eventRes.value!.data)
-
-import { useUserProfile } from '@/composables/useUserProfile'
 
 const { fetchProfile } = useUserProfile()
 const { data: profileRes } = await fetchProfile()
@@ -72,6 +82,56 @@ const isCreator = computed(
 
 if (!isCreator) {
   navigateTo('/')
+}
+
+const isSavingRegistration = ref(false)
+
+const eventLimitFormSchema = z.object({
+  enabled: z.boolean().default(false),
+  value: z.number().positive('batas registrasi harus positif.'),
+})
+
+type EventLimitFormShema = z.output<typeof eventLimitFormSchema>
+const eventLimitFormState = ref<EventLimitFormShema>({
+  enabled: false,
+  value: 1,
+})
+
+const registrationAlert = ref<{
+  title: string
+  type: 'success' | 'error'
+  message: string
+} | null>(null)
+
+async function saveRegistrationLimit(
+  eventId: number,
+  { data }: FormSubmitEvent<EventLimitFormShema>,
+) {
+  isSavingRegistration.value = true
+  registrationAlert.value = null
+  try {
+    const limit = data.enabled ? data.value : null
+    await apiUpdateRegistrationLimit(eventId, {
+      enabled: data.enabled,
+      limit,
+    })
+    registrationAlert.value = {
+      title: 'Berhasil',
+      type: 'success',
+      message: 'Batas pendaftaran berhasil disimpan.',
+    }
+  } catch (err: unknown) {
+    registrationAlert.value = {
+      title: 'Gagal',
+      type: 'error',
+      message:
+        err instanceof Error
+          ? err.message
+          : 'Gagal menyimpan batas pendaftaran.',
+    }
+  } finally {
+    isSavingRegistration.value = false
+  }
 }
 
 const isDeletingEvent = ref(false)
@@ -359,6 +419,107 @@ async function removeAttendee(id: number) {
                     </div>
                   </template>
                 </UModal>
+              </article>
+            </UCard>
+          </section>
+
+          <section v-else-if="item.value === 'registrasi'" class="space-y-6">
+            <UCard>
+              <template #header>
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-ticket" class="w-5 h-5" />
+                  <h2 class="text-lg font-bold text-on-surface">
+                    Batas Pendaftaran
+                  </h2>
+                </div>
+              </template>
+
+              <article class="space-y-4">
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                >
+                  <div>
+                    <h3 class="font-semibold text-on-surface">
+                      Batas maksimal peserta
+                    </h3>
+                    <p class="text-on-surface-variant">
+                      Batas registrasi saat ini
+                      {{
+                        !eventLimitFormState.enabled
+                          ? 'mati.'
+                          : `maksimal ${eventLimitFormState.value} peserta`
+                      }}
+                    </p>
+                  </div>
+
+                  <UModal title="Atur Batas Pendaftaran">
+                    <UButton
+                      type="button"
+                      color="primary"
+                      icon="i-lucide-settings-2"
+                    >
+                      Atur Batas
+                    </UButton>
+                    <template #body>
+                      <UAlert
+                        v-if="registrationAlert"
+                        :title="registrationAlert.title"
+                        :description="registrationAlert.message"
+                        :icon="
+                          registrationAlert.type === 'success'
+                            ? 'i-lucide-check-circle'
+                            : 'i-lucide-alert-circle'
+                        "
+                        :color="registrationAlert.type"
+                        class="mb-4"
+                        variant="subtle"
+                        close
+                        @update:open="
+                          (open) =>
+                            (registrationAlert = !open
+                              ? null
+                              : registrationAlert)
+                        "
+                      />
+                      <UForm
+                        class="space-y-4"
+                        :schema="eventLimitFormSchema"
+                        :state="eventLimitFormState"
+                        @submit="(e) => saveRegistrationLimit(event.id, e)"
+                      >
+                        <UFormField
+                          class="flex items-center justify-between"
+                          label="Aktifkan batas pendaftaran"
+                        >
+                          <USwitch
+                            v-model="eventLimitFormState.enabled"
+                            size="sm"
+                          />
+                        </UFormField>
+
+                        <UFormField
+                          v-show="eventLimitFormState.enabled"
+                          label="Batas maksimal pendaftar"
+                          hint="Minimal 1 peserta"
+                        >
+                          <UInputNumber
+                            v-model="eventLimitFormState.value"
+                            :min="1"
+                            class="w-full"
+                          />
+                        </UFormField>
+
+                        <UButton
+                          type="submit"
+                          color="primary"
+                          :loading="isSavingRegistration"
+                        >
+                          Simpan
+                        </UButton>
+                      </UForm>
+                    </template>
+                  </UModal>
+                </div>
               </article>
             </UCard>
           </section>

@@ -10,6 +10,7 @@ export interface Event {
   created_by: string
   created_at: string
   deleted_at?: string | null
+  registration_limit?: number | null
 }
 
 export type CreateEventInput = Omit<Event, 'id' | 'created_at'>

@@ -27,6 +27,30 @@ const isAdmin = computed(
   () => profile.value && ['admin', 'super_admin'].includes(profile.value.role),
 )
 
+const supabase = useSupabaseClient()
+
+// TODO: refactor into fetchEvents
+const { data: rsvpCountRes } = await useAsyncData(
+  `event-rsvp-count-${event.value?.id}`,
+  async () => {
+    if (!event.value?.id) return 0
+    const { count, error } = await supabase
+      .from('rsvps')
+      .select('*', { head: true, count: 'exact' })
+      .eq('event_id', event.value.id)
+      .eq('is_attending', true)
+    if (error) throw error
+    return count ?? 0
+  },
+)
+
+const attendingCount = computed(() => rsvpCountRes.value ?? 0)
+
+const isLimitReached = computed(() => {
+  if (!event.value?.registration_limit) return false
+  return attendingCount.value >= event.value.registration_limit
+})
+
 useSeoMeta({
   title: () => `${event.value?.title || 'Acara'} - RSVP`,
   description: () => event.value?.description || '',
@@ -231,6 +255,17 @@ async function handleAuthenticatedRsvp() {
             </div>
           </div>
 
+          <template v-else-if="isLimitReached">
+            <header>
+              <h3 class="text-xl font-bold text-on-surface">Kuota penuh</h3>
+
+              <p class="text-on-surface-variant mt-0.5">
+                Batas pendaftaran untuk acara ini telah tercapai. Silakan
+                hubungi penyelenggara untuk informasi selanjutnya.
+              </p>
+            </header>
+          </template>
+
           <!-- Authenticated Quick RSVP -->
           <template v-else-if="profile && !isAdmin">
             <header class="space-y-1">
@@ -255,6 +290,7 @@ async function handleAuthenticatedRsvp() {
               size="xl"
               class="w-full justify-center font-bold"
               icon="i-lucide-ticket"
+              :disabled="isLimitReached"
               @click="isConfirmOpen = true"
             >
               RSVP Sekarang
@@ -278,6 +314,7 @@ async function handleAuthenticatedRsvp() {
                   <UButton
                     color="primary"
                     :loading="isSubmitting"
+                    :disabled="isLimitReached"
                     @click="handleAuthenticatedRsvp"
                   >
                     Konfirmasi RSVP
@@ -352,6 +389,7 @@ async function handleAuthenticatedRsvp() {
                 size="lg"
                 class="w-full justify-center"
                 :loading="isSubmitting"
+                :disabled="isLimitReached"
               >
                 Konfirmasi RSVP
               </UButton>

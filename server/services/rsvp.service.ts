@@ -32,6 +32,17 @@ export class RsvpService {
       throw new Error('Acara tidak ditemukan')
     }
 
+    if (
+      event.registration_limit !== null &&
+      event.registration_limit !== undefined
+    ) {
+      const attendingRsvps = await this.rsvpRepo.findByEventId(input.eventId)
+      const attendingCount = attendingRsvps.filter((r) => r.is_attending).length
+      if (attendingCount >= event.registration_limit) {
+        throw new Error('Kuota penuh')
+      }
+    }
+
     const token = crypto.randomUUID()
     const rsvp = await this.rsvpRepo.create({
       event_id: input.eventId,

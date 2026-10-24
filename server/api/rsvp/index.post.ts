@@ -12,10 +12,19 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, (b) => bodySchema.parse(b))
   const service = await useRsvpService(event)
 
-  const rsvp = await service.createRsvp({
-    ...body,
-    origin: getRequestURL(event).origin,
-  })
+  try {
+    const rsvp = await service.createRsvp({
+      ...body,
+      origin: getRequestURL(event).origin,
+    })
 
-  return { success: true, token: rsvp.token }
+    return { success: true, token: rsvp.token }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Gagal membuat reservasi.'
+    const statusCode = message === 'Kuota penuh' ? 409 : 400
+    throw createError({
+      statusCode,
+      statusMessage: message,
+    })
+  }
 })

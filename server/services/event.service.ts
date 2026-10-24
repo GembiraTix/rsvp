@@ -18,6 +18,11 @@ export class EventService {
     return this.eventRepo.findAll()
   }
 
+  async getEventById(id: number): Promise<Event | null> {
+    this.logger.info('Fetching event by id', { id })
+    return this.eventRepo.findById(id)
+  }
+
   async getEventBySlug(slug: string): Promise<Event | null> {
     this.logger.info('Fetching event by slug', { slug })
     return this.eventRepo.findBySlug(slug)
@@ -83,6 +88,7 @@ export class EventService {
       endsAt?: string | null
       description?: string | null
       imageUrl?: string | null
+      registrationLimit?: number | null
     },
   ): Promise<Event> {
     const existing = await this.eventRepo.findById(id)
@@ -99,7 +105,24 @@ export class EventService {
       image_url: input.imageUrl || null,
     }
 
+    if (input.registrationLimit !== undefined) {
+      payload.registration_limit = input.registrationLimit
+    }
+
     this.logger.info('Updating event', { id, title: input.title, userId })
     return this.eventRepo.update(id, payload)
+  }
+
+  async updateRegistrationLimit(
+    id: number,
+    limit: number | null,
+  ): Promise<Event> {
+    const existing = await this.eventRepo.findById(id)
+    if (!existing) {
+      throw new Error('Acara tidak ditemukan')
+    }
+
+    this.logger.info('Updating event registration limit', { id, limit })
+    return this.eventRepo.updateRegistrationLimit(id, limit)
   }
 }
