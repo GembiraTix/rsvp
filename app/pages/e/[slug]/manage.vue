@@ -525,7 +525,6 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
             <UCard>
               <template #header>
                 <div class="flex items-center gap-2">
-                  <UIcon name="i-lucide-ticket" class="w-5 h-5" />
                   <h2 class="text-lg font-bold text-on-surface">
                     Batas Pendaftaran
                   </h2>

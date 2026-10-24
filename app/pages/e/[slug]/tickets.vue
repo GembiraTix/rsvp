@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { TicketType, TicketTypeKind } from '~~/server/domain/types'
+import type { TicketType } from '~~/server/domain/types'
 import { useEvents } from '@/composables/useEvents'
 import { useTicketTypes } from '@/composables/useTicketTypes'
-import { firstValidQty } from '@/composables/useTicketCart'
+import { useTicketCart, firstValidQty } from '@/composables/useTicketCart'
 
 const route = useRoute()
+const router = useRouter()
 const eventSlug = computed(() => route.params.slug as string)
 
 const { fetchBySlug } = useEvents()
@@ -46,20 +47,13 @@ function isSelectable(ticketType: TicketType) {
   return firstValidQty(ticketType) !== null
 }
 
-function quantityHint(ticketType: TicketType) {
-  const parts: string[] = []
-
-  if (ticketType.min_qty > 1) {
-    parts.push(`minimal ${ticketType.min_qty}`)
-  }
-
-  if (ticketType.multiple_of > 1) {
-    parts.push(`kelipatan ${ticketType.multiple_of}`)
-  }
-
-  parts.push(`maksimal ${ticketType.max_qty}`)
-
-  return parts.join(', ')
+function goToCheckout() {
+  const lines = selectedLines.value.map((line) => ({
+    ticketTypeId: line.ticketType.id,
+    qty: line.qty,
+  }))
+  const cartParam = encodeURIComponent(JSON.stringify(lines))
+  router.push(`/e/${eventSlug.value}/checkout?cart=${cartParam}`)
 }
 </script>
 
@@ -120,10 +114,6 @@ function quantityHint(ticketType: TicketType) {
 
               <p class="text-lg text-on-surface font-bold">
                 {{ formatRupiah(ticket.price) }}
-                <span class="text-xs"> · {{ quantityHint(ticket) }} </span>
-                <span v-if="ticket.capacity" class="text-xs">
-                  · kapasitas {{ ticket.capacity }}
-                </span>
               </p>
             </div>
 
@@ -222,7 +212,13 @@ function quantityHint(ticketType: TicketType) {
             </span>
           </div>
 
-          <UButton color="primary" size="lg" block disabled>
+          <UButton
+            color="primary"
+            size="lg"
+            block
+            :disabled="subtotal === 0"
+            @click="goToCheckout"
+          >
             Lanjut ke Pembayaran
           </UButton>
         </UCard>
