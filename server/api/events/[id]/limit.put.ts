@@ -28,18 +28,10 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, bodySchema.parse)
   const service = await useEventService(event)
 
-  const existing = await service.getEventById(id)
-  if (!existing) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Acara tidak ditemukan',
-    })
-  }
-
   const registrationLimit = body.enabled ? (body.limit ?? null) : null
 
   const updatedEvent = await service.updateRegistrationLimit(
-    existing.id,
+    id,
     registrationLimit,
   )
 
