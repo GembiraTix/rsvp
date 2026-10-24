@@ -97,21 +97,38 @@ const eventLimitFormState = ref<EventLimitFormShema>({
   value: 1,
 })
 
+const registrationAlert = ref<{
+  title: string
+  type: 'success' | 'error'
+  message: string
+} | null>(null)
+
 async function saveRegistrationLimit(
   eventId: number,
   { data }: FormSubmitEvent<EventLimitFormShema>,
 ) {
   isSavingRegistration.value = true
+  registrationAlert.value = null
   try {
     const limit = data.enabled ? data.value : null
     await apiUpdateRegistrationLimit(eventId, {
       enabled: data.enabled,
       limit,
     })
+    registrationAlert.value = {
+      title: 'Berhasil',
+      type: 'success',
+      message: 'Batas pendaftaran berhasil disimpan.',
+    }
   } catch (err: unknown) {
-    alert(
-      err instanceof Error ? err.message : 'Gagal menyimpan batas pendaftaran.',
-    )
+    registrationAlert.value = {
+      title: 'Gagal',
+      type: 'error',
+      message:
+        err instanceof Error
+          ? err.message
+          : 'Gagal menyimpan batas pendaftaran.',
+    }
   } finally {
     isSavingRegistration.value = false
   }
@@ -444,6 +461,26 @@ async function removeAttendee(id: number) {
                       Atur Batas
                     </UButton>
                     <template #body>
+                      <UAlert
+                        v-if="registrationAlert"
+                        :title="registrationAlert.title"
+                        :description="registrationAlert.message"
+                        :icon="
+                          registrationAlert.type === 'success'
+                            ? 'i-lucide-check-circle'
+                            : 'i-lucide-alert-circle'
+                        "
+                        :color="registrationAlert.type"
+                        class="mb-4"
+                        variant="subtle"
+                        close
+                        @update:open="
+                          (open) =>
+                            (registrationAlert = !open
+                              ? null
+                              : registrationAlert)
+                        "
+                      />
                       <UForm
                         class="space-y-4"
                         :schema="eventLimitFormSchema"
