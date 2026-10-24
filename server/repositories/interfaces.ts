@@ -15,6 +15,7 @@ export interface IEventRepository {
   create(payload: CreateEventInput): Promise<Event>
   update(id: number, payload: UpdateEventInput): Promise<Event>
   delete(id: number): Promise<void>
+  updateRegistrationLimit(id: number, limit: number | null): Promise<Event>
 }
 
 export interface IUserRepository {

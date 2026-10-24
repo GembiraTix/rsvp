@@ -10,12 +10,13 @@ export interface CreateEventBody {
 }
 
 export interface UpdateEventBody {
-  title: string
-  location: string
+  title?: string | null
+  location?: string | null
   startsAt?: string
   endsAt?: string | null
   description?: string | null
   imageUrl?: string | null
+  registrationLimit?: number | null
 }
 
 export function useEvents() {
@@ -49,6 +50,19 @@ export function useEvents() {
     })
   }
 
+  async function updateRegistrationLimit(
+    id: number,
+    body: { enabled: boolean; limit?: number | null },
+  ) {
+    return $fetch<{ success: boolean; data: Event }>(
+      `/api/events/${id}/limit`,
+      {
+        method: 'PUT',
+        body,
+      },
+    )
+  }
+
   async function uploadEventImage(file: File) {
     const formData = new FormData()
     formData.append('file', file)
@@ -67,6 +81,7 @@ export function useEvents() {
     fetchBySlug,
     createEvent,
     updateEvent,
+    updateRegistrationLimit,
     deleteEvent,
     uploadEventImage,
   }

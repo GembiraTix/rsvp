@@ -16,6 +16,11 @@ const updateEventSchema = z.object({
     .optional()
     .or(z.literal(''))
     .nullable(),
+  registrationLimit: z
+    .number()
+    .positive('Batas pendaftaran tidak boleh negatif.')
+    .optional()
+    .nullable(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -39,6 +44,7 @@ export default defineEventHandler(async (event) => {
       endsAt: body.endsAt,
       description: body.description,
       imageUrl: body.imageUrl,
+      registrationLimit: body.registrationLimit,
     })
 
     return { success: true, data: updatedEvent }
