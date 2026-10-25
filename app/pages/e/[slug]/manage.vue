@@ -2,8 +2,13 @@
 import { useEvents } from '@/composables/useEvents'
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useTicketTypes } from '@/composables/useTicketTypes'
-import type { FormSubmitEvent } from '@nuxt/ui'
-import type { Event, TicketType, TicketTypeKind } from '~~/server/domain/types'
+import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
+import type {
+  Event,
+  Rsvp,
+  TicketType,
+  TicketTypeKind,
+} from '~~/server/domain/types'
 import { z } from 'zod'
 
 definePageMeta({
@@ -170,6 +175,22 @@ const filteredAttendees = computed(() => {
       (a.organization && a.organization.toLowerCase().includes(q)),
   )
 })
+
+const attendeesColumns: TableColumn<Rsvp>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Nama',
+  },
+  {
+    accessorKey: 'email',
+    header: 'Email',
+  },
+  {
+    accessorKey: 'organization',
+    header: 'Organisasi',
+  },
+  { id: 'action', header: 'Aksi' },
+]
 
 function exportCSV() {
   if (!attendees.value || !event.value) return
@@ -406,14 +427,6 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
 
               <div class="flex items-center gap-3">
                 <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-download"
-                  @click="exportCSV"
-                >
-                  Ekspor CSV
-                </UButton>
-                <UButton
                   :to="`/e/${event.slug}`"
                   color="primary"
                   variant="soft"
@@ -432,92 +445,50 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
               </div>
             </div>
 
-            <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+            <UCard
+              class="border-outline"
+              :ui="{
+                body: 'p-0 sm:p-0',
+                header:
+                  'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3',
+              }"
+            >
               <template #header>
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                >
-                  <div>
-                    <h2 class="text-lg font-bold text-on-surface">
-                      Peserta Terdaftar ({{ attendees?.length || 0 }})
-                    </h2>
-                  </div>
-                  <div class="w-full sm:w-72">
-                    <UInput
-                      v-model="attendeeSearch"
-                      placeholder="Cari berdasarkan nama, email, organisasi..."
-                      icon="i-lucide-search"
-                      size="sm"
-                      class="w-full"
-                    />
-                  </div>
+                <h2 class="flex-1 text-lg font-bold text-on-surface">
+                  Peserta Terdaftar ({{ attendees?.length || 0 }})
+                </h2>
+                <div class="flex flex-1 gap-4 sm:w-72">
+                  <UInput
+                    v-model="attendeeSearch"
+                    placeholder="Cari berdasarkan nama, email, organisasi..."
+                    icon="i-lucide-search"
+                    class="w-full"
+                  />
+
+                  <UButton
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-download"
+                    class="min-w-fit"
+                    @click="exportCSV"
+                  >
+                    Ekspor CSV
+                  </UButton>
                 </div>
               </template>
 
-              <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead
-                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-                  >
-                    <tr>
-                      <th class="px-6 py-3">Nama Peserta</th>
-                      <th class="px-6 py-3">Email</th>
-                      <th class="px-6 py-3">Organisasi / Catatan</th>
-                      <th class="px-6 py-3">Status</th>
-                      <th class="px-6 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline">
-                    <tr
-                      v-for="att in filteredAttendees"
-                      :key="att.id"
-                      class="hover:bg-surface-container/50"
-                    >
-                      <td class="px-6 py-4 font-medium text-on-surface">
-                        {{ att.name }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant font-mono text-xs"
-                      >
-                        {{ att.email || '-' }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
-                      >
-                        {{ att.organization || '-' }}
-                      </td>
-                      <td class="px-6 py-4">
-                        <UBadge
-                          :color="att.is_attending ? 'primary' : 'neutral'"
-                          variant="subtle"
-                        >
-                          {{
-                            att.is_attending ? 'Terkonfirmasi' : 'Dibatalkan'
-                          }}
-                        </UBadge>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <UButton
-                          size="xs"
-                          color="error"
-                          variant="ghost"
-                          icon="i-lucide-trash-2"
-                          title="Hapus peserta"
-                          @click="removeAttendee(att.id)"
-                        />
-                      </td>
-                    </tr>
-                    <tr v-if="filteredAttendees.length === 0">
-                      <td
-                        colspan="5"
-                        class="px-6 py-8 text-center text-on-surface-variant"
-                      >
-                        Tidak ada peserta yang cocok dengan kriteria pencarian.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <UTable :data="filteredAttendees" :columns="attendeesColumns">
+                <template #action-cell="{ row }">
+                  <UButton
+                    size="xs"
+                    color="error"
+                    variant="ghost"
+                    icon="i-lucide-trash-2"
+                    title="Hapus peserta"
+                    @click="removeAttendee(row.original.id)"
+                  />
+                </template>
+              </UTable>
             </UCard>
           </section>
 
