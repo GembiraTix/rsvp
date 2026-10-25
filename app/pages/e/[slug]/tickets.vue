@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import type { TicketType } from '~~/server/domain/types'
 import { useEvents } from '@/composables/useEvents'
 import { useTicketTypes } from '@/composables/useTicketTypes'
-import { useTicketCart, firstValidQty } from '@/composables/useTicketCart'
+import { useTicketCart } from '@/composables/useTicketCart'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,28 +23,13 @@ const { fetchPublicByEvent } = useTicketTypes()
 const { data: ticketTypesRes } = await fetchPublicByEvent(eventSlug)
 
 const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
-
-const {
-  isSelected,
-  qtyOf,
-  select,
-  increment,
-  decrement,
-  remove,
-  canIncrement,
-  selectedLines,
-  subtotal,
-  totalQty,
-} = useTicketCart(ticketTypes)
+const { cart, totalQty, subtotal, selectedLines, select, remove } =
+  useTicketCart(ticketTypes)
 
 useSeoMeta({
   title: () => `${event.value?.title || 'Acara'} - Tiket`,
   description: () => event.value?.description || '',
 })
-
-function isSelectable(ticketType: TicketType) {
-  return firstValidQty(ticketType) !== null
-}
 
 function goToCheckout() {
   const lines = selectedLines.value.map((line) => ({
@@ -96,75 +80,14 @@ function goToCheckout() {
 
     <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <section class="lg:col-span-7 space-y-4">
-        <UCard v-for="ticket in ticketTypes" :key="ticket.id">
-          <div class="flex flex-col sm:flex-row sm:items-start gap-4">
-            <div class="flex-1 space-y-1">
-              <div class="flex items-center gap-2">
-                <h2 class="text-lg text-on-surface">
-                  {{ ticket.name }}
-                </h2>
-              </div>
-
-              <p
-                v-if="ticket.description"
-                class="text-sm text-on-surface-variant"
-              >
-                {{ ticket.description }}
-              </p>
-
-              <p class="text-lg text-on-surface font-bold">
-                {{ formatRupiah(ticket.price) }}
-              </p>
-            </div>
-
-            <div class="sm:w-64 shrink-0">
-              <UButton
-                v-if="!isSelected(ticket)"
-                color="primary"
-                variant="soft"
-                block
-                label="Pilih"
-                icon="i-lucide-add"
-                :disabled="!isSelectable(ticket)"
-                @click="select(ticket)"
-              />
-
-              <div v-else class="flex items-center justify-between gap-2">
-                <UButton
-                  size="xs"
-                  color="neutral"
-                  variant="soft"
-                  icon="i-lucide-minus"
-                  :aria-label="`Kurangi jumlah ${ticket.name}`"
-                  @click="decrement(ticket)"
-                />
-
-                <span class="font-mono font-semibold text-on-surface">
-                  {{ qtyOf(ticket) }}
-                </span>
-
-                <UButton
-                  size="xs"
-                  color="neutral"
-                  variant="soft"
-                  icon="i-lucide-plus"
-                  :aria-label="`Tambah jumlah ${ticket.name}`"
-                  :disabled="!canIncrement(ticket)"
-                  @click="increment(ticket)"
-                />
-
-                <UButton
-                  size="xs"
-                  color="error"
-                  variant="ghost"
-                  icon="i-lucide-trash-2"
-                  :aria-label="`Hapus ${ticket.name}`"
-                  @click="remove(ticket)"
-                />
-              </div>
-            </div>
-          </div>
-        </UCard>
+        <template v-for="cartLine of cart">
+          <TicketSelect
+            @select="select(cartLine.ticketType.id)"
+            @remove="remove(cartLine.ticketType.id)"
+            :line="cartLine"
+            v-model="cartLine.qty"
+          />
+        </template>
       </section>
 
       <section class="lg:col-span-5">

@@ -76,3 +76,76 @@ export type CreateTicketTypeInput = Omit<
 export type UpdateTicketTypeInput = Partial<
   Omit<CreateTicketTypeInput, 'event_id' | 'sort_order'>
 >
+
+export type OrderStatus =
+  | 'draft'
+  | 'pending'
+  | 'paid'
+  | 'cancelled'
+  | 'expired'
+  | 'refunded'
+  | 'partial_refund'
+  | 'failed'
+
+export type PaymentStatus =
+  | 'pending'
+  | 'awaiting_payment'
+  | 'settled'
+  | 'paid'
+  | 'cancelled'
+  | 'expired'
+  | 'failed'
+  | 'refunded'
+  | 'partial_refund'
+
+export interface Order {
+  id: string
+  order_number: string
+  event_id: number
+  user_id: string
+  subtotal: string
+  admin_fee: number
+  total: number | null
+  status: OrderStatus
+  payment_status: PaymentStatus
+  midtrans_order_id: string | null
+  midtrans_transaction_id: string | null
+  token: string
+  checkout_url: string | null
+  paid_at: string | null
+  expires_at: string
+  created_at: string
+  updated_at: string
+}
+
+export interface OrderItem {
+  id: number
+  order_id: string
+  ticket_type_id: number
+  qty: number
+  unit_price: number
+  total: number
+  attendee_data: Record<string, unknown>
+}
+
+export interface Ticket {
+  id: number
+  order_id: string
+  ticket_type_id: number
+  attendee_name: string
+  attendee_email: string
+  attendee_phone: string | null
+  token: string
+  fields: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface CreateOrderInput {
+  eventId: number
+  userId: string
+  lines: {
+    ticketTypeId: number
+    qty: number
+    unitPrice: number
+  }[]
+}

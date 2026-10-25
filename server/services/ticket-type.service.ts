@@ -80,6 +80,15 @@ export class TicketTypeService {
     return this.ticketTypeRepo.findActiveByEventId(event.id)
   }
 
+  async findByEventId(eventId: number): Promise<TicketType[]> {
+    const event = await this.eventRepo.findById(eventId)
+    if (!event) {
+      throw new Error('Acara tidak ditemukan')
+    }
+
+    return this.ticketTypeRepo.findByEventId(event.id)
+  }
+
   async createTicketType(
     eventId: number,
     currentUser: CurrentUser,

@@ -212,10 +212,10 @@ const ticketTypeFormSchema = z.object({
       value === '' || value === null || value === undefined ? undefined : value,
     z.coerce.number().int().positive().optional(),
   ),
-  min_qty: z.number().int().min(1, 'Jumlah minimal harus minimal 1.'),
-  max_qty: z.number().int().min(1, 'Jumlah maksimal harus minimal 1.'),
-  multiple_of: z.number().int().min(1, 'Kelipatan harus minimal 1.'),
-  is_active: z.boolean(),
+  minQty: z.number().int().min(1, 'Jumlah minimal harus minimal 1.'),
+  maxQty: z.number().int().min(1, 'Jumlah maksimal harus minimal 1.'),
+  multipleOf: z.number().int().min(1, 'Kelipatan harus minimal 1.'),
+  isActive: z.boolean(),
 })
 
 type TicketTypeForm = z.output<typeof ticketTypeFormSchema>
@@ -226,10 +226,10 @@ const ticketTypeFormState = reactive<TicketTypeForm>({
   kind: 'single',
   price: 0,
   capacity: undefined,
-  min_qty: 1,
-  max_qty: 10,
-  multiple_of: 1,
-  is_active: true,
+  minQty: 1,
+  maxQty: 10,
+  multipleOf: 1,
+  isActive: true,
 })
 
 const {
@@ -258,10 +258,10 @@ function resetTicketTypeForm() {
   ticketTypeFormState.kind = 'single'
   ticketTypeFormState.price = 0
   ticketTypeFormState.capacity = undefined
-  ticketTypeFormState.min_qty = 1
-  ticketTypeFormState.max_qty = 10
-  ticketTypeFormState.multiple_of = 1
-  ticketTypeFormState.is_active = true
+  ticketTypeFormState.minQty = 1
+  ticketTypeFormState.maxQty = 10
+  ticketTypeFormState.multipleOf = 1
+  ticketTypeFormState.isActive = true
 }
 
 function getErrorMessage(err: unknown, fallback: string) {
@@ -290,10 +290,10 @@ function openEditTicketTypeModal(ticket: TicketType) {
   ticketTypeFormState.kind = ticket.kind
   ticketTypeFormState.price = ticket.price
   ticketTypeFormState.capacity = ticket.capacity ?? undefined
-  ticketTypeFormState.min_qty = ticket.min_qty
-  ticketTypeFormState.max_qty = ticket.max_qty
-  ticketTypeFormState.multiple_of = ticket.multiple_of
-  ticketTypeFormState.is_active = ticket.is_active
+  ticketTypeFormState.minQty = ticket.min_qty
+  ticketTypeFormState.maxQty = ticket.max_qty
+  ticketTypeFormState.multipleOf = ticket.multiple_of
+  ticketTypeFormState.isActive = ticket.is_active
   isTicketTypeModalOpen.value = true
 }
 
@@ -817,7 +817,7 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                         required
                       >
                         <UInput
-                          v-model="ticketTypeFormState.min_qty"
+                          v-model="ticketTypeFormState.minQty"
                           type="number"
                           name="min_qty"
                           class="w-full"
@@ -831,7 +831,7 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                         required
                       >
                         <UInput
-                          v-model="ticketTypeFormState.max_qty"
+                          v-model="ticketTypeFormState.maxQty"
                           type="number"
                           name="max_qty"
                           class="w-full"
@@ -841,7 +841,7 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
 
                       <UFormField label="Kelipatan" name="multiple_of" required>
                         <UInput
-                          v-model="ticketTypeFormState.multiple_of"
+                          v-model="ticketTypeFormState.multipleOf"
                           type="number"
                           name="multiple_of"
                           class="w-full"
@@ -858,7 +858,7 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                       <USwitch
                         uncheckedIcon="i-lucide-x"
                         checkedIcon="i-lucide-check"
-                        v-model="ticketTypeFormState.is_active"
+                        v-model="ticketTypeFormState.isActive"
                         name="is_active"
                       />
                     </UFormField>

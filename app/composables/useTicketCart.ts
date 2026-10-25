@@ -1,23 +1,24 @@
 import type { TicketType } from '~~/server/domain/types'
 import { computed } from 'vue'
 
-export interface CartLine {
+export type CartLine = {
+  ticketType: TicketType
+  qty: number
+}
+
+export type SelectedCartLine = {
   ticketType: TicketType
   qty: number
   total: number
 }
 
 export interface TicketCart {
-  isSelected: (ticketType: TicketType) => boolean
-  qtyOf: (ticketType: TicketType) => number
-  select: (ticketType: TicketType) => void
-  increment: (ticketType: TicketType) => void
-  decrement: (ticketType: TicketType) => void
-  remove: (ticketType: TicketType) => void
-  canIncrement: (ticketType: TicketType) => boolean
-  selectedLines: ComputedRef<CartLine[]>
+  cart: Ref<CartLine[]>
+  selectedLines: ComputedRef<SelectedCartLine[]>
   subtotal: ComputedRef<number>
   totalQty: ComputedRef<number>
+  select(id: number): void
+  remove(id: number): void
 }
 
 export function firstValidQty(ticketType: TicketType): number | null {
@@ -32,82 +33,70 @@ export function firstValidQty(ticketType: TicketType): number | null {
   return qty
 }
 
-export function useTicketCart(ticketTypes: MaybeRefOrGetter<TicketType[]>): TicketCart {
-  const cart = ref<Record<number, number>>({})
+export function useTicketCart(iticketTypes: Ref<TicketType[]>): TicketCart {
+  const ticketTypes = ref<TicketType[]>(toValue(iticketTypes))
 
-  const list = computed(() => toValue(ticketTypes))
+  const cart = ref<CartLine[]>(
+    ticketTypes.value.map((t) => ({
+      ticketType: t,
+      qty: 0,
+    })),
+  )
 
-  const isSelected = (ticketType: TicketType) => {
-    return (cart.value[ticketType.id] ?? 0) > 0
-  }
-
-  const qtyOf = (ticketType: TicketType) => {
-    return cart.value[ticketType.id] ?? 0
-  }
-
-  const select = (ticketType: TicketType) => {
-    const valid = firstValidQty(ticketType)
-    if (valid === null) return
-    cart.value[ticketType.id] = valid
-  }
-
-  const increment = (ticketType: TicketType) => {
-    const current = cart.value[ticketType.id] ?? 0
-    const next = current + ticketType.multiple_of
-    if (next > ticketType.max_qty) return
-    cart.value[ticketType.id] = next
-  }
-
-  const decrement = (ticketType: TicketType) => {
-    const current = cart.value[ticketType.id] ?? 0
-    const next = current - ticketType.multiple_of
-    if (next < ticketType.min_qty) {
-      delete cart.value[ticketType.id]
-    } else {
-      cart.value[ticketType.id] = next
-    }
-  }
-
-  const remove = (ticketType: TicketType) => {
-    delete cart.value[ticketType.id]
-  }
-
-  const canIncrement = (ticketType: TicketType) => {
-    const current = cart.value[ticketType.id] ?? 0
-    return current + ticketType.multiple_of <= ticketType.max_qty
-  }
-
-  const selectedLines = computed<CartLine[]>(() => {
-    return list.value
-      .filter((t) => isSelected(t))
+  const selectedLines = computed(() => {
+    return cart.value
+      .filter((t) => t.qty > 0)
       .map((t) => {
-        const qty = qtyOf(t)
         return {
-          ticketType: t,
-          qty,
-          total: t.price * qty,
+          ticketType: t.ticketType,
+          qty: t.qty,
+          total: t.ticketType.price * t.qty,
         }
       })
   })
 
-  const subtotal = computed(() => {
-    return selectedLines.value.reduce((sum, line) => sum + line.total, 0)
+  const totalQty = computed(() => {
+    return cart.value.reduce((acc, line) => acc + line.qty, 0)
   })
 
-  const totalQty = computed(() => {
-    return selectedLines.value.reduce((sum, line) => sum + line.qty, 0)
+  const subtotal = computed(() => {
+    return cart.value.reduce(
+      (acc, line) => acc + line.ticketType.price * line.qty,
+      0,
+    )
   })
+
+  function select(id: number) {
+    const ticketType = ticketTypes.value.find((t) => t.id === id)
+    if (!ticketType) return
+
+    const nextValidQty = ticketType.multiple_of
+
+    cart.value = cart.value.map((c) => {
+      if (c.ticketType.id !== id) return c
+      return {
+        ticketType,
+        qty: nextValidQty,
+      }
+    })
+  }
+
+  function remove(id: number) {
+    cart.value = cart.value.map((c) => {
+      if (c.ticketType.id !== id) return c
+      return {
+        ...c,
+        qty: 0,
+      }
+    })
+  }
 
   return {
-    isSelected,
-    qtyOf,
-    select,
-    increment,
-    decrement,
-    remove,
-    canIncrement,
+    cart,
     selectedLines,
     subtotal,
     totalQty,
+    select,
+    remove,
   }
 }

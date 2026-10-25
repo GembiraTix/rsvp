@@ -10,6 +10,11 @@ import type {
   TicketType,
   CreateTicketTypeInput,
   UpdateTicketTypeInput,
+  Order,
+  OrderItem,
+  Ticket,
+  CreateOrderInput,
+  OrderStatus,
 } from '../domain/types'
 
 export interface IEventRepository {
@@ -63,4 +68,51 @@ export interface ITicketTypeRepository {
   update(id: number, payload: UpdateTicketTypeInput): Promise<TicketType>
   delete(id: number): Promise<void>
   hasOrders(ticketTypeId: number): Promise<boolean>
+}
+
+export interface IOrderRepository {
+  create(input: {
+    order_number: string
+    event_id: number
+    user_id: string
+    subtotal: number
+    admin_fee: number
+    total: number
+    expires_at: string
+    token: string
+  }): Promise<Order>
+  findById(id: string): Promise<Order | null>
+  findByUser(userId: string): Promise<Order[]>
+  updateStatus(id: string, status: OrderStatus): Promise<void>
+  findByMidtransOrderId(midtransOrderId: string): Promise<Order | null>
+  updateMidtrans(id: string, payload: {
+    midtrans_order_id: string
+    midtrans_transaction_id: string | null
+    checkout_url: string | null
+  }): Promise<void>
+}
+
+export interface ITicketRepository {
+  createOrderItems(input: {
+    order_id: string
+    items: {
+      ticket_type_id: number
+      qty: number
+      unit_price: number
+      total: number
+      attendee_data: Record<string, unknown>
+    }[]
+  }): Promise<OrderItem[]>
+  createTickets(input: {
+    order_id: string
+    user_id: string
+    items: {
+      ticket_type_id: number
+      qty: number
+      attendee_name: string
+      attendee_email: string
+      attendee_phone: string | null
+    }[]
+  }): Promise<Ticket[]>
+  findTicketsByOrderId(orderId: string): Promise<Ticket[]>
 }

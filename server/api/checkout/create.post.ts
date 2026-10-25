@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { useOrderService } from '#server/utils/order-service'
+import { useTicketTypeService } from '#server/utils/ticket-type-service'
 
 const checkoutSchema = z.object({
   eventId: z.coerce.number().positive(),
@@ -11,6 +13,14 @@ const checkoutSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
+  const { auth } = event.context
+  if (!auth.user) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Pengguna tidak terautentikasi.',
+    })
+  }
+
   const body = await readValidatedBody(event, (b) => checkoutSchema.parse(b))
 
   if (!body.lines || body.lines.length === 0) {
@@ -20,15 +30,46 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Stage 1 stub: return mock checkout data without auth, DB, or Midtrans.
-  // Real implementation (Stage 2) will create an order, call Midtrans Snap,
-  // and return the actual snapToken and redirectUrl.
-  return {
-    success: true,
-    data: {
-      orderId: 'STUB-ORDER-ID',
-      snapToken: 'STUB-SNAP-TOKEN',
-      redirectUrl: 'https://sandbox.midtrans.com/',
-    },
+  const orderService = await useOrderService(event)
+  const ticketTypeService = await useTicketTypeService(event)
+
+  const ticketTypes = await ticketTypeService.findByEventId(body.eventId)
+  const priceById = new Map<number, number>(
+    ticketTypes.map((t) => [t.id, t.price]),
+  )
+
+  const linesWithPrice = body.lines
+    .map((line) => {
+      const unitPrice = priceById.get(line.ticketTypeId) ?? 0
+      return {
+        ticketTypeId: line.ticketTypeId,
+        qty: line.qty,
+        unitPrice,
+      }
+    })
+    .filter((line) => line.unitPrice > 0)
+
+  try {
+    const result = await orderService.createOrder({
+      eventId: body.eventId,
+      userId: auth.user.sub,
+      lines: linesWithPrice,
+    })
+
+    return {
+      success: true,
+      data: {
+        orderId: result.order.id,
+        snapToken: result.snapToken,
+        redirectUrl: result.redirectUrl,
+      },
+    }
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : 'Gagal membuat pesanan.'
+    throw createError({
+      statusCode: message.includes('tidak ditemukan') ? 404 : 400,
+      statusMessage: message,
+    })
   }
 })
