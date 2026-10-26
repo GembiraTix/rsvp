@@ -23,7 +23,7 @@ const { fetchPublicByEvent } = useTicketTypes()
 const { data: ticketTypesRes } = await fetchPublicByEvent(eventSlug)
 
 const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
-const { cart, totalQty, subtotal, selectedLines, select, remove } =
+const { cart, totalQty, subtotal, selectedLines, encode, select, remove } =
   useTicketCart(ticketTypes)
 
 useSeoMeta({
@@ -32,11 +32,7 @@ useSeoMeta({
 })
 
 function goToCheckout() {
-  const lines = selectedLines.value.map((line) => ({
-    ticketTypeId: line.ticketType.id,
-    qty: line.qty,
-  }))
-  const cartParam = encodeURIComponent(JSON.stringify(lines))
+  const cartParam = encode(selectedLines.value)
   router.push(`/e/${eventSlug.value}/checkout?cart=${cartParam}`)
 }
 </script>

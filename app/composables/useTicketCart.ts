@@ -1,5 +1,6 @@
 import type { TicketType } from '~~/server/domain/types'
 import { computed } from 'vue'
+import { z } from 'zod'
 
 export type CartLine = {
   ticketType: TicketType
@@ -17,6 +18,8 @@ export interface TicketCart {
   selectedLines: ComputedRef<SelectedCartLine[]>
   subtotal: ComputedRef<number>
   totalQty: ComputedRef<number>
+  encode(selectedLines: SelectedCartLine[]): string
+  decode(param: string): CartLine[]
   select(id: number): void
   remove(id: number): void
 }
@@ -91,11 +94,61 @@ export function useTicketCart(iticketTypes: Ref<TicketType[]>): TicketCart {
     })
   }
 
+  /**
+   * encodes current cart value into URL-safe query parameter value.
+   * this is the opposide of decode
+   * */
+  function encode(selectedLines: SelectedCartLine[]): string {
+    const lines = selectedLines.map((line) => ({
+      ticketTypeId: line.ticketType.id,
+      qty: line.qty,
+    }))
+
+    const cartParam = encodeURIComponent(JSON.stringify(lines))
+    return cartParam
+  }
+
+  /**
+   * sets the cart value from provided parameter value.
+   * this is the opposite of encode
+   * */
+  function decode(param: string): CartLine[] {
+    if (!param) return []
+
+    const cartRaw = param
+
+    const cartSchema = z.array(
+      z.object({
+        ticketTypeId: z.number(),
+        qty: z.number(),
+      }),
+    )
+
+    const { data, error } = cartSchema.safeParse(JSON.parse(cartRaw))
+    if (error || !data) {
+      console.log(error)
+      throw createError('cart from query params is malformed') // TODO: better error handling
+    }
+
+    return data.map((d) => {
+      const ticketType = ticketTypes.value.find(
+        (tt) => tt.id === d.ticketTypeId,
+      )
+      if (!ticketType) {
+        throw createError('invalid ticket type id') // TODO: better error handling
+      }
+
+      return { ...d, ticketType }
+    })
+  }
+
   return {
     cart,
     selectedLines,
     subtotal,
     totalQty,
+    encode,
+    decode,
     select,
     remove,
   }
