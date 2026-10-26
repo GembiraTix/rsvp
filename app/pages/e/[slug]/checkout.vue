@@ -156,33 +156,17 @@ async function handleBayar() {
       class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
     >
       <section class="lg:col-span-7 space-y-4">
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold text-on-surface">Rincian Pesanan</h3>
-            </div>
-          </template>
+        <UCard title="Rincian pesanan">
           <div v-if="selectedLines.length === 0" class="p-6 text-center">
             <p class="text-on-surface-variant">Belum ada tiket yang dipilih.</p>
           </div>
+
           <ul v-else class="divide-y divide-outline">
-            <li
+            <TicketCheckoutLine
               v-for="line in selectedLines"
               :key="line.ticketType.id"
-              class="p-4 flex items-start justify-between gap-4"
-            >
-              <div>
-                <p class="font-medium text-on-surface">
-                  {{ line.ticketType.name }}
-                </p>
-                <p class="text-sm text-on-surface-variant">
-                  {{ line.qty }} × {{ formatRupiah(line.ticketType.price) }}
-                </p>
-              </div>
-              <p class="font-mono text-on-surface">
-                {{ formatRupiah(line.total) }}
-              </p>
-            </li>
+              :line="line"
+            />
           </ul>
         </UCard>
       </section>
@@ -201,15 +185,15 @@ async function handleBayar() {
             Belum ada tiket yang dipilih.
           </p>
 
-          <div
-            class="flex items-center justify-between pt-4 border-t border-outline"
-          >
+          <USeparator />
+
+          <div class="flex items-center justify-between">
             <span class="text-on-surface-variant">
               Subtotal ({{ totalQty }} tiket)
             </span>
-            <span class="text-xl font-bold text-on-surface">{{
-              formatRupiah(subtotal)
-            }}</span>
+            <span class="text-xl font-bold text-on-surface">
+              {{ formatRupiah(subtotal) }}
+            </span>
           </div>
 
           <UButton
