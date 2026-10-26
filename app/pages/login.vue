@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { StateMachine } from '~/utils/statemachine'
 
 useSeoMeta({
-  title: 'Masuk / Daftar - Admin Bursa Kerja FPCE',
+  title: 'Masuk / Daftar - GembiraTix',
 })
 
 const user = useSupabaseUser()
