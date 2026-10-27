@@ -11,6 +11,8 @@ import type {
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 import { nanoid } from 'nanoid'
+import midtrans from 'midtrans-client'
+import { z } from 'zod'
 
 const ORDER_EXPIRY_MINUTES = 30
 
@@ -113,53 +115,46 @@ export class OrderService {
     order: Order,
     lines: { ticketTypeId: number; qty: number; unitPrice: number }[],
   ): Promise<MidtransSnapResponse> {
-    const baseUrl = this.midtransConfig.isProduction
-      ? 'https://api.midtrans.com'
-      : 'https://api.sandbox.midtrans.com'
-
-    const authHeader =
-      'Basic ' +
-      Buffer.from(this.midtransConfig.serverKey + ':').toString('base64')
-
     const grossAmount = lines.reduce(
       (acc, line) => acc + line.unitPrice * line.qty,
       0,
     )
 
-    const response = await fetch(`${baseUrl}/v2/snap/transactions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Authorization: authHeader,
-      },
-      body: JSON.stringify({
-        transaction_details: {
-          order_id: `ORDER-${order.id}`,
-          gross_amount: grossAmount,
-        },
-        item_details: lines.map((line) => ({
-          id: String(line.ticketTypeId),
-          price: line.unitPrice,
-          qty: line.qty,
-          name: `Tiket #${line.ticketTypeId}`,
-        })),
-      }),
+    const snap = new midtrans.Snap({
+      isProduction: this.midtransConfig.isProduction,
+      serverKey: this.midtransConfig.serverKey,
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      this.logger.error('Midtrans Snap error', {
-        status: response.status,
-        body: errorText,
-      })
-      throw new Error('Gagal membuat transaksi pembayaran.')
+    const params = {
+      transaction_details: {
+        order_id: `ORDER-${order.id}`,
+        gross_amount: grossAmount,
+      },
+      item_details: lines.map((line) => ({
+        id: String(line.ticketTypeId),
+        name: `Tiket #${line.ticketTypeId}`,
+        price: line.unitPrice,
+        quantity: line.qty,
+      })),
     }
 
-    const data = (await response.json()) as {
-      token: string
-      redirect_url: string
+    this.logger.info('params: ', params)
+
+    const response = await snap.createTransaction(params)
+
+    const responseSchema = z
+      .object({
+        token: z.string(),
+        redirect_url: z.url(),
+      })
+      .required()
+    const { data, error } = responseSchema.safeParse(response)
+
+    if (error) {
+      console.error(response)
+      throw new Error('response is unexpected')
     }
+
     return {
       snapToken: data.token,
       redirectUrl: data.redirect_url,
