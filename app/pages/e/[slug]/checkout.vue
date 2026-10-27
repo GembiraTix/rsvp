@@ -38,9 +38,12 @@ onMounted(() => {
 
 // Checkout state
 type CheckoutResult = {
-  orderId: string
-  snapToken: string
-  redirectUrl: string
+  success: true
+  data: {
+    orderId: string
+    snapToken: string
+    redirectUrl: string
+  }
 }
 
 const isLoading = ref(false)
@@ -64,20 +67,20 @@ async function handleBayar() {
   checkoutResult.value = null
 
   try {
-    const res = await $fetch<{ orderId: string; snapToken: string; redirectUrl: string }>(
-      '/api/checkout/create',
-      {
-        method: 'POST',
-        body: {
-          eventId: event.value.id,
-          lines: selectedLines.value.map((l) => ({
-            ticketTypeId: l.ticketType.id,
-            qty: l.qty,
-          })),
-        },
+    const res = await $fetch<CheckoutResult>('/api/checkout/create', {
+      method: 'POST',
+      body: {
+        eventId: event.value.id,
+        lines: selectedLines.value.map((l) => ({
+          ticketTypeId: l.ticketType.id,
+          qty: l.qty,
+        })),
       },
-    )
+    })
+
     checkoutResult.value = res
+
+    navigateTo(checkoutResult.value.data.redirectUrl, { external: true })
   } catch (err: unknown) {
     checkoutError.value =
       err instanceof Error
@@ -128,14 +131,19 @@ async function handleBayar() {
 
     <template v-else-if="checkoutResult">
       <div class="bg-success/10 border border-success rounded-lg p-4">
-        <h2 class="text-lg font-bold text-on-surface">Pesanan Dibuat</h2>
+        <h2 class="text-lg font-bold text-on-surface">
+          Mengarahkan ke pembayaran...
+        </h2>
         <p class="text-on-surface-variant">
-          Pesanan Anda telah dibuat. Silakan lanjutkan ke pembayaran.
+          Kalau kamu tidak segera diarahkan ke halaman pembayaran, klik di bawah
+          ini.
         </p>
+
         <UButton
           color="primary"
-          :href="checkoutResult.redirectUrl"
-          target="_blank"
+          :to="checkoutResult.data.redirectUrl"
+          external
+          target="_self"
           class="mt-4 w-full"
         >
           Bayar
