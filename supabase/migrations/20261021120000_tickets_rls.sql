@@ -71,6 +71,16 @@ CREATE POLICY "Event owners and admins can manage ticket types"
     )
   );
 
+-- allow public reads to allow webhook calls
+create policy "Anyone can read orders by midtrans order id"
+  on "public"."orders"
+  as permissive
+  for select
+  to anon
+using ((midtrans_order_id IS NOT NULL));
+
+
+
 -- orders: users can read their own orders, admins can read all
 CREATE POLICY "Users can read their own orders"
   ON public.orders
@@ -91,7 +101,7 @@ CREATE POLICY "Users can update their own pending orders"
   ON public.orders
   FOR UPDATE
   TO authenticated
-  USING (auth.uid() = user_id AND status = 'draft')
+  USING (auth.uid() = user_id AND status = 'pending')
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Admins can manage all orders"
@@ -107,25 +117,31 @@ CREATE POLICY "Users can read their order items"
   FOR SELECT
   TO authenticated
   USING (
+  (
     EXISTS (
-      SELECT 1 FROM public.orders
-      WHERE orders.id = order_items.order_id
-      AND (orders.user_id = auth.uid() OR public.is_admin())
+        SELECT 1 FROM orders
+        WHERE (
+          (orders.user_id = auth.uid()) OR is_admin()
+        )
     )
-  );
+  )
+);
 
 CREATE POLICY "Users can create order items for their orders"
-  ON public.order_items
+  ON "public"."order_items"
+  AS permissive
   FOR INSERT
   TO authenticated
-  WITH CHECK (
+WITH CHECK (
+  (
     EXISTS (
-      SELECT 1 FROM public.orders
-      WHERE orders.id = order_items.order_id
-      AND orders.user_id = auth.uid()
-      AND orders.status = 'draft'
+      SELECT 1
+      FROM public.orders
+      WHERE (
+        (orders.id = order_items.order_id) AND (orders.user_id = auth.uid()) AND (orders.status = 'pending'::public.order_status))
     )
-  );
+  )
+);
 
 CREATE POLICY "Admins can manage order items"
   ON public.order_items

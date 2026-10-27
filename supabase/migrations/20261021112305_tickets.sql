@@ -159,7 +159,7 @@ alter table "public"."event_payment_settings" validate constraint "event_payment
 
 alter table "public"."event_payment_settings" add constraint "event_payment_settings_event_id_key" UNIQUE using index "event_payment_settings_event_id_key";
 
-alter table "public"."order_items" add constraint "order_items_order_id_fkey" FOREIGN KEY (order_id) REFERENCES public.orders(id) ON UPDATE CASCADE ON DELETE RESTRICT not valid;
+alter table "public"."order_items" add constraint "order_items_order_id_fkey" FOREIGN KEY (order_id) REFERENCES public.orders(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
 
 alter table "public"."order_items" validate constraint "order_items_order_id_fkey";
 
