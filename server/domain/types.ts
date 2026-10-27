@@ -145,7 +145,8 @@ export interface CreateOrderInput {
   userId: string
   lines: {
     ticketTypeId: number
-    qty: number
+    name: string
     unitPrice: number
+    qty: number
   }[]
 }

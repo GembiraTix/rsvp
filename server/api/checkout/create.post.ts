@@ -33,21 +33,23 @@ export default defineEventHandler(async (event) => {
   const orderService = await useOrderService(event)
   const ticketTypeService = await useTicketTypeService(event)
 
+  // TODO: decide what to do if we receive a request to check out tickets for an event that has none
   const ticketTypes = await ticketTypeService.findByEventId(body.eventId)
-  const priceById = new Map<number, number>(
-    ticketTypes.map((t) => [t.id, t.price]),
-  )
 
-  const linesWithPrice = body.lines
-    .map((line) => {
-      const unitPrice = priceById.get(line.ticketTypeId) ?? 0
-      return {
-        ticketTypeId: line.ticketTypeId,
-        qty: line.qty,
-        unitPrice,
-      }
-    })
-    .filter((line) => line.unitPrice > 0)
+  // turn IDs into ticket types
+  const linesWithPrice = body.lines.map((line) => {
+    const ticketType = ticketTypes.find((tt) => tt.id == line.ticketTypeId)
+
+    if (!ticketType) throw new Error('nonexistent ticket type id') // TODO: decide what to do if client sends a nonexistent ticketTypeId
+    if (ticketType.price < 0) throw new Error('invalid ticket type price')
+
+    return {
+      ticketTypeId: ticketType.id,
+      name: ticketType.name,
+      unitPrice: ticketType.price,
+      qty: line.qty,
+    }
+  })
 
   try {
     const result = await orderService.createOrder({

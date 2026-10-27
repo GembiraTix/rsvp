@@ -113,7 +113,7 @@ export class OrderService {
 
   private async createMidtransTransaction(
     order: Order,
-    lines: { ticketTypeId: number; qty: number; unitPrice: number }[],
+    lines: CreateOrderInput['lines'],
   ): Promise<MidtransSnapResponse> {
     const grossAmount = lines.reduce(
       (acc, line) => acc + line.unitPrice * line.qty,
@@ -132,7 +132,7 @@ export class OrderService {
       },
       item_details: lines.map((line) => ({
         id: String(line.ticketTypeId),
-        name: `Tiket #${line.ticketTypeId}`,
+        name: line.name,
         price: line.unitPrice,
         quantity: line.qty,
       })),
