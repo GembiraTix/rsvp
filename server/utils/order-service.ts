@@ -5,7 +5,7 @@ import { SupabaseTicketRepository } from '#server/repositories/supabase-ticket.r
 import { OrderService } from '#server/services/order.service'
 import { buildLogger } from '#server/services/logger.factory'
 
-function getMidtransConfig(): {
+export function getMidtransConfig(): {
   serverKey: string
   clientKey: string
   isProduction: boolean
