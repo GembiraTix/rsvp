@@ -13,6 +13,7 @@ import type { ILogger } from './logger.service'
 import { nanoid } from 'nanoid'
 import midtrans from 'midtrans-client'
 import { z } from 'zod'
+import { PostgrestError } from '@supabase/supabase-js'
 
 const ORDER_EXPIRY_MINUTES = 30
 
@@ -167,7 +168,21 @@ export class OrderService {
   }
 
   async findByMidtransOrderId(midtransOrderId: string): Promise<Order | null> {
-    return this.orderRepo.findByMidtransOrderId(midtransOrderId)
+    try {
+      const order = await this.orderRepo.findByMidtransOrderId(midtransOrderId)
+      return order
+    } catch (e) {
+      if (e instanceof PostgrestError) {
+        if (e.code === 'PGRST116') {
+          console.error(
+            `order with midtrans_order_id ${midtransOrderId} doesn't exist`,
+          )
+          return null
+        }
+      }
+    }
+
+    return null
   }
 
   async findById(id: string): Promise<Order | null> {

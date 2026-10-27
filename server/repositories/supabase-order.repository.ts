@@ -76,25 +76,27 @@ export class SupabaseOrderRepository implements IOrderRepository {
       .from('orders')
       .select('*')
       .eq('midtrans_order_id', midtransOrderId)
-      .maybeSingle()
+      .single()
 
     if (error) throw error
-    return (data ?? null) as unknown as Order | null
+
+    return data
   }
 
-  async updateMidtrans(id: string, payload: {
-    midtrans_order_id: string
-    midtrans_transaction_id: string | null
-    checkout_url: string | null
-  }): Promise<void> {
+  async updateMidtrans(
+    id: string,
+    payload: {
+      midtrans_order_id: string
+      midtrans_transaction_id: string | null
+      checkout_url: string | null
+    },
+  ): Promise<void> {
     const { error } = await this.client
       .from('orders')
       .update({
         midtrans_order_id: payload.midtrans_order_id,
-        midtrans_transaction_id: payload.midtrans_transaction_id as
-          | string
-          | undefined,
-        checkout_url: payload.checkout_url as string | undefined,
+        midtrans_transaction_id: payload.midtrans_transaction_id ?? undefined,
+        checkout_url: payload.checkout_url ?? undefined,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)

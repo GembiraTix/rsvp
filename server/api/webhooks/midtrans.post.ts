@@ -1,31 +1,35 @@
 import { useOrderService } from '#server/utils/order-service'
 import { mapMidtransStatusToOrder } from '#server/services/order.service'
 import crypto from 'node:crypto'
+import { z } from 'zod'
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
-  const serverKey = config.midtransServerKey as string
+  const { serverKey } = getMidtransConfig()
 
-  const body = await readBody(event)
+  const bodySchema = z.object({
+    order_id: z.string(),
+    status_code: z.string(),
+    gross_amount: z.string(),
+    signature_key: z.string(),
+  })
+  const { data, error } = await readValidatedBody(event, bodySchema.safeParse)
 
-  const { order_id, status_code, gross_amount, signature_key } = body as {
-    order_id?: string
-    status_code?: string
-    gross_amount?: string
-    signature_key?: string
+  if (error || !data) {
+    console.error('unexpected payment gateway notification: ', data)
+    return { success: false }
   }
 
-  // Verify Midtrans signature
+  const { order_id, status_code, gross_amount, signature_key } = data
+
+  console.log('verifying signature')
   const expectedSignature = crypto
-    .createHash('sha256')
-    .update(
-      `${order_id ?? ''}${status_code ?? ''}${gross_amount ?? ''}${serverKey}`,
-    )
+    .createHash('sha512')
+    .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
     .digest('hex')
 
-  const signatureValid = signature_key && expectedSignature === signature_key
+  const isSignatureValid = signature_key && expectedSignature === signature_key
 
-  if (!signatureValid) {
+  if (!isSignatureValid) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Invalid signature.',
@@ -33,12 +37,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const orderService = await useOrderService(event)
+  console.log('finding order ', order_id)
+  const order = await orderService.findByMidtransOrderId(order_id)
 
-  // Find order by Midtrans order ID (format: ORDER-{id})
-  const order = await orderService.findByMidtransOrderId(order_id ?? '')
+  if (!order) {
+    console.error('order not found')
+    return { success: false }
+  }
 
-  // Idempotency: if order already settled, return 200
-  if (order && order.payment_status === 'settled') {
+  // if order already settled, return 200
+  if (order.payment_status === 'settled') {
     return { success: true }
   }
 
@@ -46,11 +54,9 @@ export default defineEventHandler(async (event) => {
     status_code ?? 'pending',
   )
 
-  if (order) {
-    await orderService.updateStatus(order.id, orderStatus)
-
-    // Update payment_status too via repo would need extension; status is enough for now
-  }
+  await orderService.updateStatus(order.id, orderStatus)
+  console.log(`successfully updated order ${order.id} status to ${orderStatus}`)
+  // Update payment_status too via repo would need extension; status is enough for now
 
   return { success: true }
 })
