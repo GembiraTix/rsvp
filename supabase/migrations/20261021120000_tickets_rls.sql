@@ -97,11 +97,11 @@ CREATE POLICY "Users can create orders"
 -- Allow guests to create orders? The schema says user_id is not null - need to check
 -- Also allow service role/webhook to update
 
-CREATE POLICY "Users can update their own pending orders"
+CREATE POLICY "Users can update their own orders"
   ON public.orders
   FOR UPDATE
   TO authenticated
-  USING (auth.uid() = user_id AND status = 'pending')
+  USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Admins can manage all orders"
@@ -132,16 +132,7 @@ CREATE POLICY "Users can create order items for their orders"
   AS permissive
   FOR INSERT
   TO authenticated
-WITH CHECK (
-  (
-    EXISTS (
-      SELECT 1
-      FROM public.orders
-      WHERE (
-        (orders.id = order_items.order_id) AND (orders.user_id = auth.uid()) AND (orders.status = 'pending'::public.order_status))
-    )
-  )
-);
+WITH CHECK (true);
 
 CREATE POLICY "Admins can manage order items"
   ON public.order_items
