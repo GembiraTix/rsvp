@@ -48,17 +48,17 @@ export default defineEventHandler(async (event) => {
   // Idempotency: if order already settled, skip mutation
   const isSettled = order.payment_status === 'settled'
 
-  if (!isSettled) {
-    const { orderStatus, paymentStatus } =
-      mapMidtransStatusToOrder(transaction_status)
+  const { orderStatus, paymentStatus } =
+    mapMidtransStatusToOrder(transaction_status)
 
+  if (!isSettled) {
     await orderService.updateStatus(order.id, {
       status: orderStatus,
       payment_status: paymentStatus,
     })
   }
 
-  const finishStatus = isSettled ? 'paid' : transaction_status
+  const finishStatus = isSettled ? 'paid' : orderStatus
 
   return sendRedirect(
     event,

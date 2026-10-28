@@ -14,61 +14,53 @@ type OrderSummary = {
 const orderId = route.query.orderId as string | undefined
 const status = route.query.status as string | undefined
 
-const order = ref<OrderSummary | null>(null)
-const isLoading = ref(false)
+if (!orderId) {
+  navigateTo('/') // TODO
+}
 
-if (orderId) {
-  isLoading.value = true
-  $fetch<{ success: boolean, data: OrderSummary }>(`/api/orders/${orderId}`, {
-    method: 'GET'
-  })
-    .then((res) => {
-      if (res.success) {
-        order.value = res.data
-      }
-    })
-    .catch(() => {
-      // order fetch failure is non-fatal; still show status message
-    })
-    .finally(() => {
-      isLoading.value = false
-    })
+const order = ref<OrderSummary | null>(null)
+const {
+  data: orderRes,
+  error,
+  status: orderResStatus,
+} = useAsyncData(() =>
+  $fetch<{ success: boolean; data: OrderSummary }>(`/api/orders/${orderId}`, {
+    method: 'GET',
+  }),
+)
+
+if (orderRes.value && !error) {
+  order.value = orderRes.value.data
 }
 
 const statusLabels: Record<
   string,
-  { title: string, variant: 'error' | 'success' | 'warning' | 'info' }
+  { title: string; variant: 'error' | 'success' | 'warning' | 'info' }
 > = {
   paid: { title: 'Pembayaran berhasil', variant: 'success' },
   failed: { title: 'Pembayaran gagal', variant: 'error' },
   expired: { title: 'Pembayaran kadaluarsa', variant: 'error' },
   cancelled: { title: 'Pembayaran dibatalkan', variant: 'error' },
-  pending: { title: 'Pembayaran sedang diproses', variant: 'warning' }
+  pending: { title: 'Pembayaran sedang diproses', variant: 'warning' },
 }
 
 const statusKey = (status ?? 'pending') as keyof typeof statusLabels
-const pendingStatus = { title: 'Pembayaran sedang diproses', variant: 'warning' as const }
-const currentStatus = statusLabels[statusKey] ?? pendingStatus
+const pendingStatus = {
+  title: 'Pembayaran sedang diproses',
+  variant: 'warning' as const,
+}
+const currentStatus = computed(() => statusLabels[statusKey] ?? pendingStatus)
 </script>
 
 <template>
   <div class="py-8 max-w-5xl mx-auto px-4 space-y-8">
-    <UButton
-      to="/"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
-    >
+    <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left">
       Kembali ke beranda
     </UButton>
 
     <header class="space-y-2">
-      <h1 class="text-3xl font-bold text-on-surface">
-        Selesai
-      </h1>
-      <p class="text-on-surface-variant">
-        Status pembayaran pesanan Anda
-      </p>
+      <h1 class="text-3xl font-bold text-on-surface">Selesai</h1>
+      <p class="text-on-surface-variant">Status pembayaran pesanan Anda</p>
     </header>
 
     <UAlert
@@ -78,11 +70,14 @@ const currentStatus = statusLabels[statusKey] ?? pendingStatus
     >
       <template #description>
         <p v-if="status === 'paid' && order" class="text-on-surface-variant">
-          Pesanan Anda telah dibayar. Tiket akan segera tersedia untuk
-          dicek-in.
+          Pesanan Anda telah dibayar. Tiket akan segera tersedia untuk dicek-in.
         </p>
         <p
-          v-else-if="status === 'failed' || status === 'expired' || status === 'cancelled'"
+          v-else-if="
+            status === 'failed' ||
+            status === 'expired' ||
+            status === 'cancelled'
+          "
           class="text-on-surface-variant"
         >
           Pembayaran tidak berhasil. Silakan coba lagi atau hubungi
@@ -94,7 +89,7 @@ const currentStatus = statusLabels[statusKey] ?? pendingStatus
       </template>
     </UAlert>
 
-    <div v-if="order" class="space-y-4">
+    <div v-if="orderResStatus === 'success' && order" class="space-y-4">
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
@@ -122,7 +117,7 @@ const currentStatus = statusLabels[statusKey] ?? pendingStatus
       </UCard>
     </div>
 
-    <div v-else-if="isLoading" class="p-8 text-center">
+    <div v-else-if="orderResStatus === 'pending'" class="p-8 text-center">
       <USpinner />
     </div>
   </div>
