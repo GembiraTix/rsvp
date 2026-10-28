@@ -121,11 +121,12 @@ export interface Order {
 export interface OrderItem {
   id: number
   order_id: string
-  ticket_type_id: number
   qty: number
-  unit_price: number
+  ticket_type_id: number
   total: number
+  unit_price: number
   attendee_data: Record<string, unknown>
+  created_at: string
 }
 
 export interface Ticket {

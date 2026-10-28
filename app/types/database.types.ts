@@ -189,7 +189,7 @@ export type Database = {
           attendee_data: NonNullable<Json>
           created_at: string
           id: number
-          order_id: string | null
+          order_id: string
           qty: number
           ticket_type_id: number
           total: number
@@ -200,7 +200,7 @@ export type Database = {
           attendee_data: NonNullable<Json>
           created_at?: string
           id?: number
-          order_id?: string | null
+          order_id: string
           qty?: number
           ticket_type_id: number
           total: number
@@ -210,7 +210,7 @@ export type Database = {
           attendee_data?: NonNullable<Json>
           created_at?: string
           id?: number
-          order_id?: string | null
+          order_id?: string
           qty?: number
           ticket_type_id?: number
           total?: number

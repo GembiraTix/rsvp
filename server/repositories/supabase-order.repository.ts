@@ -62,7 +62,13 @@ export class SupabaseOrderRepository implements IOrderRepository {
     return (data ?? []) as unknown as Order[]
   }
 
-  async updateStatus(id: string, status: OrderStatus): Promise<void> {
+  async updateStatus(
+    id: string,
+    payload: {
+      status: OrderStatus
+      payment_status: PaymentStatus
+    },
+  ): Promise<void> {
     const { error } = await this.client
       .from('orders')
       .update({ status, updated_at: new Date().toISOString() })
@@ -81,6 +87,17 @@ export class SupabaseOrderRepository implements IOrderRepository {
     if (error) throw error
 
     return data
+  }
+
+  async findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]> {
+    const { data, error } = await this.client
+      .from('order_items')
+      .select('*')
+      .eq('order_id', orderId)
+
+    if (error) throw error
+
+    return data // TODO: add types Record<string, unknown> for jsonb columns
   }
 
   async updateMidtrans(
