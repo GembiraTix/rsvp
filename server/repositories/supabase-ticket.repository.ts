@@ -3,8 +3,7 @@ import type { Database } from '~/types/database.types'
 import type { ITicketRepository } from './interfaces'
 import type { OrderItem, Ticket } from '../domain/types'
 
-type OrderItemInsert =
-  Database['public']['Tables']['order_items']['Insert']
+type OrderItemInsert = Database['public']['Tables']['order_items']['Insert']
 type TicketInsert = Database['public']['Tables']['tickets']['Insert']
 
 export class SupabaseTicketRepository implements ITicketRepository {
@@ -36,6 +35,7 @@ export class SupabaseTicketRepository implements ITicketRepository {
       .insert(payload)
       .select('*')
 
+    console.log(error)
     if (error) throw error
     return (data ?? []) as unknown as OrderItem[]
   }
@@ -62,7 +62,8 @@ export class SupabaseTicketRepository implements ITicketRepository {
           attendee_email: item.attendee_email,
           attendee_phone: item.attendee_phone,
           checkin_by: input.user_id,
-          fields: {} as Database['public']['Tables']['tickets']['Insert']['fields'],
+          fields:
+            {} as Database['public']['Tables']['tickets']['Insert']['fields'],
         })
       }
     }

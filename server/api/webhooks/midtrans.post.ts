@@ -1,4 +1,5 @@
 import { useOrderService } from '#server/utils/order-service'
+import { useTicketService } from '#server/utils/ticket-service'
 import { mapMidtransStatusToOrder } from '#server/services/order.service'
 import crypto from 'node:crypto'
 import { z } from 'zod'
@@ -50,13 +51,43 @@ export default defineEventHandler(async (event) => {
     return { success: true }
   }
 
-  const { orderStatus, paymentStatus } = mapMidtransStatusToOrder(
-    status_code ?? 'pending',
-  )
+  const { orderStatus, paymentStatus } = mapMidtransStatusToOrder(status_code)
 
-  await orderService.updateStatus(order.id, orderStatus)
+  const isSettled = paymentStatus === 'settled' || paymentStatus === 'paid'
+
+  await orderService.updateStatus(order.id, {
+    status: orderStatus,
+    payment_status: paymentStatus,
+  })
   console.log(`successfully updated order ${order.id} status to ${orderStatus}`)
-  // Update payment_status too via repo would need extension; status is enough for now
+
+  // Issue tickets when payment is settled/paid (idempotent: skip if tickets exist)
+  if (isSettled) {
+    const ticketService = await useTicketService(event)
+    const existingTickets = await ticketService.findTicketsByOrderId(order.id)
+
+    if (existingTickets.length === 0) {
+      const orderItems = await orderService.findOrderItemsByOrderId(order.id)
+      const userProfile = await orderService.getUserProfile(order.user_id)
+
+      if (orderItems.length > 0 && userProfile) {
+        await ticketService.issueTickets({
+          orderId: order.id,
+          userId: order.user_id,
+          attendeeName: userProfile.name ?? 'Tamu',
+          attendeeEmail: userProfile.email ?? '',
+          attendeeEmailPhone: null,
+          items: orderItems.map((item) => ({
+            ticket_type_id: item.ticket_type_id,
+            qty: item.qty,
+          })),
+        })
+        console.log(
+          `tickets issued for order ${order.id} (${orderItems.length} line items)`,
+        )
+      }
+    }
+  }
 
   return { success: true }
 })

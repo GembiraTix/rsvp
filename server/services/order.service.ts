@@ -1,6 +1,7 @@
 import type {
   IOrderRepository,
   ITicketRepository,
+  IUserRepository,
 } from '#server/repositories/interfaces'
 import type {
   Order,
@@ -8,9 +9,11 @@ import type {
   CreateOrderInput,
   OrderStatus,
   PaymentStatus,
+  UserProfile,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 import { nanoid } from 'nanoid'
+// @ts-expect-error - midtrans-client has no type declarations
 import midtrans from 'midtrans-client'
 import { z } from 'zod'
 import { PostgrestError } from '@supabase/supabase-js'
@@ -32,9 +35,18 @@ export class OrderService {
   constructor(
     private readonly orderRepo: IOrderRepository,
     private readonly ticketRepo: ITicketRepository,
+    private readonly userRepo: IUserRepository,
     private readonly midtransConfig: MidtransConfig,
     private readonly logger: ILogger,
   ) {}
+
+  async findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]> {
+    return this.orderRepo.findOrderItemsByOrderId(orderId)
+  }
+
+  async getUserProfile(userId: string): Promise<UserProfile | null> {
+    return this.userRepo.findById(userId)
+  }
 
   async createOrder(input: CreateOrderInput): Promise<{
     order: Order
@@ -66,6 +78,8 @@ export class OrderService {
       total,
       expires_at: expiresAt,
       token,
+      status: 'draft',
+      payment_status: 'pending',
     })
 
     this.logger.info('Order created', {
@@ -98,6 +112,11 @@ export class OrderService {
       midtrans_order_id: `ORDER-${order.id}`,
       midtrans_transaction_id: null,
       checkout_url: redirectUrl,
+    })
+
+    await this.orderRepo.updateStatus(order.id, {
+      status: 'pending',
+      payment_status: 'pending',
     })
 
     return {
@@ -162,9 +181,22 @@ export class OrderService {
     }
   }
 
-  async updateStatus(id: string, status: OrderStatus): Promise<void> {
-    await this.orderRepo.updateStatus(id, status)
-    this.logger.info('Order status updated', { orderId: id, status })
+  async updateStatus(
+    id: string,
+    payload: {
+      status: OrderStatus
+      payment_status: PaymentStatus
+    },
+  ): Promise<void> {
+    await this.orderRepo.updateStatus(id, {
+      status: payload.status,
+      payment_status: payload.payment_status,
+    })
+    this.logger.info('Order status updated', {
+      orderId: id,
+      status: payload.status,
+      payment_status: payload.payment_status,
+    })
   }
 
   async findByMidtransOrderId(midtransOrderId: string): Promise<Order | null> {

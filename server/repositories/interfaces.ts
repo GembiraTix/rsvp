@@ -15,6 +15,7 @@ import type {
   Ticket,
   CreateOrderInput,
   OrderStatus,
+  PaymentStatus,
 } from '../domain/types'
 
 export interface IEventRepository {
@@ -80,16 +81,28 @@ export interface IOrderRepository {
     total: number
     expires_at: string
     token: string
+    status: OrderStatus
+    payment_status: PaymentStatus
   }): Promise<Order>
   findById(id: string): Promise<Order | null>
   findByUser(userId: string): Promise<Order[]>
-  updateStatus(id: string, status: OrderStatus): Promise<void>
+  updateStatus(
+    id: string,
+    payload: {
+      status: OrderStatus
+      payment_status: PaymentStatus
+    },
+  ): Promise<void>
   findByMidtransOrderId(midtransOrderId: string): Promise<Order | null>
-  updateMidtrans(id: string, payload: {
-    midtrans_order_id: string
-    midtrans_transaction_id: string | null
-    checkout_url: string | null
-  }): Promise<void>
+  findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]>
+  updateMidtrans(
+    id: string,
+    payload: {
+      midtrans_order_id: string
+      midtrans_transaction_id: string | null
+      checkout_url: string | null
+    },
+  ): Promise<void>
 }
 
 export interface ITicketRepository {

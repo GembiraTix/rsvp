@@ -1,7 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { IOrderRepository } from './interfaces'
-import type { Order, OrderStatus } from '../domain/types'
+import type {
+  Order,
+  OrderItem,
+  OrderStatus,
+  PaymentStatus,
+} from '../domain/types'
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert']
 
@@ -17,6 +22,8 @@ export class SupabaseOrderRepository implements IOrderRepository {
     total: number
     expires_at: string
     token: string
+    status: OrderStatus
+    payment_status: PaymentStatus
   }): Promise<Order> {
     const payload: OrderInsert = {
       order_number: input.order_number,
@@ -28,6 +35,8 @@ export class SupabaseOrderRepository implements IOrderRepository {
       expires_at: input.expires_at,
       token: input.token,
       checkout_url: '',
+      status: input.status,
+      payment_status: input.payment_status,
     }
 
     const { data, error } = await this.client
@@ -71,7 +80,11 @@ export class SupabaseOrderRepository implements IOrderRepository {
   ): Promise<void> {
     const { error } = await this.client
       .from('orders')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update({
+        status: payload.status,
+        payment_status: payload.payment_status,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', id)
 
     if (error) throw error
