@@ -251,7 +251,7 @@ export type Database = {
           refund_amount: number | null
           refunded_at: string | null
           status: Database['public']['Enums']['order_status']
-          subtotal: string
+          subtotal: number
           token: string
           total: number | null
           updated_at: string
@@ -275,7 +275,7 @@ export type Database = {
           refund_amount?: number | null
           refunded_at?: string | null
           status?: Database['public']['Enums']['order_status']
-          subtotal: string
+          subtotal?: number
           token: string
           total?: number | null
           updated_at?: string
@@ -298,7 +298,7 @@ export type Database = {
           refund_amount?: number | null
           refunded_at?: string | null
           status?: Database['public']['Enums']['order_status']
-          subtotal?: string
+          subtotal?: number
           token?: string
           total?: number | null
           updated_at?: string

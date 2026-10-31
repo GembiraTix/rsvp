@@ -45,7 +45,7 @@ alter table "public"."order_items" enable row level security;
     "paid_at" timestamp with time zone,
     "expires_at" timestamp with time zone not null,
     "payment_method" text,
-    "subtotal" timestamp with time zone not null,
+    "subtotal" bigint not null default 0,
     "admin_fee" bigint not null default '0'::bigint,
     "total" bigint,
     "status" public.order_status not null default 'pending'::public.order_status,

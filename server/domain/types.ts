@@ -103,7 +103,7 @@ export interface Order {
   order_number: string
   event_id: number
   user_id: string
-  subtotal: string
+  subtotal: number
   admin_fee: number
   total: number | null
   status: OrderStatus

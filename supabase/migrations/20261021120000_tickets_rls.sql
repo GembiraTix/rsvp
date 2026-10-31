@@ -71,16 +71,6 @@ CREATE POLICY "Event owners and admins can manage ticket types"
     )
   );
 
--- allow public reads to allow webhook calls
-create policy "Anyone can read orders by midtrans order id"
-  on "public"."orders"
-  as permissive
-  for select
-  to anon
-using ((midtrans_order_id IS NOT NULL));
-
-
-
 -- orders: users can read their own orders, admins can read all
 CREATE POLICY "Users can read their own orders"
   ON public.orders
@@ -96,13 +86,6 @@ CREATE POLICY "Users can create orders"
 
 -- Allow guests to create orders? The schema says user_id is not null - need to check
 -- Also allow service role/webhook to update
-
-CREATE POLICY "Users can update their own orders"
-  ON public.orders
-  FOR UPDATE
-  TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Admins can manage all orders"
   ON public.orders
@@ -132,7 +115,14 @@ CREATE POLICY "Users can create order items for their orders"
   AS permissive
   FOR INSERT
   TO authenticated
-WITH CHECK (true);
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM "public"."orders"
+      WHERE "orders"."id" = "order_items"."order_id"
+        AND "orders"."user_id" = auth.uid()
+        AND "orders"."status" = 'pending'
+    )
+  );
 
 CREATE POLICY "Admins can manage order items"
   ON public.order_items
