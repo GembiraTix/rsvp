@@ -3,6 +3,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useEvents } from '@/composables/useEvents'
 import { useRsvp } from '@/composables/useRsvp'
+import { useTicketTypes } from '@/composables/useTicketTypes'
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
@@ -22,6 +23,16 @@ if (error.value || !eventRes.value?.data) {
 }
 
 const event = computed(() => eventRes.value!.data)
+
+const { fetchPublicByEvent } = useTicketTypes()
+const { data: ticketTypesRes } = await fetchPublicByEvent(eventSlug)
+const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
+const hasTickets = computed(() => ticketTypes.value.length > 0)
+const lowestPrice = computed(() =>
+  hasTickets.value
+    ? Math.min(...ticketTypes.value.map((tt) => tt.price))
+    : null,
+)
 
 const isAdmin = computed(
   () => profile.value && ['admin', 'super_admin'].includes(profile.value.role),
@@ -267,7 +278,28 @@ async function handleAuthenticatedRsvp() {
             </header>
           </template>
 
-          <!-- Authenticated Quick RSVP -->
+          <div v-if="hasTickets" class="space-y-3">
+            <header class="flex justify-between">
+              <h2 class="text-xl font-bold text-on-surface">Beli tiket</h2>
+              <p class="text-on-surface-variant">
+                Mulai dari
+                <span class="font-bold text-on-surface">
+                  {{ formatRupiah(lowestPrice ?? 0) }}
+                </span>
+              </p>
+            </header>
+
+            <UButton
+              :to="`/e/${event.slug}/tickets`"
+              color="primary"
+              size="xl"
+              label="Beli Tiket"
+              icon="i-lucide-ticket"
+              block
+            />
+          </div>
+
+          <!-- authenticated RSVP -->
           <template v-else-if="profile && !isAdmin">
             <header class="space-y-1">
               <h2 class="text-xl font-bold text-on-surface">RSVP Cepat</h2>
@@ -289,7 +321,7 @@ async function handleAuthenticatedRsvp() {
             <UButton
               color="primary"
               size="xl"
-              class="w-full justify-center font-bold"
+              block
               icon="i-lucide-ticket"
               :disabled="isLimitReached"
               @click="isConfirmOpen = true"
