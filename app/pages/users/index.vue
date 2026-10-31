@@ -75,6 +75,32 @@ const organizedEvents = computed(() =>
     : [],
 )
 
+import { useOrders } from '@/composables/useOrders'
+import type { OrderWithEvent } from '~~/server/domain/types'
+
+const { fetchOrders, resumePayment } = useOrders()
+
+const { data: ordersRes, error: ordersError } = await fetchOrders()
+const orders = computed(() => ordersRes.value?.data ?? [])
+
+const resumingOrderId = ref<string | null>(null)
+const resumeErrorMessage = ref('')
+
+async function handleResumePayment(order: OrderWithEvent) {
+  resumingOrderId.value = order.id
+  resumeErrorMessage.value = ''
+  try {
+    const res = await resumePayment(order.id)
+    await navigateTo(res.data.redirectUrl, { external: true })
+  } catch (err: unknown) {
+    resumeErrorMessage.value =
+      (err as { statusCode?: number; statusMessage?: string })?.statusMessage ||
+      'Gagal melanjutkan pembayaran.'
+  } finally {
+    resumingOrderId.value = null
+  }
+}
+
 const { data: joinedRsvps } = await useAsyncData(
   `joined-rsvps-${user.value?.email}`,
   async () => {
@@ -98,6 +124,10 @@ const tabItems = [
   {
     label: 'Acara',
     value: 'acara',
+  },
+  {
+    label: 'Pesanan',
+    value: 'pesanan',
   },
   {
     label: 'Akun',
@@ -131,6 +161,106 @@ async function handleLogout() {
       class="gap-y-6"
     >
       <template #content="{ item }">
+        <div v-if="item.value === 'pesanan'" class="space-y-4">
+          <UAlert
+            v-if="resumeErrorMessage"
+            :title="resumeErrorMessage"
+            icon="i-lucide-alert-circle"
+            color="error"
+            variant="subtle"
+            class="my-4"
+            close
+            @update:open="resumeErrorMessage = ''"
+          />
+
+          <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+            <div v-if="orders.length > 0" class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead
+                  class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
+                >
+                  <tr>
+                    <th class="px-6 py-3">Acara</th>
+                    <th class="px-6 py-3">No. Pesanan</th>
+                    <th class="px-6 py-3">Tanggal</th>
+                    <th class="px-6 py-3">Total</th>
+                    <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline">
+                  <tr
+                    v-for="order in orders"
+                    :key="order.id"
+                    class="hover:bg-surface-container/50"
+                  >
+                    <td class="px-6 py-4 font-medium text-on-surface">
+                      {{ order.event?.title || 'Acara' }}
+                    </td>
+                    <td
+                      class="px-6 py-4 font-mono text-xs text-on-surface-variant"
+                    >
+                      #{{ order.order_number }}
+                    </td>
+                    <td class="px-6 py-4 text-on-surface-variant">
+                      {{ formatDate(order.created_at) }}
+                    </td>
+                    <td class="px-6 py-4 text-on-surface">
+                      {{ formatRupiah(order.total ?? 0) }}
+                    </td>
+                    <td class="px-6 py-4">
+                      <UBadge
+                        :color="orderStatusStyle(order.status).color"
+                        variant="subtle"
+                        size="sm"
+                      >
+                        {{ orderStatusStyle(order.status).label }}
+                      </UBadge>
+                    </td>
+                    <td
+                      class="px-6 py-4 text-right space-x-2 whitespace-nowrap"
+                    >
+                      <UButton
+                        v-if="isOrderPayable(order)"
+                        size="xs"
+                        color="primary"
+                        :loading="resumingOrderId === order.id"
+                        @click="handleResumePayment(order)"
+                      >
+                        Lanjutkan Pembayaran
+                      </UButton>
+                      <UButton
+                        :to="`/users/orders/${order.id}`"
+                        size="xs"
+                        color="neutral"
+                        variant="outline"
+                      >
+                        Detail
+                      </UButton>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <UEmpty
+              v-else
+              icon="i-lucide-receipt-text"
+              :title="
+                ordersError
+                  ? 'Gagal memuat pesanan.'
+                  : 'Anda belum memiliki pesanan apa pun.'
+              "
+            >
+              <template #actions>
+                <UButton to="/" color="neutral" variant="outline" size="sm">
+                  Jelajahi Acara Publik
+                </UButton>
+              </template>
+            </UEmpty>
+          </UCard>
+        </div>
+
         <div v-if="item.value === 'akun'" class="space-y-6">
           <UCard>
             <template #header>

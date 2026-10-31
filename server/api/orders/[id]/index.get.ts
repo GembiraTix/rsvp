@@ -38,11 +38,10 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Pesanan tidak ditemukan.',
     })
   }
+  const isOwner = order.user_id === auth.user.sub
+  const isAdmin = ['admin', 'super_admin'].includes(auth.role ?? 'user')
 
-  if (
-    order.user_id !== auth.user.sub ||
-    !['admin', 'super_admin'].includes(auth.role ?? 'user')
-  ) {
+  if (!(isOwner || isAdmin)) {
     throw createError({
       statusCode: 403,
       statusMessage: 'Anda tidak memiliki izin untuk melihat pesanan ini.',
