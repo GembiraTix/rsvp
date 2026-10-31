@@ -1,4 +1,4 @@
-import { useOrderService } from '#server/utils/order-service'
+import { useOrderService, getMidtransConfig } from '#server/utils/order-service'
 import { useTicketService } from '#server/utils/ticket-service'
 import { mapMidtransStatusToOrder } from '#server/services/order.service'
 import crypto from 'node:crypto'
@@ -74,6 +74,7 @@ export default defineEventHandler(async (event) => {
         await ticketService.issueTickets({
           orderId: order.id,
           userId: order.user_id,
+          eventId: order.event_id,
           attendeeName: userProfile.name ?? 'Tamu',
           attendeeEmail: userProfile.email ?? '',
           attendeeEmailPhone: null,

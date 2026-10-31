@@ -65,6 +65,25 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
     return data
   }
 
+  async createBatch(input: {
+    items: {
+      event_id: number
+      name: string
+      email: string | null
+      organization: string | null
+      token: string
+      is_attending: boolean
+    }[]
+  }): Promise<Rsvp[]> {
+    const { data, error } = await this.client
+      .from('rsvps')
+      .insert(input.items)
+      .select('*')
+
+    if (error) throw error
+    return (data ?? []) as unknown as Rsvp[]
+  }
+
   async delete(id: number): Promise<void> {
     const { error } = await this.client.from('rsvps').delete().eq('id', id)
 
