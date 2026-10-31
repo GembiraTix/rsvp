@@ -118,6 +118,18 @@ export interface Order {
   updated_at: string
 }
 
+export interface OrderEventSummary {
+  id: number
+  slug: string
+  title: string | null
+  starts_at: string | null
+  location: string | null
+}
+
+export interface OrderWithEvent extends Order {
+  event: OrderEventSummary | null
+}
+
 export interface OrderItem {
   id: number
   order_id: string
@@ -138,7 +150,12 @@ export interface Ticket {
   attendee_phone: string | null
   token: string
   fields: Record<string, unknown> | null
+  checkin_at: string | null
   created_at: string
+}
+
+export interface TicketWithTypeName extends Ticket {
+  ticket_type_name: string | null
 }
 
 export interface CreateOrderInput {

@@ -6,6 +6,7 @@ import type {
 import type {
   Order,
   OrderItem,
+  OrderWithEvent,
   CreateOrderInput,
   UserProfile,
 } from '#server/domain/types'
@@ -17,6 +18,26 @@ import { z } from 'zod'
 import { PostgrestError } from '@supabase/supabase-js'
 
 const ORDER_EXPIRY_MINUTES = 30
+
+export class OrderNotPayableError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+  ) {
+    super(message)
+  }
+}
+
+interface SnapTransactionParams {
+  midtransOrderId: string
+  grossAmount: number
+  itemDetails: {
+    id: string
+    name: string
+    price: number
+    quantity: number
+  }[]
+}
 
 export interface MidtransConfig {
   serverKey: string
@@ -70,10 +91,16 @@ export class OrderService {
 
     const orderId = crypto.randomUUID()
 
-    const { snapToken, redirectUrl } = await this.createMidtransTransaction(
-      orderId,
-      lines,
-    )
+    const { snapToken, redirectUrl } = await this.createMidtransTransaction({
+      midtransOrderId: `ORDER-${orderId}`,
+      grossAmount: subtotal,
+      itemDetails: lines.map((line) => ({
+        id: String(line.ticketTypeId),
+        name: line.name,
+        price: line.unitPrice,
+        quantity: line.qty,
+      })),
+    })
 
     const order = await this.orderRepo.create({
       id: orderId,
@@ -119,14 +146,8 @@ export class OrderService {
   }
 
   private async createMidtransTransaction(
-    orderId: string,
-    lines: CreateOrderInput['lines'],
+    params: SnapTransactionParams,
   ): Promise<MidtransSnapResponse> {
-    const grossAmount = lines.reduce(
-      (acc, line) => acc + line.unitPrice * line.qty,
-      0,
-    )
-
     const snap = new midtrans.Snap({
       isProduction: this.midtransConfig.isProduction,
       serverKey: this.midtransConfig.serverKey,
@@ -134,17 +155,12 @@ export class OrderService {
 
     const finishUrl = `${this.midtransConfig.appUrl}/api/checkout/finish`
 
-    const params = {
+    const transactionParams = {
       transaction_details: {
-        order_id: `ORDER-${orderId}`,
-        gross_amount: grossAmount,
+        order_id: params.midtransOrderId,
+        gross_amount: params.grossAmount,
       },
-      item_details: lines.map((line) => ({
-        id: String(line.ticketTypeId),
-        name: line.name,
-        price: line.unitPrice,
-        quantity: line.qty,
-      })),
+      item_details: params.itemDetails,
       callbacks: {
         finish: finishUrl,
         unfinish: finishUrl,
@@ -152,9 +168,9 @@ export class OrderService {
       },
     }
 
-    this.logger.info('params: ', params)
+    this.logger.info('params: ', transactionParams)
 
-    const response = await snap.createTransaction(params)
+    const response = await snap.createTransaction(transactionParams)
 
     const responseSchema = z
       .object({
@@ -197,7 +213,40 @@ export class OrderService {
     return this.orderRepo.findById(id)
   }
 
-  async findByUser(userId: string): Promise<Order[]> {
+  async findByUser(userId: string): Promise<OrderWithEvent[]> {
     return this.orderRepo.findByUser(userId)
+  }
+
+  async resumeCheckout(order: Order): Promise<MidtransSnapResponse> {
+    if (order.status !== 'pending') {
+      throw new OrderNotPayableError('Pesanan tidak dapat dibayar.', 409)
+    }
+
+    if (new Date(order.expires_at).getTime() <= Date.now()) {
+      await this.orderRepo.updateStatus(
+        order.id,
+        { status: 'expired', payment_status: 'expired' },
+        { onlyIfPaymentStatusIn: ['pending', 'awaiting_payment'] },
+      )
+      throw new OrderNotPayableError('Pesanan telah kedaluwarsa.', 410)
+    }
+
+    const grossAmount = order.total ?? order.subtotal + order.admin_fee
+    const { redirectUrl } = await this.createMidtransTransaction({
+      midtransOrderId: order.midtrans_order_id ?? `ORDER-${order.id}`,
+      grossAmount,
+      itemDetails: [
+        {
+          id: order.order_number,
+          name: order.order_number,
+          price: grossAmount,
+          quantity: 1,
+        },
+      ],
+    })
+
+    await this.orderRepo.updateCheckoutUrl(order.id, redirectUrl)
+
+    return { snapToken: '', redirectUrl }
   }
 }

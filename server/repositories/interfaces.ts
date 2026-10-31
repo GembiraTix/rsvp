@@ -13,6 +13,8 @@ import type {
   Order,
   OrderItem,
   Ticket,
+  OrderWithEvent,
+  TicketWithTypeName,
   OrderStatus,
   PaymentStatus,
 } from '../domain/types'
@@ -97,7 +99,7 @@ export interface IOrderRepository {
     payment_status: PaymentStatus
   }): Promise<Order>
   findById(id: string): Promise<Order | null>
-  findByUser(userId: string): Promise<Order[]>
+  findByUser(userId: string): Promise<OrderWithEvent[]>
   updateStatus(
     id: string,
     payload: {
@@ -111,6 +113,7 @@ export interface IOrderRepository {
       unlessPaymentStatusIn?: PaymentStatus[]
     },
   ): Promise<boolean>
+  updateCheckoutUrl(id: string, checkoutUrl: string): Promise<void>
   findByMidtransOrderId(midtransOrderId: string): Promise<Order | null>
   findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]>
 }
@@ -153,5 +156,5 @@ export interface ITicketRepository {
       attendee_phone: string | null
     }[]
   }): Promise<Ticket[]>
-  findTicketsByOrderId(orderId: string): Promise<Ticket[]>
+  findTicketsByOrderId(orderId: string): Promise<TicketWithTypeName[]>
 }

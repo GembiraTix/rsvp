@@ -4,6 +4,7 @@ import type { IOrderRepository } from './interfaces'
 import type {
   Order,
   OrderItem,
+  OrderWithEvent,
   OrderStatus,
   PaymentStatus,
 } from '../domain/types'
@@ -65,15 +66,24 @@ export class SupabaseOrderRepository implements IOrderRepository {
     return (data ?? null) as unknown as Order | null
   }
 
-  async findByUser(userId: string): Promise<Order[]> {
+  async findByUser(userId: string): Promise<OrderWithEvent[]> {
     const { data, error } = await this.client
       .from('orders')
-      .select('*')
+      .select('*, event:events(id, slug, title, starts_at, location)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
     if (error) throw error
-    return (data ?? []) as unknown as Order[]
+    return (data ?? []) as unknown as OrderWithEvent[]
+  }
+
+  async updateCheckoutUrl(id: string, checkoutUrl: string): Promise<void> {
+    const { error } = await this.client
+      .from('orders')
+      .update({ checkout_url: checkoutUrl, updated_at: new Date().toISOString() })
+      .eq('id', id)
+
+    if (error) throw error
   }
 
   async updateStatus(
@@ -118,7 +128,6 @@ export class SupabaseOrderRepository implements IOrderRepository {
     if (error) throw error
     return data.length > 0
   }
-
   async findByMidtransOrderId(midtransOrderId: string): Promise<Order | null> {
     const { data, error } = await this.client
       .from('orders')
@@ -139,6 +148,6 @@ export class SupabaseOrderRepository implements IOrderRepository {
 
     if (error) throw error
 
-    return data // TODO: add types Record<string, unknown> for jsonb columns
+    return data as unknown as OrderItem[]
   }
 }
