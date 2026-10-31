@@ -74,6 +74,7 @@ export default defineEventHandler(async (event) => {
         await ticketService.issueTickets({
           orderId: order.id,
           userId: order.user_id,
+          eventId: order.event_id,
           attendeeName: userProfile.name ?? 'Tamu',
           attendeeEmail: userProfile.email ?? '',
           attendeeEmailPhone: null,
