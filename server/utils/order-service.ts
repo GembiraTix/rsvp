@@ -10,12 +10,14 @@ export function getMidtransConfig(): {
   serverKey: string
   clientKey: string
   isProduction: boolean
+  appUrl: string
 } {
   const config = useRuntimeConfig()
   return {
     serverKey: config.midtransServerKey,
     clientKey: config.midtransClientKey,
     isProduction: config.midtransIsProduction === 'true',
+    appUrl: config.public.appUrl,
   }
 }
 

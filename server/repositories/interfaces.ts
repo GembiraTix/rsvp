@@ -13,7 +13,6 @@ import type {
   Order,
   OrderItem,
   Ticket,
-  CreateOrderInput,
   OrderStatus,
   PaymentStatus,
 } from '../domain/types'
@@ -83,6 +82,7 @@ export interface ITicketTypeRepository {
 
 export interface IOrderRepository {
   create(input: {
+    id: string
     order_number: string
     event_id: number
     user_id: string
@@ -91,6 +91,8 @@ export interface IOrderRepository {
     total: number
     expires_at: string
     token: string
+    midtrans_order_id: string
+    checkout_url: string
     status: OrderStatus
     payment_status: PaymentStatus
   }): Promise<Order>
@@ -101,18 +103,32 @@ export interface IOrderRepository {
     payload: {
       status: OrderStatus
       payment_status: PaymentStatus
+      paid_at?: string
+      midtrans_transaction_id?: string | null
     },
-  ): Promise<void>
+    guard?: {
+      onlyIfPaymentStatusIn?: PaymentStatus[]
+      unlessPaymentStatusIn?: PaymentStatus[]
+    },
+  ): Promise<boolean>
   findByMidtransOrderId(midtransOrderId: string): Promise<Order | null>
   findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]>
-  updateMidtrans(
-    id: string,
-    payload: {
-      midtrans_order_id: string
-      midtrans_transaction_id: string | null
-      checkout_url: string | null
-    },
-  ): Promise<void>
+}
+
+export interface IPaymentEventRepository {
+  existsByTransactionAndStatus(
+    midtransTransactionId: string,
+    eventType: string,
+  ): Promise<boolean>
+  create(input: {
+    order_id: string | null
+    midtrans_order_id: string | null
+    midtrans_transaction_id: string | null
+    event_type: string
+    payload: Record<string, unknown>
+    signature_valid?: boolean | null
+  }): Promise<string>
+  markProcessed(id: string, error?: string): Promise<void>
 }
 
 export interface ITicketRepository {

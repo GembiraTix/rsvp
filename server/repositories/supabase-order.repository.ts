@@ -14,6 +14,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async create(input: {
+    id: string
     order_number: string
     event_id: number
     user_id: string
@@ -22,19 +23,23 @@ export class SupabaseOrderRepository implements IOrderRepository {
     total: number
     expires_at: string
     token: string
+    midtrans_order_id: string
+    checkout_url: string
     status: OrderStatus
     payment_status: PaymentStatus
   }): Promise<Order> {
     const payload: OrderInsert = {
+      id: input.id,
       order_number: input.order_number,
       event_id: input.event_id,
       user_id: input.user_id,
-      subtotal: new Date().toISOString(),
+      subtotal: input.subtotal,
       admin_fee: input.admin_fee,
       total: input.total,
       expires_at: input.expires_at,
       token: input.token,
-      checkout_url: '',
+      midtrans_order_id: input.midtrans_order_id,
+      checkout_url: input.checkout_url,
       status: input.status,
       payment_status: input.payment_status,
     }
@@ -76,18 +81,42 @@ export class SupabaseOrderRepository implements IOrderRepository {
     payload: {
       status: OrderStatus
       payment_status: PaymentStatus
+      paid_at?: string
+      midtrans_transaction_id?: string | null
     },
-  ): Promise<void> {
-    const { error } = await this.client
+    guard?: {
+      onlyIfPaymentStatusIn?: PaymentStatus[]
+      unlessPaymentStatusIn?: PaymentStatus[]
+    },
+  ): Promise<boolean> {
+    let query = this.client
       .from('orders')
       .update({
         status: payload.status,
         payment_status: payload.payment_status,
+        ...(payload.paid_at ? { paid_at: payload.paid_at } : {}),
+        ...(payload.midtrans_transaction_id !== undefined
+          ? { midtrans_transaction_id: payload.midtrans_transaction_id }
+          : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
 
+    if (guard?.onlyIfPaymentStatusIn?.length) {
+      query = query.in('payment_status', guard.onlyIfPaymentStatusIn)
+    }
+    if (guard?.unlessPaymentStatusIn?.length) {
+      query = query.not(
+        'payment_status',
+        'in',
+        `(${guard.unlessPaymentStatusIn.join(',')})`,
+      )
+    }
+
+    const { data, error } = await query.select('id')
+
     if (error) throw error
+    return data.length > 0
   }
 
   async findByMidtransOrderId(midtransOrderId: string): Promise<Order | null> {
@@ -99,7 +128,7 @@ export class SupabaseOrderRepository implements IOrderRepository {
 
     if (error) throw error
 
-    return data
+    return data as unknown as Order | null
   }
 
   async findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]> {
@@ -111,26 +140,5 @@ export class SupabaseOrderRepository implements IOrderRepository {
     if (error) throw error
 
     return data // TODO: add types Record<string, unknown> for jsonb columns
-  }
-
-  async updateMidtrans(
-    id: string,
-    payload: {
-      midtrans_order_id: string
-      midtrans_transaction_id: string | null
-      checkout_url: string | null
-    },
-  ): Promise<void> {
-    const { error } = await this.client
-      .from('orders')
-      .update({
-        midtrans_order_id: payload.midtrans_order_id,
-        midtrans_transaction_id: payload.midtrans_transaction_id ?? undefined,
-        checkout_url: payload.checkout_url ?? undefined,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-
-    if (error) throw error
   }
 }
