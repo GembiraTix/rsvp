@@ -13,7 +13,6 @@ import type {
   Order,
   OrderItem,
   Ticket,
-  CreateOrderInput,
   OrderStatus,
   PaymentStatus,
 } from '../domain/types'

@@ -9,8 +9,7 @@ interface Props {
 
 const { line } = defineProps<Props>()
 const e = defineEmits<{
-  (e: 'select', ticketId: TicketType['id']): void
-  (e: 'remove', ticketId: TicketType['id']): void
+  (e: 'select' | 'remove', ticketId: TicketType['id']): void
 }>()
 </script>
 

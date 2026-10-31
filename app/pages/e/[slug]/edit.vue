@@ -9,6 +9,8 @@ import {
   parseZonedDateTime,
 } from '@internationalized/date'
 
+import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
+
 definePageMeta({
   middleware: 'auth',
 })
@@ -25,8 +27,6 @@ const isUpdatingEvent = ref(false)
 const isUploadingImage = ref(false)
 const editErrorMessage = ref('')
 const editSuccessMessage = ref('')
-
-import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 
 const formStateSchema = z.object({
   title: z.string().min(1, 'Judul acara wajib diisi.'),

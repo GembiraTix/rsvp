@@ -20,7 +20,8 @@ export default defineEventHandler(async (event) => {
 
     return { success: true, token: rsvp.token }
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Gagal membuat reservasi.'
+    const message =
+      err instanceof Error ? err.message : 'Gagal membuat reservasi.'
     const statusCode = message === 'Kuota penuh' ? 409 : 400
     throw createError({
       statusCode,

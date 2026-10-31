@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { id } from '@nuxt/ui/locale'
 import { useSiteName } from '@/composables/useSiteName'
-import { ref } from 'vue'
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 useHead({

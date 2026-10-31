@@ -85,7 +85,10 @@ export class SupabaseEventRepository implements IEventRepository {
     if (error) throw error
   }
 
-  async updateRegistrationLimit(id: number, limit: number | null): Promise<Event> {
+  async updateRegistrationLimit(
+    id: number,
+    limit: number | null,
+  ): Promise<Event> {
     const { data, error } = await this.client
       .from('events')
       .update({ registration_limit: limit })

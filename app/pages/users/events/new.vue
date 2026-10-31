@@ -222,7 +222,7 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
               <UInputDate
                 id="ends_at"
                 v-model="formState.date.ends_at"
-                :defaultValue="now(getLocalTimeZone())"
+                :default-value="now(getLocalTimeZone())"
                 :is-date-unavailable="
                   () =>
                     formState.date.ends_at.toDate() <

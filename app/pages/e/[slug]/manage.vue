@@ -393,9 +393,9 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                   {{ event.title }}
                 </h1>
                 <time
+                  v-if="event.starts_at"
                   class="text-on-surface-variant"
                   :datetime="event.starts_at"
-                  v-if="event.starts_at"
                 >
                   {{ formatDate(event.starts_at) }}
                 </time>
@@ -856,9 +856,9 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                       orientation="horizontal"
                     >
                       <USwitch
-                        uncheckedIcon="i-lucide-x"
-                        checkedIcon="i-lucide-check"
                         v-model="ticketTypeFormState.isActive"
+                        unchecked-icon="i-lucide-x"
+                        checked-icon="i-lucide-check"
                         name="is_active"
                       />
                     </UFormField>

@@ -6,9 +6,7 @@ import { SupabaseEventRepository } from '#server/repositories/supabase-event.rep
 import { TicketService } from '#server/services/ticket.service'
 import { buildLogger } from '#server/services/logger.factory'
 
-export async function useTicketService(
-  event: H3Event,
-): Promise<TicketService> {
+export async function useTicketService(event: H3Event): Promise<TicketService> {
   const client = await serverSupabaseClient(event)
   const ticketRepo = new SupabaseTicketRepository(client)
   const rsvpRepo = new SupabaseRsvpRepository(client)

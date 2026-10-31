@@ -278,8 +278,8 @@ async function handleAuthenticatedRsvp() {
             </header>
 
             <UAlert
-              title="ada kesalahan!"
               v-if="errorMessage"
+              title="ada kesalahan!"
               :description="errorMessage"
               icon="i-lucide-triangle-alert"
               color="error"
@@ -338,8 +338,8 @@ async function handleAuthenticatedRsvp() {
             </header>
 
             <UAlert
-              title="ada kesalahan!"
               v-if="errorMessage"
+              title="ada kesalahan!"
               :description="errorMessage"
               icon="i-lucide-triangle-alert"
               color="error"
@@ -349,8 +349,8 @@ async function handleAuthenticatedRsvp() {
             <UForm
               :schema="formSchema"
               :state="form"
-              @submit="handleRsvp"
               class="space-y-4"
+              @submit="handleRsvp"
             >
               <UFormField class="space-y-1.5" label="Nama lengkap">
                 <UInput

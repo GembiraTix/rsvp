@@ -181,10 +181,10 @@ async function handleResendConfirmation() {
         <p class="text-on-surface-variant">Tidak mendapatkan email?</p>
 
         <UButton
-          @click="handleResendConfirmation"
           size="lg"
           variant="outline"
           label="kirimkan ulang email konfirmasi"
+          @click="handleResendConfirmation"
         />
       </div>
     </header>
@@ -273,7 +273,6 @@ async function handleResendConfirmation() {
 
       <template #footer>
         <UButton
-          @click="toggleForms"
           variant="ghost"
           class="w-full justify-center"
           :label="
@@ -281,6 +280,7 @@ async function handleResendConfirmation() {
               ? 'Sudah punya akun? Masuk'
               : 'Belum punya akun? Daftar'
           "
+          @click="toggleForms"
         />
       </template>
     </UCard>

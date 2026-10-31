@@ -57,7 +57,10 @@ export class SupabaseTicketTypeRepository implements ITicketTypeRepository {
     return data
   }
 
-  async update(id: number, payload: UpdateTicketTypeInput): Promise<TicketType> {
+  async update(
+    id: number,
+    payload: UpdateTicketTypeInput,
+  ): Promise<TicketType> {
     const { data, error } = await this.client
       .from('ticket_types')
       .update(payload)
@@ -70,7 +73,10 @@ export class SupabaseTicketTypeRepository implements ITicketTypeRepository {
   }
 
   async delete(id: number): Promise<void> {
-    const { error } = await this.client.from('ticket_types').delete().eq('id', id)
+    const { error } = await this.client
+      .from('ticket_types')
+      .delete()
+      .eq('id', id)
 
     if (error) throw error
   }

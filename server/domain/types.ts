@@ -1,3 +1,5 @@
+import type { Database } from '~/types/database.types'
+
 export interface Event {
   id: number
   slug: string
@@ -17,8 +19,6 @@ export type CreateEventInput = Omit<Event, 'id' | 'created_at'>
 export type UpdateEventInput = Partial<
   Omit<Event, 'id' | 'created_at' | 'created_by'>
 >
-
-import type { Database } from '~/types/database.types'
 
 export type UserRole = Database['public']['Enums']['user_role']
 

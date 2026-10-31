@@ -46,8 +46,7 @@ export default defineEventHandler(async (event) => {
   ) {
     throw createError({
       statusCode: 403,
-      statusMessage:
-        'Anda tidak memiliki izin untuk melihat tiket ini.',
+      statusMessage: 'Anda tidak memiliki izin untuk melihat tiket ini.',
     })
   }
 

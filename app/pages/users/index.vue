@@ -2,6 +2,10 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 
+import { useUserProfile } from '@/composables/useUserProfile'
+
+import { useEvents } from '@/composables/useEvents'
+
 definePageMeta({
   middleware: 'auth',
 })
@@ -20,8 +24,6 @@ watch(
   },
   { immediate: true },
 )
-
-import { useUserProfile } from '@/composables/useUserProfile'
 
 const { fetchProfile, updateProfile: apiUpdateProfile } = useUserProfile()
 const { data: profileRes, refresh: refreshProfile } = await fetchProfile()
@@ -64,13 +66,11 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
   }
 }
 
-import { useEvents } from '@/composables/useEvents'
-
 const { fetchAll } = useEvents()
 
 const { data: organizedRes } = await fetchAll()
 const organizedEvents = computed(() =>
-  ['admin', 'super_admin'].includes(profile.value?.role!)
+  ['admin', 'super_admin'].includes(profile.value?.role ?? '')
     ? organizedRes.value?.data
     : [],
 )
@@ -125,8 +125,8 @@ async function handleLogout() {
 <template>
   <div class="py-8 max-w-6xl mx-auto px-4 space-y-10">
     <UTabs
-      variant="link"
       v-model="selectedTab"
+      variant="link"
       :items="tabItems"
       class="gap-y-6"
     >
@@ -140,35 +140,35 @@ async function handleLogout() {
             <UAlert
               v-if="profileErrorMessage"
               :title="profileErrorMessage"
-              @update:open="profileErrorMessage = ''"
               icon="i-lucide-alert-circle"
               color="error"
               variant="subtle"
               class="my-4"
               close
+              @update:open="profileErrorMessage = ''"
             />
 
             <UAlert
               v-if="profileSuccessMessage"
               :title="profileSuccessMessage"
-              @update:open="profileSuccessMessage = ''"
               icon="i-lucide-check-circle"
               color="success"
               class="my-4"
               variant="subtle"
               close
+              @update:open="profileSuccessMessage = ''"
             />
 
             <div class="grid gap-4 md:grid-cols-3">
               <div class="flex items-center gap-4">
                 <UFileUpload
+                  v-slot="{ open }"
                   v-model="profileFormState.profile"
                   accept="image/*"
                   icon="i-lucide-upload-cloud"
                   label="Pilih atau seret gambar foto profil baru ke sini"
                   description="PNG, JPG, WEBP hingga 5MB"
                   class="w-full"
-                  v-slot="{ open }"
                   disabled
                 >
                   <div class="flex flex-col gap-4 items-center">
@@ -182,9 +182,9 @@ async function handleLogout() {
                     />
                     <UButton
                       variant="outline"
-                      @click="open()"
                       label="Unggah foto baru"
                       disabled
+                      @click="open()"
                     />
                   </div>
                 </UFileUpload>
