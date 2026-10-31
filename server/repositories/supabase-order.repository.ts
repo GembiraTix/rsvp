@@ -110,7 +110,9 @@ export class SupabaseOrderRepository implements IOrderRepository {
 
     if (error) throw error
 
-    return data // TODO: add types Record<string, unknown> for jsonb columns
+    // TODO(RSVP-48): map/convert attendee_data (Json vs Record<string, unknown>) properly and remove this
+    // @ts-expect-error attendee_data is Json in generated types but Record<string, unknown> in OrderItem
+    return data
   }
 
   async updateMidtrans(
