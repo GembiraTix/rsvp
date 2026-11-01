@@ -10,36 +10,22 @@ useSeoMeta({
 const route = useRoute()
 const orderId = route.params.id as string
 
-const { fetchOrder, fetchTickets, resumePayment } = useOrders()
+const { fetchOrder, fetchTickets } = useOrders()
 
 const {
   data: orderRes,
   error: orderError,
   status: orderStatus,
 } = await fetchOrder(orderId)
-console.log(orderError.value)
 const { data: ticketsRes } = await fetchTickets(orderId)
 
 const order = computed(() => orderRes.value?.data ?? null)
 const tickets = computed(() => ticketsRes.value?.data ?? [])
 
-const isResuming = ref(false)
-const resumeErrorMessage = ref('')
+const { resumingOrderId, resumeErrorMessage, resume } = useResumePayment()
 
-async function handleResumePayment() {
-  if (!order.value) return
-  isResuming.value = true
-  resumeErrorMessage.value = ''
-  try {
-    const res = await resumePayment(order.value.id)
-    await navigateTo(res.data.redirectUrl, { external: true })
-  } catch (err: unknown) {
-    resumeErrorMessage.value =
-      (err as { statusCode?: number; statusMessage?: string })?.statusMessage ||
-      'Gagal melanjutkan pembayaran.'
-  } finally {
-    isResuming.value = false
-  }
+function handleResumePayment() {
+  if (order.value) resume(order.value)
 }
 </script>
 
@@ -84,7 +70,7 @@ async function handleResumePayment() {
               v-if="isOrderPayable(order)"
               color="primary"
               icon="i-lucide-credit-card"
-              :loading="isResuming"
+              :loading="resumingOrderId === order.id"
               @click="handleResumePayment"
             >
               Lanjutkan Pembayaran
