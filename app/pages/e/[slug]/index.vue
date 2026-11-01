@@ -36,7 +36,7 @@ const isAdmin = computed(
   () => profile.value && ['admin', 'super_admin'].includes(profile.value.role),
 )
 
-const { fetchAttendingCount } = useRsvp()
+const { fetchAttendingCount, getRsvpByEventAndEmail } = useRsvp()
 const { data: rsvpCountRes } = await fetchAttendingCount(event.value.id)
 
 const attendingCount = computed(() => rsvpCountRes.value?.data.count ?? 0)
@@ -51,29 +51,20 @@ useSeoMeta({
   description: () => event.value?.description || '',
 })
 
-const existingRsvp = ref<{ token: string; is_attending: boolean } | null>(null)
-
-const { getRsvpByEventAndEmail } = useRsvp()
-
-if (profile.value?.email && event.value) {
-  const existing = await getRsvpByEventAndEmail(
-    event.value.id,
-    profile.value.email,
-  )
-  if (existing) {
-    existingRsvp.value = {
-      token: existing.token,
-      is_attending: existing.is_attending,
-    }
-  }
-}
-
-const rsvpSuccess = ref(false)
-const rsvpToken = ref(existingRsvp.value?.token || '')
-
-const isRegistered = computed(
-  () => rsvpSuccess.value || (existingRsvp.value?.is_attending ?? false),
+const {
+  data: existingRsvp,
+  refresh: refreshExistingRsvp,
+} = await useAsyncData(`event-rsvp-${event.value.id}-${profile.value?.email}`, () =>
+  getRsvpByEventAndEmail(event.value.id, profile.value?.email ?? ''),
 )
+
+const rsvpToken = computed(() => existingRsvp.value?.token ?? '')
+
+const isRegistered = computed(() => existingRsvp.value?.is_attending ?? false)
+
+async function handleRegistered() {
+  await refreshExistingRsvp()
+}
 
 const sidebarPanel = computed(() =>
   resolveEventSidebarPanel({
@@ -83,11 +74,6 @@ const sidebarPanel = computed(() =>
     isLoggedIn: Boolean(profile.value),
   }),
 )
-
-function handleRegistered(token: string) {
-  rsvpToken.value = token
-  rsvpSuccess.value = true
-}
 </script>
 
 <template>
