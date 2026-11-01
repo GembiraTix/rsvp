@@ -1,15 +1,15 @@
 import type { Rsvp } from '~~/server/domain/types'
 
 export function useAttendees() {
-  function fetchByEvent(eventId: MaybeRefOrGetter<number>) {
+  function fetchByEvent(slug: MaybeRefOrGetter<string>) {
     return useFetch<{ success: boolean; data: Rsvp[] }>(
-      () => `/api/events/${toValue(eventId)}/attendees`,
+      () => `/api/events/${toValue(slug)}/attendees`,
     )
   }
 
-  async function removeAttendee(eventId: number, rsvpId: number) {
+  async function removeAttendee(slug: string, rsvpId: number) {
     return $fetch<{ success: boolean; data: { id: number } }>(
-      `/api/events/${eventId}/attendees/${rsvpId}`,
+      `/api/events/${slug}/attendees/${rsvpId}`,
       { method: 'DELETE' },
     )
   }

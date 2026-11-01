@@ -131,11 +131,8 @@ async function handleDeleteEvent(event: Event) {
 
 // Fetch attendees roster
 const { fetchByEvent, removeAttendee: apiRemoveAttendee } = useAttendees()
-const {
-  data: attendeesRes,
-  error: attendeesError,
-  refresh: refreshAttendees,
-} = await fetchByEvent(event.value.id)
+const { data: attendeesRes, refresh: refreshAttendees } =
+  await fetchByEvent(eventSlug)
 const attendees = computed(() => attendeesRes.value?.data ?? [])
 
 const attendeeErrorMessage = ref('')
@@ -144,10 +141,13 @@ async function removeAttendee(id: number) {
   if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
   attendeeErrorMessage.value = ''
   try {
-    await apiRemoveAttendee(event.value.id, id)
+    await apiRemoveAttendee(eventSlug.value, id)
     await refreshAttendees()
   } catch (err: unknown) {
-    attendeeErrorMessage.value = getErrorMessage(err, 'Gagal menghapus peserta.')
+    attendeeErrorMessage.value = getErrorMessage(
+      err,
+      'Gagal menghapus peserta.',
+    )
   }
 }
 
@@ -220,10 +220,7 @@ function exportCSV() {
   URL.revokeObjectURL(url)
 }
 
-const {
-  fetchByEvent: fetchTicketTypes,
-  deleteTicketType,
-} = useTicketTypes()
+const { fetchByEvent: fetchTicketTypes, deleteTicketType } = useTicketTypes()
 const { data: ticketTypesRes, refresh: refreshTicketTypes } =
   await fetchTicketTypes(eventSlug)
 
