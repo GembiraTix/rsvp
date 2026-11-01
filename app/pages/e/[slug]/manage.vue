@@ -2,8 +2,15 @@
 import { useEvents } from '@/composables/useEvents'
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useTicketTypes } from '@/composables/useTicketTypes'
-import type { FormSubmitEvent } from '@nuxt/ui'
-import type { Event, TicketType, TicketTypeKind } from '~~/server/domain/types'
+import { useAttendees } from '@/composables/useAttendees'
+import { useTabQuery } from '@/composables/useTabQuery'
+import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
+import type {
+  Event,
+  Rsvp,
+  TicketType,
+  TicketTypeKind,
+} from '~~/server/domain/types'
 import { z } from 'zod'
 
 definePageMeta({
@@ -11,7 +18,6 @@ definePageMeta({
 })
 
 const route = useRoute()
-const router = useRouter()
 const eventSlug = computed(() => route.params.slug as string)
 
 const tabItems = computed(() => {
@@ -39,19 +45,7 @@ const tabItems = computed(() => {
   return items
 })
 
-const selectedTab = computed({
-  get() {
-    const tab = route.query.tab as string
-    return tab || 'overview'
-  },
-  set(val: string) {
-    router.push({
-      query: { ...route.query, tab: val },
-    })
-  },
-})
-
-const supabase = useSupabaseClient()
+const selectedTab = useTabQuery('overview')
 
 const {
   fetchBySlug,
@@ -78,10 +72,10 @@ const eventLimitFormSchema = z.object({
   value: z.number().positive('batas registrasi harus positif.'),
 })
 
-type EventLimitFormShema = z.output<typeof eventLimitFormSchema>
-const eventLimitFormState = ref<EventLimitFormShema>({
-  enabled: false,
-  value: 1,
+type EventLimitFormSchema = z.output<typeof eventLimitFormSchema>
+const eventLimitFormState = ref<EventLimitFormSchema>({
+  enabled: event.value?.registration_limit != null,
+  value: event.value?.registration_limit ?? 1,
 })
 
 const registrationAlert = ref<{
@@ -92,7 +86,7 @@ const registrationAlert = ref<{
 
 async function saveRegistrationLimit(
   eventId: number,
-  { data }: FormSubmitEvent<EventLimitFormShema>,
+  { data }: FormSubmitEvent<EventLimitFormSchema>,
 ) {
   isSavingRegistration.value = true
   registrationAlert.value = null
@@ -136,20 +130,26 @@ async function handleDeleteEvent(event: Event) {
 }
 
 // Fetch attendees roster
-const { data: attendees, refresh: refreshAttendees } = await useAsyncData(
-  `event-attendees-${event.value?.id}`,
-  async () => {
-    if (!event.value?.id) return []
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('*')
-      .eq('event_id', event.value.id)
-      .order('created_at', { ascending: false })
+const { fetchByEvent, removeAttendee: apiRemoveAttendee } = useAttendees()
+const { data: attendeesRes, refresh: refreshAttendees } =
+  await fetchByEvent(eventSlug)
+const attendees = computed(() => attendeesRes.value?.data ?? [])
 
-    if (error) throw error
-    return data || []
-  },
-)
+const attendeeErrorMessage = ref('')
+
+async function removeAttendee(id: number) {
+  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
+  attendeeErrorMessage.value = ''
+  try {
+    await apiRemoveAttendee(eventSlug.value, id)
+    await refreshAttendees()
+  } catch (err: unknown) {
+    attendeeErrorMessage.value = getErrorMessage(
+      err,
+      'Gagal menghapus peserta.',
+    )
+  }
+}
 
 useSeoMeta({
   title: () => (event.value ? `Kelola ${event.value.title}` : 'Kelola Acara'),
@@ -171,129 +171,76 @@ const filteredAttendees = computed(() => {
   )
 })
 
+const attendeesColumns: TableColumn<Rsvp>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Nama',
+  },
+  {
+    accessorKey: 'email',
+    header: 'Email',
+  },
+  {
+    accessorKey: 'organization',
+    header: 'Organisasi',
+  },
+  { id: 'action', header: 'Aksi' },
+]
+
+function csvEscape(value: string | number | boolean): string {
+  let str = String(value)
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`
+  }
+  return /[",\n\r]/.test(str) ? `"${str.replaceAll('"', '""')}"` : str
+}
+
 function exportCSV() {
   if (!attendees.value || !event.value) return
   const headers = ['ID', 'Nama', 'Email', 'Organisasi', 'Tanggal RSVP', 'Hadir']
   const rows = attendees.value.map((a) => [
     a.id,
-    `"${a.name}"`,
-    `"${a.email || ''}"`,
-    `"${a.organization || ''}"`,
-    `"${a.created_at}"`,
-    `"${a.is_attending}"`,
+    a.name,
+    a.email || '',
+    a.organization || '',
+    a.created_at,
+    a.is_attending,
   ])
-  const csvContent =
-    'data:text/csv;charset=utf-8,' +
-    [headers.join(','), ...rows.map((e) => e.join(','))].join('\n')
-  const encodedUri = encodeURI(csvContent)
+  const lines = [headers, ...rows]
+    .map((row) => row.map(csvEscape).join(','))
+    .join('\n')
+  const blob = new Blob([lines], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
+  link.setAttribute('href', url)
   link.setAttribute('download', `peserta-${event.value.slug}.csv`)
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
-async function removeAttendee(id: number) {
-  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
-  const { error } = await supabase.from('rsvps').delete().eq('id', id)
-  if (!error) {
-    await refreshAttendees()
-  }
-}
-
-const ticketTypeFormSchema = z.object({
-  name: z.string().nonempty('Nama tiket wajib diisi.'),
-  description: z.string().optional(),
-  kind: z.enum(['single', 'couple', 'berempat']),
-  price: z.coerce.number().int().min(0, 'Harga tidak valid.'),
-  capacity: z.preprocess(
-    (value) =>
-      value === '' || value === null || value === undefined ? undefined : value,
-    z.coerce.number().int().positive().optional(),
-  ),
-  minQty: z.number().int().min(1, 'Jumlah minimal harus minimal 1.'),
-  maxQty: z.number().int().min(1, 'Jumlah maksimal harus minimal 1.'),
-  multipleOf: z.number().int().min(1, 'Kelipatan harus minimal 1.'),
-  isActive: z.boolean(),
-})
-
-type TicketTypeForm = z.output<typeof ticketTypeFormSchema>
-
-const ticketTypeFormState = reactive<TicketTypeForm>({
-  name: '',
-  description: '',
-  kind: 'single',
-  price: 0,
-  capacity: undefined,
-  minQty: 1,
-  maxQty: 10,
-  multipleOf: 1,
-  isActive: true,
-})
-
-const {
-  fetchByEvent: fetchTicketTypes,
-  createTicketType,
-  updateTicketType,
-  deleteTicketType,
-} = useTicketTypes()
+const { fetchByEvent: fetchTicketTypes, deleteTicketType } = useTicketTypes()
 const { data: ticketTypesRes, refresh: refreshTicketTypes } =
   await fetchTicketTypes(eventSlug)
 
 const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 
 const isTicketTypeModalOpen = ref(false)
-const isSavingTicketType = ref(false)
-const ticketTypeError = ref('')
-const editingTicketTypeId = ref<number | null>(null)
+const editingTicketType = ref<TicketType | null>(null)
 const ticketTypeToDelete = ref<TicketType | null>(null)
 const isDeleteTicketTypeModalOpen = ref(false)
 const isDeletingTicketType = ref(false)
 const ticketTypeNotice = ref('')
-
-function resetTicketTypeForm() {
-  ticketTypeFormState.name = ''
-  ticketTypeFormState.description = ''
-  ticketTypeFormState.kind = 'single'
-  ticketTypeFormState.price = 0
-  ticketTypeFormState.capacity = undefined
-  ticketTypeFormState.minQty = 1
-  ticketTypeFormState.maxQty = 10
-  ticketTypeFormState.multipleOf = 1
-  ticketTypeFormState.isActive = true
-}
-
-function getErrorMessage(err: unknown, fallback: string) {
-  if (err && typeof err === 'object' && 'data' in err) {
-    const data = (err as { data?: { statusMessage?: string } }).data
-    if (data?.statusMessage) {
-      return data.statusMessage
-    }
-  }
-
-  return err instanceof Error ? err.message : fallback
-}
+const ticketTypeError = ref('')
 
 function openCreateTicketTypeModal() {
-  editingTicketTypeId.value = null
-  ticketTypeError.value = ''
-  resetTicketTypeForm()
+  editingTicketType.value = null
   isTicketTypeModalOpen.value = true
 }
 
 function openEditTicketTypeModal(ticket: TicketType) {
-  editingTicketTypeId.value = ticket.id
-  ticketTypeError.value = ''
-  ticketTypeFormState.name = ticket.name
-  ticketTypeFormState.description = ticket.description ?? ''
-  ticketTypeFormState.kind = ticket.kind
-  ticketTypeFormState.price = ticket.price
-  ticketTypeFormState.capacity = ticket.capacity ?? undefined
-  ticketTypeFormState.minQty = ticket.min_qty
-  ticketTypeFormState.maxQty = ticket.max_qty
-  ticketTypeFormState.multipleOf = ticket.multiple_of
-  ticketTypeFormState.isActive = ticket.is_active
+  editingTicketType.value = ticket
   isTicketTypeModalOpen.value = true
 }
 
@@ -303,33 +250,9 @@ function askDeleteTicketType(ticket: TicketType) {
   isDeleteTicketTypeModalOpen.value = true
 }
 
-async function handleSubmitTicketType({
-  data: body,
-}: FormSubmitEvent<TicketTypeForm>) {
-  isSavingTicketType.value = true
-  ticketTypeError.value = ''
-
-  try {
-    if (editingTicketTypeId.value !== null) {
-      await updateTicketType(event.value.id, editingTicketTypeId.value, body)
-      ticketTypeNotice.value = 'Tipe tiket berhasil diperbarui.'
-    } else {
-      await createTicketType(event.value.id, body)
-      ticketTypeNotice.value = 'Tipe tiket berhasil dibuat.'
-    }
-
-    await refreshTicketTypes()
-    resetTicketTypeForm()
-    editingTicketTypeId.value = null
-    isTicketTypeModalOpen.value = false
-  } catch (err: unknown) {
-    ticketTypeError.value = getErrorMessage(
-      err,
-      'Gagal menyimpan tipe tiket. Silakan coba lagi.',
-    )
-  } finally {
-    isSavingTicketType.value = false
-  }
+function handleTicketTypeSaved(notice: string) {
+  ticketTypeNotice.value = notice
+  refreshTicketTypes()
 }
 
 async function handleDeleteTicketType() {
@@ -363,6 +286,42 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
   couple: 'Couple',
   berempat: 'Berempat',
 }
+
+const ticketTypeColumns: TableColumn<TicketType>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Nama Tiket',
+  },
+  {
+    id: 'kind',
+    header: 'Tipe',
+    cell: ({ row }) => ticketTypeKindLabels[row.original.kind],
+  },
+  {
+    accessorKey: 'price',
+    header: 'Harga',
+    cell: ({ row }) => formatRupiah(row.original.price),
+  },
+  {
+    accessorKey: 'capacity',
+    header: 'Kapasitas',
+    cell: ({ row }) => row.original.capacity ?? '∞',
+  },
+  {
+    id: 'qty',
+    header: 'Jumlah',
+    cell: ({ row }) =>
+      `${row.original.min_qty}–${row.original.max_qty} (×${row.original.multiple_of})`,
+  },
+  {
+    accessorKey: 'is_active',
+    header: 'Status',
+  },
+  {
+    id: 'action',
+    header: 'Aksi',
+  },
+]
 </script>
 
 <template>
@@ -392,27 +351,10 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                 <h1 class="text-2xl font-bold text-on-surface mb-2">
                   {{ event.title }}
                 </h1>
-                <time
-                  v-if="event.starts_at"
-                  class="text-on-surface-variant"
-                  :datetime="event.starts_at"
-                >
-                  {{ formatDate(event.starts_at) }}
-                </time>
-                <p class="text-on-surface-variant">
-                  {{ event.location || 'Lokasi belum diatur' }}
-                </p>
+                <EventInfoPanel :event="event" />
               </div>
 
               <div class="flex items-center gap-3">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-download"
-                  @click="exportCSV"
-                >
-                  Ekspor CSV
-                </UButton>
                 <UButton
                   :to="`/e/${event.slug}`"
                   color="primary"
@@ -432,92 +374,61 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
               </div>
             </div>
 
-            <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+            <UCard
+              class="border-outline"
+              :ui="{
+                body: 'p-0 sm:p-0',
+                header:
+                  'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3',
+              }"
+            >
               <template #header>
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                >
-                  <div>
-                    <h2 class="text-lg font-bold text-on-surface">
-                      Peserta Terdaftar ({{ attendees?.length || 0 }})
-                    </h2>
-                  </div>
-                  <div class="w-full sm:w-72">
-                    <UInput
-                      v-model="attendeeSearch"
-                      placeholder="Cari berdasarkan nama, email, organisasi..."
-                      icon="i-lucide-search"
-                      size="sm"
-                      class="w-full"
-                    />
-                  </div>
+                <h2 class="flex-1 text-lg font-bold text-on-surface">
+                  Peserta Terdaftar ({{ attendees.length }})
+                </h2>
+                <div class="flex flex-1 gap-4 sm:w-72">
+                  <UInput
+                    v-model="attendeeSearch"
+                    placeholder="Cari berdasarkan nama, email, organisasi..."
+                    icon="i-lucide-search"
+                    class="w-full"
+                  />
+
+                  <UButton
+                    color="neutral"
+                    variant="outline"
+                    icon="i-lucide-download"
+                    class="min-w-fit"
+                    @click="exportCSV"
+                  >
+                    Ekspor CSV
+                  </UButton>
                 </div>
               </template>
 
-              <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead
-                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-                  >
-                    <tr>
-                      <th class="px-6 py-3">Nama Peserta</th>
-                      <th class="px-6 py-3">Email</th>
-                      <th class="px-6 py-3">Organisasi / Catatan</th>
-                      <th class="px-6 py-3">Status</th>
-                      <th class="px-6 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline">
-                    <tr
-                      v-for="att in filteredAttendees"
-                      :key="att.id"
-                      class="hover:bg-surface-container/50"
-                    >
-                      <td class="px-6 py-4 font-medium text-on-surface">
-                        {{ att.name }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant font-mono text-xs"
-                      >
-                        {{ att.email || '-' }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
-                      >
-                        {{ att.organization || '-' }}
-                      </td>
-                      <td class="px-6 py-4">
-                        <UBadge
-                          :color="att.is_attending ? 'primary' : 'neutral'"
-                          variant="subtle"
-                        >
-                          {{
-                            att.is_attending ? 'Terkonfirmasi' : 'Dibatalkan'
-                          }}
-                        </UBadge>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <UButton
-                          size="xs"
-                          color="error"
-                          variant="ghost"
-                          icon="i-lucide-trash-2"
-                          title="Hapus peserta"
-                          @click="removeAttendee(att.id)"
-                        />
-                      </td>
-                    </tr>
-                    <tr v-if="filteredAttendees.length === 0">
-                      <td
-                        colspan="5"
-                        class="px-6 py-8 text-center text-on-surface-variant"
-                      >
-                        Tidak ada peserta yang cocok dengan kriteria pencarian.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              <UAlert
+                v-if="attendeeErrorMessage"
+                :title="attendeeErrorMessage"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="subtle"
+                class="m-4"
+                close
+                @update:open="attendeeErrorMessage = ''"
+              />
+
+              <UTable :data="filteredAttendees" :columns="attendeesColumns">
+                <template #action-cell="{ row }">
+                  <UButton
+                    size="xs"
+                    color="error"
+                    variant="ghost"
+                    icon="i-lucide-trash-2"
+                    title="Hapus peserta"
+                    @click="removeAttendee(row.original.id)"
+                  />
+                </template>
+              </UTable>
             </UCard>
           </section>
 
@@ -644,237 +555,67 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                 @update:open="ticketTypeNotice = ''"
               />
 
-              <p v-if="ticketTypes.length === 0" class="text-on-surface">
-                Belum ada tiket.
-              </p>
-
-              <div v-else class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead
-                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-                  >
-                    <tr>
-                      <th class="px-6 py-3">Nama Tiket</th>
-                      <th class="px-6 py-3">Tipe</th>
-                      <th class="px-6 py-3">Harga</th>
-                      <th class="px-6 py-3">Kapasitas</th>
-                      <th class="px-6 py-3">Jumlah</th>
-                      <th class="px-6 py-3">Status</th>
-                      <th class="px-6 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline">
-                    <tr
-                      v-for="ticket in ticketTypes"
-                      :key="ticket.id"
-                      class="hover:bg-surface-container/50"
-                    >
-                      <td class="px-6 py-4 font-medium text-on-surface">
-                        {{ ticket.name }}
-                        <span
-                          v-if="ticket.description"
-                          class="block text-xs font-normal text-on-surface-variant"
-                        >
-                          {{ ticket.description }}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4 text-on-surface-variant">
-                        {{ ticketTypeKindLabels[ticket.kind] }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant font-mono text-xs"
-                      >
-                        {{ formatRupiah(ticket.price) }}
-                      </td>
-                      <td class="px-6 py-4 text-on-surface-variant">
-                        {{ ticket.capacity ?? '∞' }}
-                      </td>
-                      <td class="px-6 py-4 text-on-surface-variant">
-                        {{ ticket.min_qty }}–{{ ticket.max_qty }} (×{{
-                          ticket.multiple_of
-                        }})
-                      </td>
-                      <td class="px-6 py-4">
-                        <UBadge
-                          :color="ticket.is_active ? 'primary' : 'neutral'"
-                          variant="subtle"
-                        >
-                          {{ ticket.is_active ? 'Aktif' : 'Disembunyikan' }}
-                        </UBadge>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <UButton
-                          size="xs"
-                          color="neutral"
-                          variant="ghost"
-                          icon="i-lucide-pencil"
-                          title="Ubah tipe tiket"
-                          @click="openEditTicketTypeModal(ticket)"
-                        />
-                        <UButton
-                          size="xs"
-                          color="error"
-                          variant="ghost"
-                          icon="i-lucide-trash-2"
-                          title="Hapus tipe tiket"
-                          @click="askDeleteTicketType(ticket)"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <UModal
-                v-model:open="isTicketTypeModalOpen"
-                :title="
-                  editingTicketTypeId !== null
-                    ? 'Ubah tipe tiket'
-                    : 'Buat tipe tiket baru'
-                "
+              <UTable
+                v-if="ticketTypes.length > 0"
+                :data="ticketTypes"
+                :columns="ticketTypeColumns"
               >
-                <template #body>
-                  <UAlert
-                    v-if="ticketTypeError"
-                    title="Ada kesalahan!"
-                    :description="ticketTypeError"
-                    color="error"
-                    icon="i-lucide-triangle-alert"
-                    variant="subtle"
-                    class="mb-4"
-                  />
-
-                  <UForm
-                    class="space-y-4"
-                    :schema="ticketTypeFormSchema"
-                    :state="ticketTypeFormState"
-                    @submit="handleSubmitTicketType"
-                  >
-                    <UFormField label="Nama tiket" name="name">
-                      <UInput
-                        v-model="ticketTypeFormState.name"
-                        type="text"
-                        name="name"
-                        class="w-full"
-                        required
-                      />
-                    </UFormField>
-
-                    <UFormField
-                      label="Deskripsi"
-                      name="description"
-                      hint="opsional"
+                <template #name-cell="{ row }">
+                  <span class="font-medium text-on-surface">
+                    {{ row.original.name }}
+                    <span
+                      v-if="row.original.description"
+                      class="block text-xs font-normal text-on-surface-variant"
                     >
-                      <UInput
-                        v-model="ticketTypeFormState.description"
-                        type="text"
-                        name="description"
-                        class="w-full"
-                      />
-                    </UFormField>
-
-                    <UFormField label="Tipe tiket" name="kind">
-                      <USelect
-                        v-model="ticketTypeFormState.kind"
-                        name="kind"
-                        :items="[
-                          { label: 'Single (1 orang)', value: 'single' },
-                          { label: 'Couple (2 orang)', value: 'couple' },
-                          { label: 'Berempat (4 orang)', value: 'berempat' },
-                        ]"
-                        class="w-full"
-                      />
-                    </UFormField>
-
-                    <UFormField label="Harga" name="price" required>
-                      <UInput
-                        v-model="ticketTypeFormState.price"
-                        type="number"
-                        name="price"
-                        class="w-full"
-                        :min="0"
-                      />
-                    </UFormField>
-
-                    <UFormField
-                      label="Kapasitas"
-                      name="capacity"
-                      hint="default: tak terbatas"
-                    >
-                      <UInput
-                        v-model="ticketTypeFormState.capacity"
-                        type="number"
-                        name="capacity"
-                        class="w-full"
-                        placeholder="∞"
-                      />
-                    </UFormField>
-
-                    <div class="grid gap-4 sm:grid-cols-3">
-                      <UFormField
-                        label="Jumlah minimal"
-                        name="min_qty"
-                        required
-                      >
-                        <UInput
-                          v-model="ticketTypeFormState.minQty"
-                          type="number"
-                          name="min_qty"
-                          class="w-full"
-                          :min="1"
-                        />
-                      </UFormField>
-
-                      <UFormField
-                        label="Jumlah maksimal"
-                        name="max_qty"
-                        required
-                      >
-                        <UInput
-                          v-model="ticketTypeFormState.maxQty"
-                          type="number"
-                          name="max_qty"
-                          class="w-full"
-                          :min="1"
-                        />
-                      </UFormField>
-
-                      <UFormField label="Kelipatan" name="multiple_of" required>
-                        <UInput
-                          v-model="ticketTypeFormState.multipleOf"
-                          type="number"
-                          name="multiple_of"
-                          class="w-full"
-                          :min="1"
-                        />
-                      </UFormField>
-                    </div>
-
-                    <UFormField
-                      label="Tampilkan di halaman acara"
-                      name="is_active"
-                      orientation="horizontal"
-                    >
-                      <USwitch
-                        v-model="ticketTypeFormState.isActive"
-                        unchecked-icon="i-lucide-x"
-                        checked-icon="i-lucide-check"
-                        name="is_active"
-                      />
-                    </UFormField>
-
-                    <UButton
-                      type="submit"
-                      :label="
-                        editingTicketTypeId !== null
-                          ? 'Simpan Perubahan'
-                          : 'Simpan'
-                      "
-                      :loading="isSavingTicketType"
-                    />
-                  </UForm>
+                      {{ row.original.description }}
+                    </span>
+                  </span>
                 </template>
-              </UModal>
+
+                <template #is_active-cell="{ row }">
+                  <UBadge
+                    :color="row.original.is_active ? 'primary' : 'neutral'"
+                    variant="subtle"
+                  >
+                    {{ row.original.is_active ? 'Aktif' : 'Disembunyikan' }}
+                  </UBadge>
+                </template>
+
+                <template #action-cell="{ row }">
+                  <div class="text-right">
+                    <UButton
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      icon="i-lucide-pencil"
+                      title="Ubah tipe tiket"
+                      @click="openEditTicketTypeModal(row.original)"
+                    />
+                    <UButton
+                      size="xs"
+                      color="error"
+                      variant="ghost"
+                      icon="i-lucide-trash-2"
+                      title="Hapus tipe tiket"
+                      @click="askDeleteTicketType(row.original)"
+                    />
+                  </div>
+                </template>
+              </UTable>
+
+              <UEmpty
+                v-else
+                icon="i-lucide-ticket"
+                title="Belum ada tiket."
+                class="py-4"
+              />
+
+              <TicketTypeModal
+                v-model:open="isTicketTypeModalOpen"
+                :event-id="event.id"
+                :ticket-type="editingTicketType"
+                @saved="handleTicketTypeSaved"
+              />
 
               <UModal
                 v-model:open="isDeleteTicketTypeModalOpen"

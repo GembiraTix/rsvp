@@ -119,14 +119,13 @@ export function useTicketCart(iticketTypes: Ref<TicketType[]>): TicketCart {
 
     const cartSchema = z.array(
       z.object({
-        ticketTypeId: z.number(),
-        qty: z.number(),
+        ticketTypeId: z.number().int(),
+        qty: z.number().int().positive(),
       }),
     )
 
     const { data, error } = cartSchema.safeParse(JSON.parse(cartRaw))
     if (error || !data) {
-      console.log(error)
       throw createError('cart from query params is malformed') // TODO: better error handling
     }
 
@@ -136,6 +135,15 @@ export function useTicketCart(iticketTypes: Ref<TicketType[]>): TicketCart {
       )
       if (!ticketType) {
         throw createError('invalid ticket type id') // TODO: better error handling
+      }
+
+      const { min_qty, max_qty, multiple_of } = ticketType
+      if (
+        d.qty < min_qty ||
+        d.qty > max_qty ||
+        d.qty % multiple_of !== 0
+      ) {
+        throw createError('invalid ticket quantity')
       }
 
       return { ...d, ticketType }

@@ -6,9 +6,8 @@ import type {
 import type {
   Order,
   OrderItem,
+  OrderWithEvent,
   CreateOrderInput,
-  OrderStatus,
-  PaymentStatus,
   UserProfile,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
@@ -20,10 +19,31 @@ import { PostgrestError } from '@supabase/supabase-js'
 
 const ORDER_EXPIRY_MINUTES = 30
 
+export class OrderNotPayableError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+  ) {
+    super(message)
+  }
+}
+
+interface SnapTransactionParams {
+  midtransOrderId: string
+  grossAmount: number
+  itemDetails: {
+    id: string
+    name: string
+    price: number
+    quantity: number
+  }[]
+}
+
 export interface MidtransConfig {
   serverKey: string
   clientKey: string
   isProduction: boolean
+  appUrl: string
 }
 
 export interface MidtransSnapResponse {
@@ -69,7 +89,21 @@ export class OrderService {
       Date.now() + ORDER_EXPIRY_MINUTES * 60 * 1000,
     ).toISOString()
 
+    const orderId = crypto.randomUUID()
+
+    const { snapToken, redirectUrl } = await this.createMidtransTransaction({
+      midtransOrderId: `ORDER-${orderId}`,
+      grossAmount: subtotal,
+      itemDetails: lines.map((line) => ({
+        id: String(line.ticketTypeId),
+        name: line.name,
+        price: line.unitPrice,
+        quantity: line.qty,
+      })),
+    })
+
     const order = await this.orderRepo.create({
+      id: orderId,
       order_number: orderNumber,
       event_id: eventId,
       user_id: userId,
@@ -78,8 +112,10 @@ export class OrderService {
       total,
       expires_at: expiresAt,
       token,
-      status: 'draft',
-      payment_status: 'pending',
+      midtrans_order_id: `ORDER-${orderId}`,
+      checkout_url: redirectUrl,
+      status: 'pending',
+      payment_status: 'awaiting_payment',
     })
 
     this.logger.info('Order created', {
@@ -101,30 +137,8 @@ export class OrderService {
       })),
     })
 
-    this.logger.info('order items created. creating midtrans transaction...')
-
-    const { snapToken, redirectUrl } = await this.createMidtransTransaction(
-      order,
-      lines,
-    )
-
-    await this.orderRepo.updateMidtrans(order.id, {
-      midtrans_order_id: `ORDER-${order.id}`,
-      midtrans_transaction_id: null,
-      checkout_url: redirectUrl,
-    })
-
-    await this.orderRepo.updateStatus(order.id, {
-      status: 'pending',
-      payment_status: 'pending',
-    })
-
     return {
-      order: {
-        ...order,
-        midtrans_order_id: `ORDER-${order.id}`,
-        checkout_url: redirectUrl,
-      },
+      order,
       orderItems,
       snapToken,
       redirectUrl,
@@ -132,35 +146,31 @@ export class OrderService {
   }
 
   private async createMidtransTransaction(
-    order: Order,
-    lines: CreateOrderInput['lines'],
+    params: SnapTransactionParams,
   ): Promise<MidtransSnapResponse> {
-    const grossAmount = lines.reduce(
-      (acc, line) => acc + line.unitPrice * line.qty,
-      0,
-    )
-
     const snap = new midtrans.Snap({
       isProduction: this.midtransConfig.isProduction,
       serverKey: this.midtransConfig.serverKey,
     })
 
-    const params = {
+    const finishUrl = `${this.midtransConfig.appUrl}/api/checkout/finish`
+
+    const transactionParams = {
       transaction_details: {
-        order_id: `ORDER-${order.id}`,
-        gross_amount: grossAmount,
+        order_id: params.midtransOrderId,
+        gross_amount: params.grossAmount,
       },
-      item_details: lines.map((line) => ({
-        id: String(line.ticketTypeId),
-        name: line.name,
-        price: line.unitPrice,
-        quantity: line.qty,
-      })),
+      item_details: params.itemDetails,
+      callbacks: {
+        finish: finishUrl,
+        unfinish: finishUrl,
+        error: finishUrl,
+      },
     }
 
-    this.logger.info('params: ', params)
+    this.logger.info('params: ', transactionParams)
 
-    const response = await snap.createTransaction(params)
+    const response = await snap.createTransaction(transactionParams)
 
     const responseSchema = z
       .object({
@@ -179,24 +189,6 @@ export class OrderService {
       snapToken: data.token,
       redirectUrl: data.redirect_url,
     }
-  }
-
-  async updateStatus(
-    id: string,
-    payload: {
-      status: OrderStatus
-      payment_status: PaymentStatus
-    },
-  ): Promise<void> {
-    await this.orderRepo.updateStatus(id, {
-      status: payload.status,
-      payment_status: payload.payment_status,
-    })
-    this.logger.info('Order status updated', {
-      orderId: id,
-      status: payload.status,
-      payment_status: payload.payment_status,
-    })
   }
 
   async findByMidtransOrderId(midtransOrderId: string): Promise<Order | null> {
@@ -221,38 +213,40 @@ export class OrderService {
     return this.orderRepo.findById(id)
   }
 
-  async findByUser(userId: string): Promise<Order[]> {
+  async findByUser(userId: string): Promise<OrderWithEvent[]> {
     return this.orderRepo.findByUser(userId)
   }
-}
 
-export function mapMidtransStatusToOrder(status: string): {
-  orderStatus: OrderStatus
-  paymentStatus: PaymentStatus
-} {
-  switch (status) {
-    case 'settlement':
-      return { orderStatus: 'paid', paymentStatus: 'settled' }
-    case 'capture':
-      return { orderStatus: 'paid', paymentStatus: 'paid' }
-    case 'pending':
-      return { orderStatus: 'pending', paymentStatus: 'awaiting_payment' }
-    case 'deny':
-      return { orderStatus: 'failed', paymentStatus: 'failed' }
-    case 'expire':
-      return { orderStatus: 'expired', paymentStatus: 'expired' }
-    case 'cancel':
-      return { orderStatus: 'cancelled', paymentStatus: 'cancelled' }
-    case 'refund':
-      return { orderStatus: 'refunded', paymentStatus: 'refunded' }
-    case 'partial_refund':
-      return {
-        orderStatus: 'partial_refund',
-        paymentStatus: 'partial_refund',
-      }
-    case 'chargeback':
-      return { orderStatus: 'failed', paymentStatus: 'failed' }
-    default:
-      return { orderStatus: 'pending', paymentStatus: 'pending' }
+  async resumeCheckout(order: Order): Promise<MidtransSnapResponse> {
+    if (order.status !== 'pending') {
+      throw new OrderNotPayableError('Pesanan tidak dapat dibayar.', 409)
+    }
+
+    if (new Date(order.expires_at).getTime() <= Date.now()) {
+      await this.orderRepo.updateStatus(
+        order.id,
+        { status: 'expired', payment_status: 'expired' },
+        { onlyIfPaymentStatusIn: ['pending', 'awaiting_payment'] },
+      )
+      throw new OrderNotPayableError('Pesanan telah kedaluwarsa.', 410)
+    }
+
+    const grossAmount = order.total ?? order.subtotal + order.admin_fee
+    const { redirectUrl } = await this.createMidtransTransaction({
+      midtransOrderId: order.midtrans_order_id ?? `ORDER-${order.id}`,
+      grossAmount,
+      itemDetails: [
+        {
+          id: order.order_number,
+          name: order.order_number,
+          price: grossAmount,
+          quantity: 1,
+        },
+      ],
+    })
+
+    await this.orderRepo.updateCheckoutUrl(order.id, redirectUrl)
+
+    return { snapToken: '', redirectUrl }
   }
 }

@@ -7,12 +7,15 @@ import type {
   UserRole,
   Rsvp,
   CreateRsvpInput,
+  RsvpWithEvent,
   TicketType,
   CreateTicketTypeInput,
   UpdateTicketTypeInput,
   Order,
   OrderItem,
   Ticket,
+  OrderWithEvent,
+  TicketWithTypeName,
   OrderStatus,
   PaymentStatus,
 } from '../domain/types'
@@ -42,8 +45,11 @@ export interface IUserRepository {
 
 export interface IRsvpRepository {
   findByToken(token: string): Promise<Rsvp | null>
+  findById(id: number): Promise<Rsvp | null>
   findByEventId(eventId: number): Promise<Rsvp[]>
   findByEmail(email: string): Promise<Rsvp[]>
+  findAttendingByEmail(email: string): Promise<RsvpWithEvent[]>
+  countAttendingByEventId(eventId: number): Promise<number>
   findByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null>
   create(payload: CreateRsvpInput): Promise<Rsvp>
   createBatch(input: {
@@ -82,6 +88,7 @@ export interface ITicketTypeRepository {
 
 export interface IOrderRepository {
   create(input: {
+    id: string
     order_number: string
     event_id: number
     user_id: string
@@ -90,28 +97,45 @@ export interface IOrderRepository {
     total: number
     expires_at: string
     token: string
+    midtrans_order_id: string
+    checkout_url: string
     status: OrderStatus
     payment_status: PaymentStatus
   }): Promise<Order>
   findById(id: string): Promise<Order | null>
-  findByUser(userId: string): Promise<Order[]>
+  findByUser(userId: string): Promise<OrderWithEvent[]>
   updateStatus(
     id: string,
     payload: {
       status: OrderStatus
       payment_status: PaymentStatus
+      paid_at?: string
+      midtrans_transaction_id?: string | null
     },
-  ): Promise<void>
+    guard?: {
+      onlyIfPaymentStatusIn?: PaymentStatus[]
+      unlessPaymentStatusIn?: PaymentStatus[]
+    },
+  ): Promise<boolean>
+  updateCheckoutUrl(id: string, checkoutUrl: string): Promise<void>
   findByMidtransOrderId(midtransOrderId: string): Promise<Order | null>
   findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]>
-  updateMidtrans(
-    id: string,
-    payload: {
-      midtrans_order_id: string
-      midtrans_transaction_id: string | null
-      checkout_url: string | null
-    },
-  ): Promise<void>
+}
+
+export interface IPaymentEventRepository {
+  existsByTransactionAndStatus(
+    midtransTransactionId: string,
+    eventType: string,
+  ): Promise<boolean>
+  create(input: {
+    order_id: string | null
+    midtrans_order_id: string | null
+    midtrans_transaction_id: string | null
+    event_type: string
+    payload: Record<string, unknown>
+    signature_valid?: boolean | null
+  }): Promise<string>
+  markProcessed(id: string, error?: string): Promise<void>
 }
 
 export interface ITicketRepository {
@@ -136,5 +160,5 @@ export interface ITicketRepository {
       attendee_phone: string | null
     }[]
   }): Promise<Ticket[]>
-  findTicketsByOrderId(orderId: string): Promise<Ticket[]>
+  findTicketsByOrderId(orderId: string): Promise<TicketWithTypeName[]>
 }

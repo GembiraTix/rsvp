@@ -1,6 +1,6 @@
-import type { Rsvp } from '~/../../server/domain/types'
+import type { Rsvp, RsvpWithEvent } from '~/../../server/domain/types'
 
-type RsvpWithEvent = Rsvp & {
+type RsvpDetail = Rsvp & {
   events: {
     id: number
     title: string | null
@@ -13,8 +13,20 @@ type RsvpWithEvent = Rsvp & {
 export function useRsvp() {
   function fetchByToken(token: MaybeRefOrGetter<string>) {
     return useFetch(() => `/api/rsvp/${toValue(token)}`, {
-      transform: (res: { success: boolean; data: RsvpWithEvent }) => res.data,
+      transform: (res: { success: boolean; data: RsvpDetail }) => res.data,
     })
+  }
+
+  function fetchJoined() {
+    return useFetch<{ success: boolean; data: RsvpWithEvent[] }>(
+      '/api/users/me/rsvps',
+    )
+  }
+
+  function fetchAttendingCount(eventId: MaybeRefOrGetter<number>) {
+    return useFetch<{ success: boolean; data: { count: number } }>(
+      () => `/api/public/events/${toValue(eventId)}/rsvp-count`,
+    )
   }
 
   async function getRsvpByEventAndEmail(
@@ -45,5 +57,11 @@ export function useRsvp() {
       body: payload,
     })
 
-  return { fetchByToken, getRsvpByEventAndEmail, submit }
+  return {
+    fetchByToken,
+    fetchJoined,
+    fetchAttendingCount,
+    getRsvpByEventAndEmail,
+    submit,
+  }
 }

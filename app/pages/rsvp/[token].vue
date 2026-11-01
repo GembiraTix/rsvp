@@ -17,9 +17,7 @@ useSeoMeta({
 
 <template>
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
-    <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left">
-      Kembali ke Beranda
-    </UButton>
+    <PageHeader back-to="/" back-label="Kembali ke Beranda" />
 
     <div
       v-if="error || !rsvp"

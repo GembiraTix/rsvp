@@ -23,24 +23,28 @@ useSeoMeta({
 })
 
 const user = useSupabaseUser()
-const navItems: NavigationMenuItem[] = [
-  {
-    label: 'Beranda',
-    to: '/',
-  },
-  {
-    label: 'Dasbor',
-    to: '/users',
-  },
-]
+const navItems = computed<NavigationMenuItem[]>(() => {
+  const items: NavigationMenuItem[] = [
+    {
+      label: 'Beranda',
+      to: '/',
+    },
+    {
+      label: 'Dasbor',
+      to: '/users',
+    },
+  ]
 
-if (!user.value) {
-  navItems.push({
-    label: 'Masuk',
-    to: '/login',
-    type: 'link',
-  })
-}
+  if (!user.value) {
+    items.push({
+      label: 'Masuk',
+      to: '/login',
+      type: 'link',
+    })
+  }
+
+  return items
+})
 </script>
 
 <template>

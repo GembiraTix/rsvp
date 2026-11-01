@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@nuxt/ui'
-import { z } from 'zod'
 import { useEvents } from '@/composables/useEvents'
 import { useRsvp } from '@/composables/useRsvp'
+import { useTicketTypes } from '@/composables/useTicketTypes'
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
@@ -23,28 +22,24 @@ if (error.value || !eventRes.value?.data) {
 
 const event = computed(() => eventRes.value!.data)
 
+const { fetchPublicByEvent } = useTicketTypes()
+const { data: ticketTypesRes } = await fetchPublicByEvent(eventSlug)
+const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
+const hasTickets = computed(() => ticketTypes.value.length > 0)
+const lowestPrice = computed(() =>
+  hasTickets.value
+    ? Math.min(...ticketTypes.value.map((tt) => tt.price))
+    : null,
+)
+
 const isAdmin = computed(
   () => profile.value && ['admin', 'super_admin'].includes(profile.value.role),
 )
 
-const supabase = useSupabaseClient()
+const { fetchAttendingCount, getRsvpByEventAndEmail } = useRsvp()
+const { data: rsvpCountRes } = await fetchAttendingCount(event.value.id)
 
-// TODO: refactor into fetchEvents
-const { data: rsvpCountRes } = await useAsyncData(
-  `event-rsvp-count-${event.value?.id}`,
-  async () => {
-    if (!event.value?.id) return 0
-    const { count, error } = await supabase
-      .from('rsvps')
-      .select('*', { head: true, count: 'exact' })
-      .eq('event_id', event.value.id)
-      .eq('is_attending', true)
-    if (error) throw error
-    return count ?? 0
-  },
-)
-
-const attendingCount = computed(() => rsvpCountRes.value ?? 0)
+const attendingCount = computed(() => rsvpCountRes.value?.data.count ?? 0)
 
 const isLimitReached = computed(() => {
   if (!event.value?.registration_limit) return false
@@ -56,77 +51,29 @@ useSeoMeta({
   description: () => event.value?.description || '',
 })
 
-const existingRsvp = ref<{ token: string; is_attending: boolean } | null>(null)
+const {
+  data: existingRsvp,
+  refresh: refreshExistingRsvp,
+} = await useAsyncData(`event-rsvp-${event.value.id}-${profile.value?.email}`, () =>
+  getRsvpByEventAndEmail(event.value.id, profile.value?.email ?? ''),
+)
 
-const { getRsvpByEventAndEmail, submit } = useRsvp()
+const rsvpToken = computed(() => existingRsvp.value?.token ?? '')
 
-if (profile.value?.email && event.value) {
-  const existing = await getRsvpByEventAndEmail(
-    event.value.id,
-    profile.value.email,
-  )
-  if (existing) {
-    existingRsvp.value = {
-      token: existing.token,
-      is_attending: existing.is_attending,
-    }
-  }
+const isRegistered = computed(() => existingRsvp.value?.is_attending ?? false)
+
+async function handleRegistered() {
+  await refreshExistingRsvp()
 }
 
-const formSchema = z.object({
-  name: z.string().min(1, 'Nama lengkap wajib diisi.'),
-  email: z.email('Masukkan alamat email yang valid.'),
-  organization: z.string().optional(),
-})
-
-type RSVPForm = z.output<typeof formSchema>
-
-const form = reactive<RSVPForm>({
-  name: profile.value?.name || '',
-  email: profile.value?.email || '',
-  organization: '',
-})
-
-const isSubmitting = ref(false)
-const rsvpSuccess = ref(false)
-const rsvpToken = ref(existingRsvp.value?.token || '')
-const errorMessage = ref('')
-const isConfirmOpen = ref(false)
-
-async function submitRsvp(name: string, email: string, organization?: string) {
-  if (!event.value) return
-  errorMessage.value = ''
-  isSubmitting.value = true
-
-  try {
-    const res = await submit({
-      eventId: event.value.id,
-      name,
-      email,
-      organization,
-    })
-
-    rsvpToken.value = res.token
-    rsvpSuccess.value = true
-    isConfirmOpen.value = false
-  } catch (err: unknown) {
-    console.log(err)
-    errorMessage.value = 'Gagal mengirim RSVP. Silakan coba lagi.'
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
-  await submitRsvp(e.data.name, e.data.email, e.data.organization)
-}
-
-async function handleAuthenticatedRsvp() {
-  const email = profile.value?.email
-  if (!email) return
-  const userName = profile.value?.name || email.split('@')[0] || email
-  await submitRsvp(userName, email)
-}
+const sidebarPanel = computed(() =>
+  resolveEventSidebarPanel({
+    isRegistered: isRegistered.value,
+    isLimitReached: isLimitReached.value,
+    hasTickets: hasTickets.value,
+    isLoggedIn: Boolean(profile.value),
+  }),
+)
 </script>
 
 <template>
@@ -188,37 +135,39 @@ async function handleAuthenticatedRsvp() {
         </div>
       </section>
 
-      <section class="lg:col-span-5">
+      <section class="lg:col-span-5 space-y-6">
+        <UCard
+          v-if="isAdmin"
+          class="shadow-xl border-outline"
+          :ui="{ body: 'p-6 space-y-4 text-center py-2' }"
+        >
+          <h2 class="text-xl font-bold text-on-surface">Kelola Acara Anda</h2>
+          <p>Sunting detil acara, atau kelola peserta</p>
+
+          <UButton
+            :to="`/e/${event.slug}/edit`"
+            variant="outline"
+            size="lg"
+            icon="i-lucide-pencil"
+            class="w-full justify-center font-bold"
+            label="Edit detil acara"
+          />
+          <UButton
+            :to="`/e/${event.slug}/manage`"
+            color="primary"
+            size="lg"
+            class="w-full justify-center font-bold"
+            icon="i-lucide-settings"
+            label="Kelola Acara & Peserta"
+          />
+        </UCard>
+
         <UCard
           class="sticky top-20 shadow-xl border-outline"
           :ui="{ body: 'p-6 space-y-6' }"
         >
-          <div v-if="isAdmin" class="space-y-4 text-center py-2">
-            <h2 class="text-xl font-bold text-on-surface">Kelola Acara Anda</h2>
-            <p>Sunting detil acara, atau kelola peserta</p>
-
-            <UButton
-              :to="`/e/${event.slug}/edit`"
-              variant="outline"
-              size="lg"
-              icon="i-lucide-pencil"
-              class="w-full justify-center font-bold"
-              label="Edit detil acara"
-            />
-            <UButton
-              :to="`/e/${event.slug}/manage`"
-              color="primary"
-              size="lg"
-              class="w-full justify-center font-bold"
-              icon="i-lucide-settings"
-              label="Kelola Acara & Peserta"
-            />
-          </div>
-
           <div
-            v-else-if="
-              rsvpSuccess || (existingRsvp && existingRsvp.is_attending)
-            "
+            v-if="sidebarPanel === 'confirmed'"
             class="space-y-4 text-center py-4"
           >
             <div
@@ -256,7 +205,7 @@ async function handleAuthenticatedRsvp() {
             </div>
           </div>
 
-          <template v-else-if="isLimitReached">
+          <template v-else-if="sidebarPanel === 'quota_full'">
             <header>
               <h3 class="text-xl font-bold text-on-surface">Kuota penuh</h3>
 
@@ -267,134 +216,47 @@ async function handleAuthenticatedRsvp() {
             </header>
           </template>
 
-          <!-- Authenticated Quick RSVP -->
-          <template v-else-if="profile && !isAdmin">
-            <header class="space-y-1">
-              <h2 class="text-xl font-bold text-on-surface">RSVP Cepat</h2>
+          <div v-else-if="sidebarPanel === 'buy_tickets'" class="space-y-3">
+            <header class="flex justify-between">
+              <h2 class="text-xl font-bold text-on-surface">Beli tiket</h2>
               <p class="text-on-surface-variant">
-                Masuk sebagai
-                <strong class="text-on-surface">{{ profile.email }}</strong>
+                Mulai dari
+                <span class="font-bold text-on-surface">
+                  {{ formatRupiah(lowestPrice ?? 0) }}
+                </span>
               </p>
             </header>
 
-            <UAlert
-              v-if="errorMessage"
-              title="ada kesalahan!"
-              :description="errorMessage"
-              icon="i-lucide-triangle-alert"
-              color="error"
-              variant="subtle"
-            />
-
             <UButton
+              :to="`/e/${event.slug}/tickets`"
               color="primary"
               size="xl"
-              class="w-full justify-center font-bold"
+              label="Beli Tiket"
               icon="i-lucide-ticket"
-              :disabled="isLimitReached"
-              @click="isConfirmOpen = true"
-            >
-              RSVP Sekarang
-            </UButton>
+              block
+            />
+          </div>
 
-            <!-- Confirm Dialog -->
-            <UModal
-              v-model:open="isConfirmOpen"
-              title="Konfirmasi RSVP Anda"
-              :description="`Pesan 1 tempat untuk ${profile.email} pada acara ${event.title}?`"
-            >
-              <template #footer>
-                <div class="flex justify-end gap-2">
-                  <UButton
-                    color="neutral"
-                    variant="ghost"
-                    @click="isConfirmOpen = false"
-                  >
-                    Batal
-                  </UButton>
-                  <UButton
-                    color="primary"
-                    :loading="isSubmitting"
-                    :disabled="isLimitReached"
-                    @click="handleAuthenticatedRsvp"
-                  >
-                    Konfirmasi RSVP
-                  </UButton>
-                </div>
-              </template>
-            </UModal>
+          <!-- authenticated RSVP -->
+          <template v-else-if="sidebarPanel === 'rsvp_form'">
+            <EventRsvpForm
+              mode="authenticated"
+              :event-id="event.id"
+              :event-title="event.title"
+              :profile="profile"
+              @registered="handleRegistered"
+            />
           </template>
 
           <!-- Guest Form State -->
           <template v-else>
-            <header>
-              <h3 class="text-xl font-bold text-on-surface">
-                Amankan Tempat Anda
-              </h3>
-
-              <p class="text-on-surface-variant mt-0.5">
-                Tidak memerlukan akun. Pendaftaran cepat dan gratis.
-              </p>
-            </header>
-
-            <UAlert
-              v-if="errorMessage"
-              title="ada kesalahan!"
-              :description="errorMessage"
-              icon="i-lucide-triangle-alert"
-              color="error"
-              variant="subtle"
+            <EventRsvpForm
+              mode="guest"
+              :event-id="event.id"
+              :event-title="event.title"
+              :profile="profile"
+              @registered="handleRegistered"
             />
-
-            <UForm
-              :schema="formSchema"
-              :state="form"
-              class="space-y-4"
-              @submit="handleRsvp"
-            >
-              <UFormField class="space-y-1.5" label="Nama lengkap">
-                <UInput
-                  v-model="form.name"
-                  placeholder="Andi Johan"
-                  required
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField class="space-y-1.5" label="Alamat email">
-                <UInput
-                  v-model="form.email"
-                  type="email"
-                  placeholder="andi@example.com"
-                  required
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField
-                class="space-y-1.5"
-                label="Organisasi / Latar Belakang"
-                hint="opsional"
-              >
-                <UTextarea
-                  v-model="form.organization"
-                  placeholder="Mahasiswa Ilmu Komputer"
-                  :rows="3"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UButton
-                type="submit"
-                color="primary"
-                size="lg"
-                class="w-full justify-center"
-                :loading="isSubmitting"
-                :disabled="isLimitReached"
-              >
-                Konfirmasi RSVP
-              </UButton>
-            </UForm>
           </template>
         </UCard>
       </section>

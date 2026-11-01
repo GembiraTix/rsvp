@@ -1,94 +1,68 @@
-import { useOrderService } from '#server/utils/order-service'
-import { useTicketService } from '#server/utils/ticket-service'
-import { mapMidtransStatusToOrder } from '#server/services/order.service'
+import { getMidtransConfig } from '#server/utils/order-service'
+import { usePaymentStatusService } from '#server/utils/payment-status-service'
 import crypto from 'node:crypto'
 import { z } from 'zod'
+
+const notificationSchema = z.object({
+  order_id: z.string(),
+  status_code: z.string(),
+  gross_amount: z.string(),
+  signature_key: z.string(),
+  transaction_status: z.string(),
+  transaction_id: z.string().optional(),
+  fraud_status: z.string().nullish(),
+  payment_type: z.string().nullish(),
+  status_message: z.string().nullish(),
+})
 
 export default defineEventHandler(async (event) => {
   const { serverKey } = getMidtransConfig()
 
-  const bodySchema = z.object({
-    order_id: z.string(),
-    status_code: z.string(),
-    gross_amount: z.string(),
-    signature_key: z.string(),
-  })
-  const { data, error } = await readValidatedBody(event, bodySchema.safeParse)
+  const { data: notification, error } = await readValidatedBody(
+    event,
+    notificationSchema.safeParse,
+  )
 
-  if (error || !data) {
-    console.error('unexpected payment gateway notification: ', data)
+  if (error || !notification) {
+    console.error('unexpected payment gateway notification: ', notification)
     return { success: false }
   }
 
-  const { order_id, status_code, gross_amount, signature_key } = data
+  const { order_id, status_code, gross_amount, signature_key } = notification
 
-  console.log('verifying signature')
   const expectedSignature = crypto
     .createHash('sha512')
     .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
     .digest('hex')
 
-  const isSignatureValid = signature_key && expectedSignature === signature_key
-
-  if (!isSignatureValid) {
+  if (expectedSignature !== signature_key) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Invalid signature.',
     })
   }
 
-  const orderService = await useOrderService(event)
-  console.log('finding order ', order_id)
-  const order = await orderService.findByMidtransOrderId(order_id)
+  const paymentStatusService = usePaymentStatusService(event)
+  const order = await paymentStatusService.findByMidtransOrderId(order_id)
 
   if (!order) {
-    console.error('order not found')
+    console.error('order not found for notification: ', order_id)
     return { success: false }
   }
 
-  // if order already settled, return 200
-  if (order.payment_status === 'settled') {
-    return { success: true }
-  }
-
-  const { orderStatus, paymentStatus } = mapMidtransStatusToOrder(status_code)
-
-  const isSettled = paymentStatus === 'settled' || paymentStatus === 'paid'
-
-  await orderService.updateStatus(order.id, {
-    status: orderStatus,
-    payment_status: paymentStatus,
+  const result = await paymentStatusService.applyMidtransUpdate({
+    order,
+    transactionStatus: notification.transaction_status,
+    fraudStatus: notification.fraud_status,
+    grossAmount: gross_amount,
+    transactionId: notification.transaction_id,
+    paymentType: notification.payment_type,
+    source: 'notification',
+    raw: notification,
+    signatureValid: true,
   })
-  console.log(`successfully updated order ${order.id} status to ${orderStatus}`)
 
-  // Issue tickets when payment is settled/paid (idempotent: skip if tickets exist)
-  if (isSettled) {
-    const ticketService = await useTicketService(event)
-    const existingTickets = await ticketService.findTicketsByOrderId(order.id)
-
-    if (existingTickets.length === 0) {
-      const orderItems = await orderService.findOrderItemsByOrderId(order.id)
-      const userProfile = await orderService.getUserProfile(order.user_id)
-
-      if (orderItems.length > 0 && userProfile) {
-        await ticketService.issueTickets({
-          orderId: order.id,
-          userId: order.user_id,
-          eventId: order.event_id,
-          attendeeName: userProfile.name ?? 'Tamu',
-          attendeeEmail: userProfile.email ?? '',
-          attendeeEmailPhone: null,
-          items: orderItems.map((item) => ({
-            ticket_type_id: item.ticket_type_id,
-            qty: item.qty,
-          })),
-        })
-        console.log(
-          `tickets issued for order ${order.id} (${orderItems.length} line items)`,
-        )
-      }
-    }
-  }
+  console.log(`notification for order ${order.id} processed: ${result}`)
 
   return { success: true }
 })

@@ -47,6 +47,19 @@ export interface Rsvp {
   created_at: string
 }
 
+export interface RsvpEventSummary {
+  id: number
+  slug: string
+  title: string | null
+  location: string | null
+  starts_at: string | null
+  ends_at: string | null
+}
+
+export interface RsvpWithEvent extends Rsvp {
+  event: RsvpEventSummary | null
+}
+
 export type CreateRsvpInput = Omit<Rsvp, 'id' | 'created_at'>
 export type UpdateRsvpInput = Partial<Omit<Rsvp, 'id' | 'created_at' | 'token'>>
 export type TicketTypeKind = 'single' | 'couple' | 'berempat'
@@ -103,7 +116,7 @@ export interface Order {
   order_number: string
   event_id: number
   user_id: string
-  subtotal: string
+  subtotal: number
   admin_fee: number
   total: number | null
   status: OrderStatus
@@ -116,6 +129,18 @@ export interface Order {
   expires_at: string
   created_at: string
   updated_at: string
+}
+
+export interface OrderEventSummary {
+  id: number
+  slug: string
+  title: string | null
+  starts_at: string | null
+  location: string | null
+}
+
+export interface OrderWithEvent extends Order {
+  event: OrderEventSummary | null
 }
 
 export interface OrderItem {
@@ -138,7 +163,12 @@ export interface Ticket {
   attendee_phone: string | null
   token: string
   fields: Record<string, unknown> | null
+  checkin_at: string | null
   created_at: string
+}
+
+export interface TicketWithTypeName extends Ticket {
+  ticket_type_name: string | null
 }
 
 export interface CreateOrderInput {

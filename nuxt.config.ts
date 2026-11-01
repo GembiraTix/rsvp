@@ -22,6 +22,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'Bursa Kerja FPCE',
+      appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      ticketQrEnabled: process.env.NUXT_PUBLIC_TICKET_QR_ENABLED === 'true',
     },
 
     resendApiKey: process.env.NUXT_RESEND_API_KEY,

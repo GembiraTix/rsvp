@@ -41,7 +41,11 @@ const events = computed(() => res.value?.data || [])
         v-if="events.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
       >
-        <HomeEvent v-for="event in events" :key="event.id" :event="event" />
+        <HomeEvent
+          v-for="event in events"
+          :key="event.id"
+          :event="event"
+        />
       </div>
     </section>
   </div>

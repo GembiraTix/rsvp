@@ -39,25 +39,20 @@ function goToCheckout() {
 
 <template>
   <div class="py-8 max-w-5xl mx-auto px-4 space-y-8">
-    <UButton
-      :to="`/e/${event.slug}`"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
-    >
-      Kembali ke acara
-    </UButton>
-
-    <header class="space-y-2">
-      <h1 class="text-3xl font-bold text-on-surface">Pilih Tiket</h1>
-      <p class="text-on-surface-variant">
-        {{ event.title }}
-        <template v-if="event.starts_at">
-          · {{ formatDate(event.starts_at) }}
-        </template>
-        <template v-if="event.location"> · {{ event.location }}</template>
-      </p>
-    </header>
+    <PageHeader
+      :back-to="`/e/${event.slug}`"
+      back-label="Kembali ke acara"
+      title="Pilih Tiket"
+      :description="
+        [
+          event.title,
+          event.starts_at ? formatDate(event.starts_at) : null,
+          event.location,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      "
+    />
 
     <UCard v-if="ticketTypes.length === 0">
       <p class="text-on-surface-variant">
@@ -76,7 +71,10 @@ function goToCheckout() {
 
     <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <section class="lg:col-span-7 space-y-4">
-        <template v-for="cartLine of cart" :key="cartLine.ticketType.id">
+        <template
+          v-for="cartLine of cart"
+          :key="cartLine.ticketType.id"
+        >
           <TicketSelect
             v-model="cartLine.qty"
             :line="cartLine"
@@ -101,23 +99,11 @@ function goToCheckout() {
           </p>
 
           <ul v-else class="space-y-3">
-            <li
+            <TicketOrderLine
               v-for="line in selectedLines"
               :key="line.ticketType.id"
-              class="flex items-start justify-between gap-4 text-sm"
-            >
-              <div>
-                <p class="font-medium text-on-surface">
-                  {{ line.ticketType.name }}
-                </p>
-                <p class="text-on-surface-variant">
-                  {{ line.qty }} × {{ formatRupiah(line.ticketType.price) }}
-                </p>
-              </div>
-              <p class="font-mono text-on-surface">
-                {{ formatRupiah(line.total) }}
-              </p>
-            </li>
+              :line="line"
+            />
           </ul>
 
           <div

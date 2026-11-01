@@ -1,38 +1,17 @@
 <script setup lang="ts">
-import { z } from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
-import { useUserProfile } from '@/composables/useUserProfile'
 import { useAdminUsers } from '@/composables/useAdminUsers'
-import type { UserProfile, UserRole } from '~~/server/domain/types'
+import type { UserProfile } from '~~/server/domain/types'
+import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
-  middleware: 'auth',
+  middleware: ['auth', 'super-admin'],
 })
 
 useSeoMeta({
   title: 'Manajemen Pengguna - Admin',
 })
 
-const { fetchProfile } = useUserProfile()
-const { data: profileRes } = await fetchProfile()
-const currentUser = computed(() => profileRes.value?.data || null)
-
-// Ensure only super_admin can view this page
-watch(
-  currentUser,
-  (val) => {
-    if (val && val.role !== 'super_admin') {
-      navigateTo('/users')
-    }
-  },
-  { immediate: true },
-)
-
-const {
-  fetchUsers,
-  createUser: apiCreateUser,
-  updateUserRole: apiUpdateUserRole,
-} = useAdminUsers()
+const { fetchUsers } = useAdminUsers()
 const { data: usersRes, refresh: refreshUsers } = await fetchUsers()
 const usersList = computed(() => usersRes.value?.data || [])
 
@@ -51,113 +30,43 @@ const filteredUsers = computed(() => {
   )
 })
 
+const usersColumns: TableColumn<UserProfile>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Pengguna',
+  },
+  {
+    accessorKey: 'email',
+    header: 'Email',
+  },
+  {
+    accessorKey: 'role',
+    header: 'Role',
+  },
+  {
+    accessorKey: 'created_at',
+    header: 'Terdaftar',
+    cell: ({ row }) =>
+      formatDate(row.original.created_at, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      }),
+  },
+  {
+    id: 'action',
+    header: 'Aksi',
+  },
+]
+
 const isCreateModalOpen = ref(false)
-const isCreating = ref(false)
-const createErrorMessage = ref('')
-const createSuccessMessage = ref('')
 
-const createUserSchema = z.object({
-  name: z.string().min(1, 'Nama wajib diisi.'),
-  email: z.email('Format email tidak valid.'),
-  password: z.string().min(6, 'Kata sandi minimal 6 karakter.'),
-  role: z.enum(['user', 'admin', 'super_admin']),
-})
-
-type CreateUserState = z.output<typeof createUserSchema>
-
-const createFormState = reactive<CreateUserState>({
-  name: '',
-  email: '',
-  password: '',
-  role: 'admin',
-})
-
-async function handleCreateUser(e: FormSubmitEvent<CreateUserState>) {
-  isCreating.value = true
-  createErrorMessage.value = ''
-  createSuccessMessage.value = ''
-
-  try {
-    await apiCreateUser({
-      name: e.data.name,
-      email: e.data.email,
-      password: e.data.password,
-      role: e.data.role,
-    })
-    await refreshUsers()
-    createSuccessMessage.value = 'Pengguna berhasil dibuat!'
-    createFormState.name = ''
-    createFormState.email = ''
-    createFormState.password = ''
-    createFormState.role = 'admin'
-    setTimeout(() => {
-      isCreateModalOpen.value = false
-      createSuccessMessage.value = ''
-    }, 1500)
-  } catch (err: unknown) {
-    createErrorMessage.value =
-      err instanceof Error ? err.message : 'Gagal membuat pengguna.'
-  } finally {
-    isCreating.value = false
-  }
-}
-
-// Role editing modal
 const isRoleModalOpen = ref(false)
 const selectedUserForRole = ref<UserProfile | null>(null)
-const selectedNewRole = ref<UserRole>('user')
-const isUpdatingRole = ref(false)
-const roleErrorMessage = ref('')
 
 function openRoleModal(user: UserProfile) {
   selectedUserForRole.value = user
-  selectedNewRole.value = user.role || 'user'
-  roleErrorMessage.value = ''
   isRoleModalOpen.value = true
-}
-
-async function handleSaveRole() {
-  if (!selectedUserForRole.value) return
-  isUpdatingRole.value = true
-  roleErrorMessage.value = ''
-
-  try {
-    await apiUpdateUserRole(selectedUserForRole.value.id, selectedNewRole.value)
-    await refreshUsers()
-    isRoleModalOpen.value = false
-  } catch (err: unknown) {
-    roleErrorMessage.value =
-      err instanceof Error ? err.message : 'Gagal mengubah role.'
-  } finally {
-    isUpdatingRole.value = false
-  }
-}
-
-const roleOptions: { label: string; value: UserRole }[] = [
-  { label: 'User (Pengunjung Biasa)', value: 'user' },
-  { label: 'Admin (Dapat Mengelola Acara)', value: 'admin' },
-  { label: 'Super Admin (Akses Penuh)', value: 'super_admin' },
-]
-
-function getRoleBadgeColor(role: UserRole) {
-  const roleColors = new Map<
-    string,
-    | 'success'
-    | 'error'
-    | 'primary'
-    | 'warning'
-    | 'info'
-    | 'neutral'
-    | 'secondary'
-    | undefined
-  >()
-  roleColors.set('super_admin', 'primary')
-  roleColors.set('admin', 'neutral')
-  roleColors.set('user', 'neutral')
-
-  const color = roleColors.get(role)
-
-  return color ?? 'neutral'
 }
 </script>
 
@@ -207,202 +116,54 @@ function getRoleBadgeColor(role: UserRole) {
         </div>
       </template>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left">
-          <thead
-            class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
+      <UTable :data="filteredUsers" :columns="usersColumns">
+        <template #name-cell="{ row }">
+          <span class="font-medium text-on-surface">
+            {{ row.original.name || '-' }}
+          </span>
+        </template>
+
+        <template #email-cell="{ row }">
+          <span class="text-on-surface-variant font-mono text-xs">
+            {{ row.original.email }}
+          </span>
+        </template>
+
+        <template #role-cell="{ row }">
+          <UBadge
+            :color="getRoleBadgeColor(row.original.role)"
+            variant="outline"
           >
-            <tr>
-              <th class="px-6 py-3">Pengguna</th>
-              <th class="px-6 py-3">Email</th>
-              <th class="px-6 py-3">Role</th>
-              <th class="px-6 py-3">Terdaftar</th>
-              <th class="px-6 py-3 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-outline">
-            <tr
-              v-for="u in filteredUsers"
-              :key="u.id"
-              class="hover:bg-surface-container/50"
-            >
-              <td class="px-6 py-4 font-medium text-on-surface">
-                {{ u.name || '-' }}
-              </td>
-              <td class="px-6 py-4 text-on-surface-variant font-mono text-xs">
-                {{ u.email }}
-              </td>
-              <td class="px-6 py-4">
-                <UBadge :color="getRoleBadgeColor(u.role)" variant="outline">
-                  {{ u.role }}
-                </UBadge>
-              </td>
-              <td class="px-6 py-4 text-on-surface-variant text-sm">
-                {{
-                  formatDate(u.created_at, {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })
-                }}
-              </td>
-              <td class="px-6 py-4 text-right">
-                <UButton size="sm" variant="outline" @click="openRoleModal(u)">
-                  Ubah Role
-                </UButton>
-              </td>
-            </tr>
-            <tr v-if="filteredUsers.length === 0">
-              <td
-                colspan="5"
-                class="px-6 py-8 text-center text-on-surface-variant"
-              >
-                Tidak ada pengguna yang ditemukan.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </UCard>
+            {{ row.original.role }}
+          </UBadge>
+        </template>
 
-    <UModal
-      v-model:open="isCreateModalOpen"
-      title="Tambah Pengguna Baru"
-      description="Buat akun pengguna baru dan tetapkan rolenya."
-    >
-      <template #body>
-        <UAlert
-          v-if="createErrorMessage"
-          :title="createErrorMessage"
-          icon="i-lucide-alert-circle"
-          color="error"
-          variant="subtle"
-          class="mb-4"
-        />
-
-        <UAlert
-          v-if="createSuccessMessage"
-          :title="createSuccessMessage"
-          icon="i-lucide-check-circle"
-          color="success"
-          variant="subtle"
-          class="mb-4"
-        />
-
-        <UForm
-          :schema="createUserSchema"
-          :state="createFormState"
-          class="space-y-4"
-          @submit="handleCreateUser"
-        >
-          <UFormField label="Nama Lengkap" name="name" required>
-            <UInput
-              v-model="createFormState.name"
-              placeholder="contoh: Budi Pratama"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField label="Alamat Email" name="email" required>
-            <UInput
-              v-model="createFormState.email"
-              type="email"
-              placeholder="budi@example.com"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField label="Kata Sandi Awal" name="password" required>
-            <UInput
-              v-model="createFormState.password"
-              type="password"
-              placeholder="Minimal 6 karakter"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField label="Role Pengguna" name="role" required>
-            <select
-              v-model="createFormState.role"
-              class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
-            >
-              <option
-                v-for="opt in roleOptions"
-                :key="opt.value"
-                :value="opt.value"
-              >
-                {{ opt.label }}
-              </option>
-            </select>
-          </UFormField>
-
-          <div class="flex justify-end gap-2 pt-4 border-t border-outline">
+        <template #action-cell="{ row }">
+          <div class="text-right">
             <UButton
-              color="neutral"
-              variant="ghost"
-              @click="isCreateModalOpen = false"
+              size="sm"
+              variant="outline"
+              @click="openRoleModal(row.original)"
             >
-              Batal
-            </UButton>
-            <UButton color="primary" type="submit" :loading="isCreating">
-              Simpan Pengguna
+              Ubah Role
             </UButton>
           </div>
-        </UForm>
-      </template>
-    </UModal>
+        </template>
 
-    <UModal
+        <template #empty>
+          <p class="px-6 py-8 text-center text-on-surface-variant">
+            Tidak ada pengguna yang ditemukan.
+          </p>
+        </template>
+      </UTable>
+    </UCard>
+
+    <CreateUserModal v-model:open="isCreateModalOpen" @saved="refreshUsers" />
+
+    <RoleModal
       v-model:open="isRoleModalOpen"
-      title="Ubah Role Pengguna"
-      :description="`Atur hak akses untuk ${selectedUserForRole?.name || selectedUserForRole?.email}`"
-    >
-      <template #body>
-        <UAlert
-          v-if="roleErrorMessage"
-          :title="roleErrorMessage"
-          icon="i-lucide-alert-circle"
-          color="error"
-          variant="subtle"
-          class="mb-4"
-        />
-
-        <div class="space-y-4 py-2">
-          <UFormField label="Pilih Role Baru">
-            <select
-              v-model="selectedNewRole"
-              class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
-            >
-              <option
-                v-for="opt in roleOptions"
-                :key="opt.value"
-                :value="opt.value"
-              >
-                {{ opt.label }}
-              </option>
-            </select>
-          </UFormField>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            @click="isRoleModalOpen = false"
-          >
-            Batal
-          </UButton>
-          <UButton
-            color="primary"
-            :loading="isUpdatingRole"
-            @click="handleSaveRole"
-          >
-            Simpan Perubahan
-          </UButton>
-        </div>
-      </template>
-    </UModal>
+      :user="selectedUserForRole"
+      @saved="refreshUsers"
+    />
   </div>
 </template>

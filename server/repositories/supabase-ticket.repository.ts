@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { ITicketRepository } from './interfaces'
-import type { OrderItem, Ticket } from '../domain/types'
+import type { OrderItem, Ticket, TicketWithTypeName } from '../domain/types'
 
 type OrderItemInsert = Database['public']['Tables']['order_items']['Insert']
 type TicketInsert = Database['public']['Tables']['tickets']['Insert']
@@ -77,14 +77,14 @@ export class SupabaseTicketRepository implements ITicketRepository {
     return (data ?? []) as unknown as Ticket[]
   }
 
-  async findTicketsByOrderId(orderId: string): Promise<Ticket[]> {
+  async findTicketsByOrderId(orderId: string): Promise<TicketWithTypeName[]> {
     const { data, error } = await this.client
       .from('tickets')
-      .select('*')
+      .select('*, ticket_type:ticket_types(name)')
       .eq('order_id', orderId)
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    return (data ?? []) as unknown as Ticket[]
+    return (data ?? []) as unknown as TicketWithTypeName[]
   }
 }
