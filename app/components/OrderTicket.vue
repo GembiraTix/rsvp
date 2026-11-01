@@ -5,6 +5,8 @@ const props = defineProps<{ ticket: TicketWithTypeName }>()
 
 const ticketQrEnabled = useRuntimeConfig().public.ticketQrEnabled
 
+const isOpen = ref(false)
+
 const qrDataUrl = ref('')
 const qrFailed = ref(false)
 
@@ -29,7 +31,7 @@ const fieldsEntries = computed(() =>
 </script>
 
 <template>
-  <UCollapsible class="border border-outline rounded-lg">
+  <UCollapsible v-model:open="isOpen" class="border border-outline rounded-lg">
     <UButton
       variant="ghost"
       color="neutral"
@@ -59,7 +61,7 @@ const fieldsEntries = computed(() =>
         <UIcon
           name="i-lucide-chevron-down"
           class="transition-transform"
-          :class="{ 'rotate-180': false }"
+          :class="{ 'rotate-180': isOpen }"
         />
       </span>
     </UButton>
