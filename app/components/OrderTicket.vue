@@ -109,7 +109,7 @@ const fieldsEntries = computed(() =>
           <p v-else-if="qrFailed" class="text-sm text-error">
             Gagal memuat QR kode.
           </p>
-          <USpinner v-else class="size-6" />
+          <UIcon v-else name="i-lucide-loader-circle" class="size-6 animate-spin" />
           <p
             class="text-xs font-mono text-on-surface-variant break-all text-center"
           >
