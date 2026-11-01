@@ -43,6 +43,7 @@ function handleResumePayment() {
       </template>
     </PageHeader>
 
+    <template v-if="orderStatus === 'success' && order">
       <UAlert
         v-if="resumeErrorMessage"
         :title="resumeErrorMessage"
@@ -131,9 +132,7 @@ function handleResumePayment() {
       </section>
     </template>
 
-    <div v-else-if="orderStatus === 'pending'" class="p-8 text-center">
-      <USpinner class="size-8" />
-    </div>
+    <LoadingState v-else-if="orderStatus === 'pending'" />
 
     <UAlert
       v-else-if="orderError"
