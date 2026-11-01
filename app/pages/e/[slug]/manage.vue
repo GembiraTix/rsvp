@@ -384,6 +384,42 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
   couple: 'Couple',
   berempat: 'Berempat',
 }
+
+const ticketTypeColumns: TableColumn<TicketType>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Nama Tiket',
+  },
+  {
+    id: 'kind',
+    header: 'Tipe',
+    cell: ({ row }) => ticketTypeKindLabels[row.original.kind],
+  },
+  {
+    accessorKey: 'price',
+    header: 'Harga',
+    cell: ({ row }) => formatRupiah(row.original.price),
+  },
+  {
+    accessorKey: 'capacity',
+    header: 'Kapasitas',
+    cell: ({ row }) => row.original.capacity ?? '∞',
+  },
+  {
+    id: 'qty',
+    header: 'Jumlah',
+    cell: ({ row }) =>
+      `${row.original.min_qty}–${row.original.max_qty} (×${row.original.multiple_of})`,
+  },
+  {
+    accessorKey: 'is_active',
+    header: 'Status',
+  },
+  {
+    id: 'action',
+    header: 'Aksi',
+  },
+]
 </script>
 
 <template>
@@ -615,237 +651,53 @@ const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
                 @update:open="ticketTypeNotice = ''"
               />
 
-              <p v-if="ticketTypes.length === 0" class="text-on-surface">
-                Belum ada tiket.
-              </p>
-
-              <div v-else class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead
-                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-                  >
-                    <tr>
-                      <th class="px-6 py-3">Nama Tiket</th>
-                      <th class="px-6 py-3">Tipe</th>
-                      <th class="px-6 py-3">Harga</th>
-                      <th class="px-6 py-3">Kapasitas</th>
-                      <th class="px-6 py-3">Jumlah</th>
-                      <th class="px-6 py-3">Status</th>
-                      <th class="px-6 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline">
-                    <tr
-                      v-for="ticket in ticketTypes"
-                      :key="ticket.id"
-                      class="hover:bg-surface-container/50"
-                    >
-                      <td class="px-6 py-4 font-medium text-on-surface">
-                        {{ ticket.name }}
-                        <span
-                          v-if="ticket.description"
-                          class="block text-xs font-normal text-on-surface-variant"
-                        >
-                          {{ ticket.description }}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4 text-on-surface-variant">
-                        {{ ticketTypeKindLabels[ticket.kind] }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant font-mono text-xs"
-                      >
-                        {{ formatRupiah(ticket.price) }}
-                      </td>
-                      <td class="px-6 py-4 text-on-surface-variant">
-                        {{ ticket.capacity ?? '∞' }}
-                      </td>
-                      <td class="px-6 py-4 text-on-surface-variant">
-                        {{ ticket.min_qty }}–{{ ticket.max_qty }} (×{{
-                          ticket.multiple_of
-                        }})
-                      </td>
-                      <td class="px-6 py-4">
-                        <UBadge
-                          :color="ticket.is_active ? 'primary' : 'neutral'"
-                          variant="subtle"
-                        >
-                          {{ ticket.is_active ? 'Aktif' : 'Disembunyikan' }}
-                        </UBadge>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <UButton
-                          size="xs"
-                          color="neutral"
-                          variant="ghost"
-                          icon="i-lucide-pencil"
-                          title="Ubah tipe tiket"
-                          @click="openEditTicketTypeModal(ticket)"
-                        />
-                        <UButton
-                          size="xs"
-                          color="error"
-                          variant="ghost"
-                          icon="i-lucide-trash-2"
-                          title="Hapus tipe tiket"
-                          @click="askDeleteTicketType(ticket)"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <UModal
-                v-model:open="isTicketTypeModalOpen"
-                :title="
-                  editingTicketTypeId !== null
-                    ? 'Ubah tipe tiket'
-                    : 'Buat tipe tiket baru'
-                "
+              <UTable
+                v-if="ticketTypes.length > 0"
+                :data="ticketTypes"
+                :columns="ticketTypeColumns"
               >
-                <template #body>
-                  <UAlert
-                    v-if="ticketTypeError"
-                    title="Ada kesalahan!"
-                    :description="ticketTypeError"
-                    color="error"
-                    icon="i-lucide-triangle-alert"
-                    variant="subtle"
-                    class="mb-4"
-                  />
-
-                  <UForm
-                    class="space-y-4"
-                    :schema="ticketTypeFormSchema"
-                    :state="ticketTypeFormState"
-                    @submit="handleSubmitTicketType"
-                  >
-                    <UFormField label="Nama tiket" name="name">
-                      <UInput
-                        v-model="ticketTypeFormState.name"
-                        type="text"
-                        name="name"
-                        class="w-full"
-                        required
-                      />
-                    </UFormField>
-
-                    <UFormField
-                      label="Deskripsi"
-                      name="description"
-                      hint="opsional"
+                <template #name-cell="{ row }">
+                  <span class="font-medium text-on-surface">
+                    {{ row.original.name }}
+                    <span
+                      v-if="row.original.description"
+                      class="block text-xs font-normal text-on-surface-variant"
                     >
-                      <UInput
-                        v-model="ticketTypeFormState.description"
-                        type="text"
-                        name="description"
-                        class="w-full"
-                      />
-                    </UFormField>
-
-                    <UFormField label="Tipe tiket" name="kind">
-                      <USelect
-                        v-model="ticketTypeFormState.kind"
-                        name="kind"
-                        :items="[
-                          { label: 'Single (1 orang)', value: 'single' },
-                          { label: 'Couple (2 orang)', value: 'couple' },
-                          { label: 'Berempat (4 orang)', value: 'berempat' },
-                        ]"
-                        class="w-full"
-                      />
-                    </UFormField>
-
-                    <UFormField label="Harga" name="price" required>
-                      <UInput
-                        v-model="ticketTypeFormState.price"
-                        type="number"
-                        name="price"
-                        class="w-full"
-                        :min="0"
-                      />
-                    </UFormField>
-
-                    <UFormField
-                      label="Kapasitas"
-                      name="capacity"
-                      hint="default: tak terbatas"
-                    >
-                      <UInput
-                        v-model="ticketTypeFormState.capacity"
-                        type="number"
-                        name="capacity"
-                        class="w-full"
-                        placeholder="∞"
-                      />
-                    </UFormField>
-
-                    <div class="grid gap-4 sm:grid-cols-3">
-                      <UFormField
-                        label="Jumlah minimal"
-                        name="min_qty"
-                        required
-                      >
-                        <UInput
-                          v-model="ticketTypeFormState.minQty"
-                          type="number"
-                          name="min_qty"
-                          class="w-full"
-                          :min="1"
-                        />
-                      </UFormField>
-
-                      <UFormField
-                        label="Jumlah maksimal"
-                        name="max_qty"
-                        required
-                      >
-                        <UInput
-                          v-model="ticketTypeFormState.maxQty"
-                          type="number"
-                          name="max_qty"
-                          class="w-full"
-                          :min="1"
-                        />
-                      </UFormField>
-
-                      <UFormField label="Kelipatan" name="multiple_of" required>
-                        <UInput
-                          v-model="ticketTypeFormState.multipleOf"
-                          type="number"
-                          name="multiple_of"
-                          class="w-full"
-                          :min="1"
-                        />
-                      </UFormField>
-                    </div>
-
-                    <UFormField
-                      label="Tampilkan di halaman acara"
-                      name="is_active"
-                      orientation="horizontal"
-                    >
-                      <USwitch
-                        uncheckedIcon="i-lucide-x"
-                        checkedIcon="i-lucide-check"
-                        v-model="ticketTypeFormState.isActive"
-                        name="is_active"
-                      />
-                    </UFormField>
-
-                    <UButton
-                      type="submit"
-                      :label="
-                        editingTicketTypeId !== null
-                          ? 'Simpan Perubahan'
-                          : 'Simpan'
-                      "
-                      :loading="isSavingTicketType"
-                    />
-                  </UForm>
+                      {{ row.original.description }}
+                    </span>
+                  </span>
                 </template>
-              </UModal>
+
+                <template #is_active-cell="{ row }">
+                  <UBadge
+                    :color="row.original.is_active ? 'primary' : 'neutral'"
+                    variant="subtle"
+                  >
+                    {{ row.original.is_active ? 'Aktif' : 'Disembunyikan' }}
+                  </UBadge>
+                </template>
+
+                <template #action-cell="{ row }">
+                  <div class="text-right">
+                    <UButton
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      icon="i-lucide-pencil"
+                      title="Ubah tipe tiket"
+                      @click="openEditTicketTypeModal(row.original)"
+                    />
+                    <UButton
+                      size="xs"
+                      color="error"
+                      variant="ghost"
+                      icon="i-lucide-trash-2"
+                      title="Hapus tipe tiket"
+                      @click="askDeleteTicketType(row.original)"
+                    />
+                  </div>
+                </template>
+              </UTable>
 
               <UModal
                 v-model:open="isDeleteTicketTypeModalOpen"

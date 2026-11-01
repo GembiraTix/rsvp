@@ -205,183 +205,62 @@ async function handleLogout() {
           />
 
           <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-            <div v-if="orders.length > 0" class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead
-                  class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-                >
-                  <tr>
-                    <th class="px-6 py-3">Acara</th>
-                    <th class="px-6 py-3">No. Pesanan</th>
-                    <th class="px-6 py-3">Tanggal</th>
-                    <th class="px-6 py-3">Total</th>
-                    <th class="px-6 py-3">Status</th>
-                    <th class="px-6 py-3 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-outline">
-                  <tr
-                    v-for="order in orders"
-                    :key="order.id"
-                    class="hover:bg-surface-container/50"
-                  >
-                    <td class="px-6 py-4 font-medium text-on-surface">
-                      {{ order.event?.title || 'Acara' }}
-                    </td>
-                    <td
-                      class="px-6 py-4 font-mono text-xs text-on-surface-variant"
-                    >
-                      #{{ order.order_number }}
-                    </td>
-                    <td class="px-6 py-4 text-on-surface-variant">
-                      {{ formatDate(order.created_at) }}
-                    </td>
-                    <td class="px-6 py-4 text-on-surface">
-                      {{ formatRupiah(order.total ?? 0) }}
-                    </td>
-                    <td class="px-6 py-4">
-                      <UBadge
-                        :color="orderStatusStyle(order.status).color"
-                        variant="subtle"
-                        size="sm"
-                      >
-                        {{ orderStatusStyle(order.status).label }}
-                      </UBadge>
-                    </td>
-                    <td
-                      class="px-6 py-4 text-right space-x-2 whitespace-nowrap"
-                    >
-                      <UButton
-                        v-if="isOrderPayable(order)"
-                        size="xs"
-                        color="primary"
-                        :loading="resumingOrderId === order.id"
-                        @click="handleResumePayment(order)"
-                      >
-                        Lanjutkan Pembayaran
-                      </UButton>
-                      <UButton
-                        :to="`/users/orders/${order.id}`"
-                        size="xs"
-                        color="neutral"
-                        variant="outline"
-                      >
-                        Detail
-                      </UButton>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <UEmpty
-              v-else
-              icon="i-lucide-receipt-text"
-              :title="
-                ordersError
-                  ? 'Gagal memuat pesanan.'
-                  : 'Anda belum memiliki pesanan apa pun.'
-              "
-            >
-              <template #actions>
-                <UButton to="/" color="neutral" variant="outline" size="sm">
-                  Jelajahi Acara Publik
-                </UButton>
+            <UTable :data="orders" :columns="ordersColumns">
+              <template #order_number-cell="{ row }">
+                <span class="font-mono text-xs text-on-surface-variant">
+                  #{{ row.original.order_number }}
+                </span>
               </template>
-            </UEmpty>
-          </UCard>
-        </div>
 
-        <div v-if="item.value === 'akun'" class="space-y-6">
-          <UCard>
-            <template #header>
-              <h2 class="font-bold">Profil pengguna</h2>
-            </template>
-
-            <UAlert
-              v-if="profileErrorMessage"
-              :title="profileErrorMessage"
-              @update:open="profileErrorMessage = ''"
-              icon="i-lucide-alert-circle"
-              color="error"
-              variant="subtle"
-              class="my-4"
-              close
-            />
-
-            <UAlert
-              v-if="profileSuccessMessage"
-              :title="profileSuccessMessage"
-              @update:open="profileSuccessMessage = ''"
-              icon="i-lucide-check-circle"
-              color="success"
-              class="my-4"
-              variant="subtle"
-              close
-            />
-
-            <div class="grid gap-4 md:grid-cols-3">
-              <div class="flex items-center gap-4">
-                <UFileUpload
-                  v-model="profileFormState.profile"
-                  accept="image/*"
-                  icon="i-lucide-upload-cloud"
-                  label="Pilih atau seret gambar foto profil baru ke sini"
-                  description="PNG, JPG, WEBP hingga 5MB"
-                  class="w-full"
-                  v-slot="{ open }"
-                  disabled
+              <template #status-cell="{ row }">
+                <UBadge
+                  :color="orderStatusStyle(row.original.status).color"
+                  variant="subtle"
+                  size="sm"
                 >
-                  <div class="flex flex-col gap-4 items-center">
-                    <UAvatar
-                      :text="
-                        (profile?.name || user?.email || 'U')
-                          .charAt(0)
-                          .toUpperCase()
-                      "
-                      class="size-36 aspect-square"
-                    />
-                    <UButton
-                      variant="outline"
-                      @click="open()"
-                      label="Unggah foto baru"
-                      disabled
-                    />
-                  </div>
-                </UFileUpload>
-              </div>
+                  {{ orderStatusStyle(row.original.status).label }}
+                </UBadge>
+              </template>
 
-              <UForm
-                :schema="profileFormSchema"
-                :state="profileFormState"
-                class="space-y-4 col-span-2"
-                @submit="handleUpdateProfile"
-              >
-                <UFormField label="Email">
-                  <UInput :model-value="user?.email" disabled class="w-full" />
-                </UFormField>
-
-                <UFormField label="Nama Lengkap / Nama Tampilan" name="name">
-                  <UInput
-                    id="name"
-                    v-model="profileFormState.name"
-                    placeholder="contoh: Dr. Jane Doe"
-                    name="name"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <div class="pt-4 flex justify-end gap-2">
+              <template #action-cell="{ row }">
+                <div class="flex gap-2 justify-end whitespace-nowrap">
                   <UButton
+                    v-if="isOrderPayable(row.original)"
+                    size="xs"
                     color="primary"
-                    type="submit"
-                    :loading="isUpdatingProfile"
+                    :loading="resumingOrderId === row.original.id"
+                    @click="resume(row.original)"
                   >
-                    Simpan Perubahan
+                    Lanjutkan Pembayaran
+                  </UButton>
+                  <UButton
+                    :to="`/users/orders/${row.original.id}`"
+                    size="xs"
+                    color="neutral"
+                    variant="outline"
+                  >
+                    Detail
                   </UButton>
                 </div>
-              </UForm>
-            </div>
+              </template>
+
+              <template #empty>
+                <UEmpty
+                  icon="i-lucide-receipt-text"
+                  :title="
+                    ordersError
+                      ? 'Gagal memuat pesanan.'
+                      : 'Anda belum memiliki pesanan apa pun.'
+                  "
+                >
+                  <template #actions>
+                    <UButton to="/" color="neutral" variant="outline" size="sm">
+                      Jelajahi Acara Publik
+                    </UButton>
+                  </template>
+                </UEmpty>
+              </template>
+            </UTable>
           </UCard>
 
           <UCard>
