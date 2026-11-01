@@ -7,6 +7,7 @@ import type {
   UserRole,
   Rsvp,
   CreateRsvpInput,
+  RsvpWithEvent,
   TicketType,
   CreateTicketTypeInput,
   UpdateTicketTypeInput,
@@ -46,6 +47,8 @@ export interface IRsvpRepository {
   findByToken(token: string): Promise<Rsvp | null>
   findByEventId(eventId: number): Promise<Rsvp[]>
   findByEmail(email: string): Promise<Rsvp[]>
+  findAttendingByEmail(email: string): Promise<RsvpWithEvent[]>
+  countAttendingByEventId(eventId: number): Promise<number>
   findByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null>
   create(payload: CreateRsvpInput): Promise<Rsvp>
   createBatch(input: {

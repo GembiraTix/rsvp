@@ -39,6 +39,31 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
     return data ?? []
   }
 
+  async findAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {
+    const { data, error } = await this.client
+      .from('rsvps')
+      .select(
+        '*, event:events(id, slug, title, location, starts_at, ends_at)',
+      )
+      .eq('email', email)
+      .eq('is_attending', true)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return (data ?? []) as unknown as RsvpWithEvent[]
+  }
+
+  async countAttendingByEventId(eventId: number): Promise<number> {
+    const { count, error } = await this.client
+      .from('rsvps')
+      .select('*', { head: true, count: 'exact' })
+      .eq('event_id', eventId)
+      .eq('is_attending', true)
+
+    if (error) throw error
+    return count ?? 0
+  }
+
   async findByEventAndEmail(
     eventId: number,
     email: string,

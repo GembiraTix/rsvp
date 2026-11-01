@@ -1,7 +1,16 @@
 <script setup lang="ts">
-import type { Event } from '~~/server/domain/types'
-import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
-import { z } from 'zod'
+import type {
+  Event,
+  OrderWithEvent,
+  RsvpWithEvent,
+} from '~~/server/domain/types'
+import type { TableColumn } from '@nuxt/ui'
+
+import { useUserProfile } from '@/composables/useUserProfile'
+import { useEvents } from '@/composables/useEvents'
+import { useOrders } from '@/composables/useOrders'
+import { useResumePayment } from '@/composables/useResumePayment'
+import { useRsvp } from '@/composables/useRsvp'
 
 definePageMeta({
   middleware: 'auth',
@@ -22,50 +31,9 @@ watch(
   { immediate: true },
 )
 
-import { useUserProfile } from '@/composables/useUserProfile'
-
-const { fetchProfile, updateProfile: apiUpdateProfile } = useUserProfile()
-const { data: profileRes, refresh: refreshProfile } = await fetchProfile()
+const { fetchProfile } = useUserProfile()
+const { data: profileRes } = await fetchProfile()
 const profile = computed(() => profileRes.value?.data || null)
-
-const isUpdatingProfile = ref(false)
-const profileErrorMessage = ref('')
-const profileSuccessMessage = ref('')
-
-const profileFormSchema = z.object({
-  name: z.string().min(1, 'Nama wajib diisi.'),
-  profile: z.instanceof(File).optional(), // TODO: implement in the future
-})
-
-type ProfileFormState = z.output<typeof profileFormSchema>
-
-const profileFormState = reactive<ProfileFormState>({
-  name: profile.value?.name || '',
-  profile: undefined,
-})
-
-async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
-  if (!user.value) return
-  isUpdatingProfile.value = true
-  profileErrorMessage.value = ''
-  profileSuccessMessage.value = ''
-
-  try {
-    await apiUpdateProfile(e.data.name)
-    await refreshProfile()
-    profileSuccessMessage.value = 'Profil berhasil diperbarui!'
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      profileErrorMessage.value = err.message
-    } else {
-      profileErrorMessage.value = 'Gagal memperbarui profil.'
-    }
-  } finally {
-    isUpdatingProfile.value = false
-  }
-}
-
-import { useEvents } from '@/composables/useEvents'
 
 const { fetchAll } = useEvents()
 
@@ -132,21 +100,61 @@ async function handleResumePayment(order: OrderWithEvent) {
   }
 }
 
-const { data: joinedRsvps } = await useAsyncData(
-  `joined-rsvps-${user.value?.email}`,
-  async () => {
-    if (!user.value?.email) return []
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('id, token, is_attending, created_at, events (*)')
-      .eq('email', user.value.email)
-      .eq('is_attending', true)
-      .order('created_at', { ascending: false })
-
-    if (error) throw error
-    return data || []
+const ordersColumns: TableColumn<OrderWithEvent>[] = [
+  {
+    id: 'acara',
+    header: 'Acara',
+    cell: ({ row }) => row.original.event?.title || 'Acara',
   },
-)
+  {
+    accessorKey: 'order_number',
+    header: 'No. Pesanan',
+  },
+  {
+    accessorKey: 'created_at',
+    header: 'Tanggal',
+    cell: ({ row }) => formatDate(row.original.created_at),
+  },
+  {
+    accessorKey: 'total',
+    header: 'Total',
+    cell: ({ row }) => formatRupiah(row.original.total ?? 0),
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+  },
+  {
+    id: 'action',
+    header: 'Aksi',
+  },
+]
+
+const { fetchJoined } = useRsvp()
+
+const { data: joinedRes } = await fetchJoined()
+const joinedRsvps = computed(() => joinedRes.value?.data ?? [])
+
+const joinedRsvpsColumns: TableColumn<RsvpWithEvent>[] = [
+  {
+    id: 'acara',
+    header: 'Acara',
+    cell: ({ row }) => row.original.event?.title || 'Acara',
+  },
+  {
+    id: 'lokasi',
+    header: 'Lokasi',
+    cell: ({ row }) => row.original.event?.location || '-',
+  },
+  {
+    accessorKey: 'token',
+    header: 'Ref RSVP',
+  },
+  {
+    id: 'action',
+    header: 'Aksi',
+  },
+]
 
 const selectedTab = useTabQuery('acara')
 
@@ -373,78 +381,61 @@ async function handleLogout() {
               <h2
                 class="text-xl font-bold text-on-surface flex items-center gap-2"
               >
-                Acara Yang Anda Ikuti ({{ joinedRsvps?.length || 0 }})
+                Acara Yang Anda Ikuti ({{ joinedRsvps.length }})
               </h2>
             </div>
 
             <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-              <div
-                v-if="joinedRsvps && joinedRsvps.length > 0"
-                class="overflow-x-auto"
+              <UTable
+                :data="joinedRsvps"
+                :columns="joinedRsvpsColumns"
+                caption="Menampilkan acara yang Anda ikuti"
               >
-                <table class="w-full text-left text-sm">
-                  <thead
-                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-                  >
-                    <tr>
-                      <th class="px-6 py-3">Acara</th>
-                      <th class="px-6 py-3">Lokasi</th>
-                      <th class="px-6 py-3">Ref RSVP</th>
-                      <th class="px-6 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline">
-                    <tr
-                      v-for="rsvp in joinedRsvps"
-                      :key="rsvp.id"
-                      class="hover:bg-surface-container/50"
-                    >
-                      <td class="px-6 py-4 font-medium text-on-surface">
-                        {{ rsvp.events?.title || 'Acara' }}
-                      </td>
-                      <td class="px-6 py-4 text-on-surface-variant">
-                        {{ rsvp.events?.location || '-' }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-xs font-mono text-on-surface-variant"
-                      >
-                        {{ rsvp.token.slice(0, 8) }}...
-                      </td>
-                      <td class="px-6 py-4 text-right space-x-2">
-                        <UButton
-                          :to="`/rsvp/${rsvp.token}`"
-                          size="xs"
-                          color="neutral"
-                          variant="outline"
-                        >
-                          Lihat Tiket
-                        </UButton>
-                        <UButton
-                          v-if="rsvp.events?.slug"
-                          :to="`/e/${rsvp.events.slug}`"
-                          size="xs"
-                          color="neutral"
-                          variant="ghost"
-                          icon="i-lucide-external-link"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                <template #token-cell="{ row }">
+                  <span class="text-xs font-mono text-on-surface-variant">
+                    {{ row.original.token.slice(0, 8) }}...
+                  </span>
+                </template>
 
-              <div v-else class="p-8 text-center space-y-3">
-                <UIcon
-                  name="i-lucide-ticket-slash"
-                  class="w-10 h-10 mx-auto text-on-surface-variant"
-                />
-                <p class="text-sm text-on-surface-variant">
-                  Anda belum mengikuti acara apa pun.
-                </p>
-                <UButton to="/" color="neutral" variant="outline" size="sm">
-                  Jelajahi Acara Publik
-                </UButton>
-              </div>
+                <template #action-cell="{ row }">
+                  <div class="flex gap-2 justify-end">
+                    <UButton
+                      :to="`/rsvp/${row.original.token}`"
+                      size="xs"
+                      color="neutral"
+                      variant="outline"
+                    >
+                      Lihat Tiket
+                    </UButton>
+                    <UButton
+                      v-if="row.original.event?.slug"
+                      :to="`/e/${row.original.event.slug}`"
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      icon="i-lucide-external-link"
+                    />
+                  </div>
+                </template>
+
+                <template #empty>
+                  <UEmpty
+                    icon="i-lucide-ticket-slash"
+                    title="Anda belum mengikuti acara apa pun."
+                  >
+                    <template #actions>
+                      <UButton
+                        to="/"
+                        color="neutral"
+                        variant="outline"
+                        size="sm"
+                      >
+                        Jelajahi Acara Publik
+                      </UButton>
+                    </template>
+                  </UEmpty>
+                </template>
+              </UTable>
             </UCard>
           </section>
         </template>
