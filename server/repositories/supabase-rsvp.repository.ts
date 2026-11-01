@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { IRsvpRepository } from './interfaces'
-import type { Rsvp, CreateRsvpInput } from '../domain/types'
+import type { Rsvp, RsvpWithEvent, CreateRsvpInput } from '../domain/types'
 
 export class SupabaseRsvpRepository implements IRsvpRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -11,6 +11,17 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
       .from('rsvps')
       .select('*')
       .eq('token', token)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  }
+
+  async findById(id: number): Promise<Rsvp | null> {
+    const { data, error } = await this.client
+      .from('rsvps')
+      .select('*')
+      .eq('id', id)
       .maybeSingle()
 
     if (error) throw error

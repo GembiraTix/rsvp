@@ -2,6 +2,7 @@
 import { useEvents } from '@/composables/useEvents'
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useTicketTypes } from '@/composables/useTicketTypes'
+import { useAttendees } from '@/composables/useAttendees'
 import { useTabQuery } from '@/composables/useTabQuery'
 import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
 import type {
@@ -129,20 +130,26 @@ async function handleDeleteEvent(event: Event) {
 }
 
 // Fetch attendees roster
-const { data: attendees, refresh: refreshAttendees } = await useAsyncData(
-  `event-attendees-${event.value?.id}`,
-  async () => {
-    if (!event.value?.id) return []
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('*')
-      .eq('event_id', event.value.id)
-      .order('created_at', { ascending: false })
+const { fetchByEvent, removeAttendee: apiRemoveAttendee } = useAttendees()
+const {
+  data: attendeesRes,
+  error: attendeesError,
+  refresh: refreshAttendees,
+} = await fetchByEvent(event.value.id)
+const attendees = computed(() => attendeesRes.value?.data ?? [])
 
-    if (error) throw error
-    return data || []
-  },
-)
+const attendeeErrorMessage = ref('')
+
+async function removeAttendee(id: number) {
+  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
+  attendeeErrorMessage.value = ''
+  try {
+    await apiRemoveAttendee(event.value.id, id)
+    await refreshAttendees()
+  } catch (err: unknown) {
+    attendeeErrorMessage.value = getErrorMessage(err, 'Gagal menghapus peserta.')
+  }
+}
 
 useSeoMeta({
   title: () => (event.value ? `Kelola ${event.value.title}` : 'Kelola Acara'),
@@ -202,44 +209,6 @@ function exportCSV() {
   link.click()
   document.body.removeChild(link)
 }
-
-async function removeAttendee(id: number) {
-  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
-  const { error } = await supabase.from('rsvps').delete().eq('id', id)
-  if (!error) {
-    await refreshAttendees()
-  }
-}
-
-const ticketTypeFormSchema = z.object({
-  name: z.string().nonempty('Nama tiket wajib diisi.'),
-  description: z.string().optional(),
-  kind: z.enum(['single', 'couple', 'berempat']),
-  price: z.coerce.number().int().min(0, 'Harga tidak valid.'),
-  capacity: z.preprocess(
-    (value) =>
-      value === '' || value === null || value === undefined ? undefined : value,
-    z.coerce.number().int().positive().optional(),
-  ),
-  minQty: z.number().int().min(1, 'Jumlah minimal harus minimal 1.'),
-  maxQty: z.number().int().min(1, 'Jumlah maksimal harus minimal 1.'),
-  multipleOf: z.number().int().min(1, 'Kelipatan harus minimal 1.'),
-  isActive: z.boolean(),
-})
-
-type TicketTypeForm = z.output<typeof ticketTypeFormSchema>
-
-const ticketTypeFormState = reactive<TicketTypeForm>({
-  name: '',
-  description: '',
-  kind: 'single',
-  price: 0,
-  capacity: undefined,
-  minQty: 1,
-  maxQty: 10,
-  multipleOf: 1,
-  isActive: true,
-})
 
 const {
   fetchByEvent: fetchTicketTypes,
@@ -479,7 +448,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
             >
               <template #header>
                 <h2 class="flex-1 text-lg font-bold text-on-surface">
-                  Peserta Terdaftar ({{ attendees?.length || 0 }})
+                  Peserta Terdaftar ({{ attendees.length }})
                 </h2>
                 <div class="flex flex-1 gap-4 sm:w-72">
                   <UInput
@@ -500,6 +469,17 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   </UButton>
                 </div>
               </template>
+
+              <UAlert
+                v-if="attendeeErrorMessage"
+                :title="attendeeErrorMessage"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="subtle"
+                class="m-4"
+                close
+                @update:open="attendeeErrorMessage = ''"
+              />
 
               <UTable :data="filteredAttendees" :columns="attendeesColumns">
                 <template #action-cell="{ row }">

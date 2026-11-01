@@ -45,6 +45,7 @@ export interface IUserRepository {
 
 export interface IRsvpRepository {
   findByToken(token: string): Promise<Rsvp | null>
+  findById(id: number): Promise<Rsvp | null>
   findByEventId(eventId: number): Promise<Rsvp[]>
   findByEmail(email: string): Promise<Rsvp[]>
   findAttendingByEmail(email: string): Promise<RsvpWithEvent[]>

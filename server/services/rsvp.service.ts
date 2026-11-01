@@ -152,6 +152,15 @@ export class RsvpService {
   async countAttendingByEventId(eventId: number): Promise<number> {
     return this.rsvpRepo.countAttendingByEventId(eventId)
   }
+
+  async getRsvpById(id: number): Promise<Rsvp | null> {
+    return this.rsvpRepo.findById(id)
+  }
+
+  async deleteRsvp(id: number): Promise<void> {
+    this.logger.info('Deleting RSVP', { rsvpId: id })
+    await this.rsvpRepo.delete(id)
+  }
 }
 
 function buildEmailHtml(input: {

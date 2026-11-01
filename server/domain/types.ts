@@ -47,6 +47,19 @@ export interface Rsvp {
   created_at: string
 }
 
+export interface RsvpEventSummary {
+  id: number
+  slug: string
+  title: string | null
+  location: string | null
+  starts_at: string | null
+  ends_at: string | null
+}
+
+export interface RsvpWithEvent extends Rsvp {
+  event: RsvpEventSummary | null
+}
+
 export type CreateRsvpInput = Omit<Rsvp, 'id' | 'created_at'>
 export type UpdateRsvpInput = Partial<Omit<Rsvp, 'id' | 'created_at' | 'token'>>
 export type TicketTypeKind = 'single' | 'couple' | 'berempat'
