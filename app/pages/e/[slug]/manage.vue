@@ -187,27 +187,37 @@ const attendeesColumns: TableColumn<Rsvp>[] = [
   { id: 'action', header: 'Aksi' },
 ]
 
+function csvEscape(value: string | number | boolean): string {
+  let str = String(value)
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`
+  }
+  return /[",\n\r]/.test(str) ? `"${str.replaceAll('"', '""')}"` : str
+}
+
 function exportCSV() {
   if (!attendees.value || !event.value) return
   const headers = ['ID', 'Nama', 'Email', 'Organisasi', 'Tanggal RSVP', 'Hadir']
   const rows = attendees.value.map((a) => [
     a.id,
-    `"${a.name}"`,
-    `"${a.email || ''}"`,
-    `"${a.organization || ''}"`,
-    `"${a.created_at}"`,
-    `"${a.is_attending}"`,
+    a.name,
+    a.email || '',
+    a.organization || '',
+    a.created_at,
+    a.is_attending,
   ])
-  const csvContent =
-    'data:text/csv;charset=utf-8,' +
-    [headers.join(','), ...rows.map((e) => e.join(','))].join('\n')
-  const encodedUri = encodeURI(csvContent)
+  const lines = [headers, ...rows]
+    .map((row) => row.map(csvEscape).join(','))
+    .join('\n')
+  const blob = new Blob([lines], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
+  link.setAttribute('href', url)
   link.setAttribute('download', `peserta-${event.value.slug}.csv`)
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 const {
