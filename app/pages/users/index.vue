@@ -148,8 +148,7 @@ const { data: joinedRsvps } = await useAsyncData(
   },
 )
 
-const route = useRoute()
-const router = useRouter()
+const selectedTab = useTabQuery('acara')
 
 const tabItems = [
   {
@@ -165,17 +164,6 @@ const tabItems = [
     value: 'akun',
   },
 ]
-
-const selectedTab = computed({
-  get() {
-    const tab = route.query.tab as string
-    return tab || 'acara'
-  },
-
-  set(val: string) {
-    router.push({ query: { ...route.query, tab: val } })
-  },
-})
 
 async function handleLogout() {
   await supabase.auth.signOut()

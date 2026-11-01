@@ -2,6 +2,7 @@
 import { useEvents } from '@/composables/useEvents'
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useTicketTypes } from '@/composables/useTicketTypes'
+import { useTabQuery } from '@/composables/useTabQuery'
 import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
 import type {
   Event,
@@ -16,7 +17,6 @@ definePageMeta({
 })
 
 const route = useRoute()
-const router = useRouter()
 const eventSlug = computed(() => route.params.slug as string)
 
 const tabItems = computed(() => {
@@ -44,19 +44,7 @@ const tabItems = computed(() => {
   return items
 })
 
-const selectedTab = computed({
-  get() {
-    const tab = route.query.tab as string
-    return tab || 'overview'
-  },
-  set(val: string) {
-    router.push({
-      query: { ...route.query, tab: val },
-    })
-  },
-})
-
-const supabase = useSupabaseClient()
+const selectedTab = useTabQuery('overview')
 
 const {
   fetchBySlug,
