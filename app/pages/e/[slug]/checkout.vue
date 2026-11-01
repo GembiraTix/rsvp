@@ -33,7 +33,13 @@ const { cart, selectedLines, subtotal, totalQty, decode } =
 
 onMounted(() => {
   // TODO: handle nonexistent cart param
-  cart.value = decode(route.query.cart as string)
+  try {
+    cart.value = decode(route.query.cart as string)
+  } catch {
+    cart.value = []
+    checkoutError.value =
+      'Keranjang tidak valid. Silakan pilih tiket kembali dari halaman acara.'
+  }
 })
 
 // Checkout state
