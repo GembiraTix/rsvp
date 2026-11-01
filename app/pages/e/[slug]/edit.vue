@@ -103,6 +103,7 @@ watch(
       return
     }
 
+    isUploadingImage.value = true
     try {
       const res = await uploadEventImage(newImage)
       if (!res.success) {

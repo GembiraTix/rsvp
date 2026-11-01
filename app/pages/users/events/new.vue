@@ -81,14 +81,20 @@ const formState = shallowReactive<FormState>({
   description: '',
 })
 
+const isUploadingImage = ref(false)
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const { createEvent, uploadEventImage } = useEvents()
+
 watch(
   () => formState.image,
   async (newImage) => {
     if (!newImage) {
-      console.log('no image')
       return
     }
 
+    isUploadingImage.value = true
     try {
       const res = await uploadEventImage(newImage)
       formState.imageUrl = res.data.url
@@ -100,12 +106,6 @@ watch(
     }
   },
 )
-
-const isLoading = ref(false)
-const isUploadingImage = ref(false)
-const errorMessage = ref('')
-
-const { createEvent, uploadEventImage } = useEvents()
 
 async function handleSubmit(e: FormSubmitEvent<FormState>) {
   const userId = user.value?.sub
