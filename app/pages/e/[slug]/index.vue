@@ -38,24 +38,10 @@ const isAdmin = computed(
   () => profile.value && ['admin', 'super_admin'].includes(profile.value.role),
 )
 
-const supabase = useSupabaseClient()
+const { fetchAttendingCount } = useRsvp()
+const { data: rsvpCountRes } = await fetchAttendingCount(event.value.id)
 
-// TODO: refactor into fetchEvents
-const { data: rsvpCountRes } = await useAsyncData(
-  `event-rsvp-count-${event.value?.id}`,
-  async () => {
-    if (!event.value?.id) return 0
-    const { count, error } = await supabase
-      .from('rsvps')
-      .select('*', { head: true, count: 'exact' })
-      .eq('event_id', event.value.id)
-      .eq('is_attending', true)
-    if (error) throw error
-    return count ?? 0
-  },
-)
-
-const attendingCount = computed(() => rsvpCountRes.value ?? 0)
+const attendingCount = computed(() => rsvpCountRes.value?.data.count ?? 0)
 
 const isLimitReached = computed(() => {
   if (!event.value?.registration_limit) return false

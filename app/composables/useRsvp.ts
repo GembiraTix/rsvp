@@ -22,6 +22,13 @@ export function useRsvp() {
       '/api/users/me/rsvps',
     )
   }
+
+  function fetchAttendingCount(eventId: MaybeRefOrGetter<number>) {
+    return useFetch<{ success: boolean; data: { count: number } }>(
+      () => `/api/public/events/${toValue(eventId)}/rsvp-count`,
+    )
+  }
+
   async function getRsvpByEventAndEmail(
     eventId: number,
     email: string,
