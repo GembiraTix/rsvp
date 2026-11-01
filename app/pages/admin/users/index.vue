@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useAdminUsers } from '@/composables/useAdminUsers'
-import type { UserProfile, UserRole } from '~~/server/domain/types'
+import type { UserProfile } from '~~/server/domain/types'
+import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
   middleware: 'auth',
@@ -26,11 +27,7 @@ watch(
   { immediate: true },
 )
 
-const {
-  fetchUsers,
-  createUser: apiCreateUser,
-  updateUserRole: apiUpdateUserRole,
-} = useAdminUsers()
+const { fetchUsers } = useAdminUsers()
 const { data: usersRes, refresh: refreshUsers } = await fetchUsers()
 const usersList = computed(() => usersRes.value?.data || [])
 
@@ -80,62 +77,12 @@ const usersColumns: TableColumn<UserProfile>[] = [
 
 const isCreateModalOpen = ref(false)
 
-// Role editing modal
 const isRoleModalOpen = ref(false)
 const selectedUserForRole = ref<UserProfile | null>(null)
-const selectedNewRole = ref<UserRole>('user')
-const isUpdatingRole = ref(false)
-const roleErrorMessage = ref('')
 
 function openRoleModal(user: UserProfile) {
   selectedUserForRole.value = user
-  selectedNewRole.value = user.role || 'user'
-  roleErrorMessage.value = ''
   isRoleModalOpen.value = true
-}
-
-async function handleSaveRole() {
-  if (!selectedUserForRole.value) return
-  isUpdatingRole.value = true
-  roleErrorMessage.value = ''
-
-  try {
-    await apiUpdateUserRole(selectedUserForRole.value.id, selectedNewRole.value)
-    await refreshUsers()
-    isRoleModalOpen.value = false
-  } catch (err: unknown) {
-    roleErrorMessage.value =
-      err instanceof Error ? err.message : 'Gagal mengubah role.'
-  } finally {
-    isUpdatingRole.value = false
-  }
-}
-
-const roleOptions: { label: string; value: UserRole }[] = [
-  { label: 'User (Pengunjung Biasa)', value: 'user' },
-  { label: 'Admin (Dapat Mengelola Acara)', value: 'admin' },
-  { label: 'Super Admin (Akses Penuh)', value: 'super_admin' },
-]
-
-function getRoleBadgeColor(role: UserRole) {
-  const roleColors = new Map<
-    string,
-    | 'success'
-    | 'error'
-    | 'primary'
-    | 'warning'
-    | 'info'
-    | 'neutral'
-    | 'secondary'
-    | undefined
-  >()
-  roleColors.set('super_admin', 'primary')
-  roleColors.set('admin', 'neutral')
-  roleColors.set('user', 'neutral')
-
-  const color = roleColors.get(role)
-
-  return color ?? 'neutral'
 }
 </script>
 
@@ -229,24 +176,10 @@ function getRoleBadgeColor(role: UserRole) {
 
     <CreateUserModal v-model:open="isCreateModalOpen" @saved="refreshUsers" />
 
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            @click="isRoleModalOpen = false"
-          >
-            Batal
-          </UButton>
-          <UButton
-            color="primary"
-            :loading="isUpdatingRole"
-            @click="handleSaveRole"
-          >
-            Simpan Perubahan
-          </UButton>
-        </div>
-      </template>
-    </UModal>
+    <RoleModal
+      v-model:open="isRoleModalOpen"
+      :user="selectedUserForRole"
+      @saved="refreshUsers"
+    />
   </div>
 </template>
