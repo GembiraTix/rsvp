@@ -406,16 +406,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                 <h1 class="text-2xl font-bold text-on-surface mb-2">
                   {{ event.title }}
                 </h1>
-                <time
-                  class="text-on-surface-variant"
-                  :datetime="event.starts_at"
-                  v-if="event.starts_at"
-                >
-                  {{ formatDate(event.starts_at) }}
-                </time>
-                <p class="text-on-surface-variant">
-                  {{ event.location || 'Lokasi belum diatur' }}
-                </p>
+                <EventInfoPanel :event="event" />
               </div>
 
               <div class="flex items-center gap-3">
