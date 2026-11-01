@@ -1,31 +1,15 @@
 <script setup lang="ts">
-import { useUserProfile } from '@/composables/useUserProfile'
 import { useAdminUsers } from '@/composables/useAdminUsers'
 import type { UserProfile } from '~~/server/domain/types'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
-  middleware: 'auth',
+  middleware: ['auth', 'super-admin'],
 })
 
 useSeoMeta({
   title: 'Manajemen Pengguna - Admin',
 })
-
-const { fetchProfile } = useUserProfile()
-const { data: profileRes } = await fetchProfile()
-const currentUser = computed(() => profileRes.value?.data || null)
-
-// Ensure only super_admin can view this page
-watch(
-  currentUser,
-  (val) => {
-    if (val && val.role !== 'super_admin') {
-      navigateTo('/users')
-    }
-  },
-  { immediate: true },
-)
 
 const { fetchUsers } = useAdminUsers()
 const { data: usersRes, refresh: refreshUsers } = await fetchUsers()
