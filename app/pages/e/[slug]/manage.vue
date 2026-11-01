@@ -72,10 +72,10 @@ const eventLimitFormSchema = z.object({
   value: z.number().positive('batas registrasi harus positif.'),
 })
 
-type EventLimitFormShema = z.output<typeof eventLimitFormSchema>
-const eventLimitFormState = ref<EventLimitFormShema>({
-  enabled: false,
-  value: 1,
+type EventLimitFormSchema = z.output<typeof eventLimitFormSchema>
+const eventLimitFormState = ref<EventLimitFormSchema>({
+  enabled: event.value?.registration_limit != null,
+  value: event.value?.registration_limit ?? 1,
 })
 
 const registrationAlert = ref<{
@@ -86,7 +86,7 @@ const registrationAlert = ref<{
 
 async function saveRegistrationLimit(
   eventId: number,
-  { data }: FormSubmitEvent<EventLimitFormShema>,
+  { data }: FormSubmitEvent<EventLimitFormSchema>,
 ) {
   isSavingRegistration.value = true
   registrationAlert.value = null

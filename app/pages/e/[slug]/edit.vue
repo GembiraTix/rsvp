@@ -6,7 +6,6 @@ import {
   getLocalTimeZone,
   ZonedDateTime,
   parseAbsolute,
-  parseZonedDateTime,
 } from '@internationalized/date'
 
 definePageMeta({
@@ -17,9 +16,16 @@ const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
 const { fetchBySlug, updateEvent, uploadEventImage } = useEvents()
-const {
-  data: { value: oldEvent },
-} = await fetchBySlug(eventSlug)
+const { data: oldEventRes, error: oldEventError } = await fetchBySlug(eventSlug)
+
+if (oldEventError.value || !oldEventRes.value?.data) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Acara tidak ditemukan',
+  })
+}
+
+const oldEvent = computed(() => oldEventRes.value!.data)
 
 const isUpdatingEvent = ref(false)
 const isUploadingImage = ref(false)
@@ -76,34 +82,17 @@ const formStateSchema = z.object({
 })
 type EditFormState = z.output<typeof formStateSchema>
 
-watch(
-  () => oldEvent!.data,
-  (newEvent) => {
-    if (!newEvent) return
-    formState.title = newEvent.title || ''
-    formState.location = newEvent.location || ''
-    formState.startsAt = newEvent.starts_at
-      ? parseZonedDateTime(newEvent.starts_at)
-      : undefined
-    formState.endsAt = newEvent.ends_at
-      ? parseZonedDateTime(newEvent.ends_at)
-      : undefined
-    formState.description = newEvent.description || undefined
-    formState.imageUrl = newEvent.image_url || undefined
-  },
-)
-
 const formState = shallowReactive<EditFormState>({
-  title: oldEvent?.data.title || '',
-  location: oldEvent?.data.location || '',
-  startsAt: oldEvent?.data.starts_at
-    ? parseAbsolute(oldEvent?.data.starts_at, getLocalTimeZone())
+  title: oldEvent.value.title || '',
+  location: oldEvent.value.location || '',
+  startsAt: oldEvent.value.starts_at
+    ? parseAbsolute(oldEvent.value.starts_at, getLocalTimeZone())
     : undefined,
-  endsAt: oldEvent?.data.ends_at
-    ? parseAbsolute(oldEvent?.data.ends_at, getLocalTimeZone())
+  endsAt: oldEvent.value.ends_at
+    ? parseAbsolute(oldEvent.value.ends_at, getLocalTimeZone())
     : undefined,
-  description: oldEvent?.data.description || undefined,
-  imageUrl: oldEvent?.data.image_url || undefined,
+  description: oldEvent.value.description || undefined,
+  imageUrl: oldEvent.value.image_url || undefined,
   image: undefined,
 })
 
@@ -111,7 +100,6 @@ watch(
   () => formState.image,
   async (newImage) => {
     if (!newImage) {
-      console.log('no image')
       return
     }
 
@@ -131,14 +119,12 @@ watch(
 )
 
 async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
-  if (!oldEvent) return
-
   isUpdatingEvent.value = true
   editErrorMessage.value = ''
   editSuccessMessage.value = ''
 
   try {
-    await updateEvent(oldEvent.data.id, {
+    await updateEvent(oldEvent.value.id, {
       title: e.data.title,
       location: e.data.location,
       startsAt: e.data.startsAt?.toDate().toISOString(),
@@ -163,17 +149,8 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
 </script>
 
 <template>
-  <div class="py-8 max-w-6xl mx-auto px-4 space-y-">
-    <!-- <UButton -->
-    <!--   to="/users" -->
-    <!--   variant="ghost" -->
-    <!--   color="neutral" -->
-    <!--   icon="i-lucide-arrow-left" -->
-    <!-- > -->
-    <!--   Kembali ke Dasbor -->
-    <!-- </UButton> -->
-
-    <h1>Menyunting {{ oldEvent?.data.title }}</h1>
+  <div class="py-8 max-w-6xl mx-auto px-4 space-y-6">
+    <h1>Menyunting {{ oldEvent?.title }}</h1>
 
     <UAlert
       v-if="editErrorMessage"
