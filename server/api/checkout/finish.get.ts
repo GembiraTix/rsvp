@@ -87,11 +87,5 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const freshOrder = await paymentStatusService.findByMidtransOrderId(order_id)
-
-  return sendRedirect(
-    event,
-    `/checkout/finish?orderId=${order.id}&status=${freshOrder?.status ?? order.status}`,
-    302,
-  )
+  return sendRedirect(event, `/users/orders/${order.id}`, 302)
 })
