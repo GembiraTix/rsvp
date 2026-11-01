@@ -12,10 +12,6 @@ import { useOrders } from '@/composables/useOrders'
 import { useResumePayment } from '@/composables/useResumePayment'
 import { useRsvp } from '@/composables/useRsvp'
 
-import { useUserProfile } from '@/composables/useUserProfile'
-
-import { useEvents } from '@/composables/useEvents'
-
 definePageMeta({
   middleware: 'auth',
 })
