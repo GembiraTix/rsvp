@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@nuxt/ui'
-import { z } from 'zod'
 import { useEvents } from '@/composables/useEvents'
 import { useRsvp } from '@/composables/useRsvp'
 import { useTicketTypes } from '@/composables/useTicketTypes'
@@ -55,7 +53,7 @@ useSeoMeta({
 
 const existingRsvp = ref<{ token: string; is_attending: boolean } | null>(null)
 
-const { getRsvpByEventAndEmail, submit } = useRsvp()
+const { getRsvpByEventAndEmail } = useRsvp()
 
 if (profile.value?.email && event.value) {
   const existing = await getRsvpByEventAndEmail(
@@ -70,31 +68,12 @@ if (profile.value?.email && event.value) {
   }
 }
 
-const formSchema = z.object({
-  name: z.string().min(1, 'Nama lengkap wajib diisi.'),
-  email: z.email('Masukkan alamat email yang valid.'),
-  organization: z.string().optional(),
-})
-
-type RSVPForm = z.output<typeof formSchema>
-
-const form = reactive<RSVPForm>({
-  name: profile.value?.name || '',
-  email: profile.value?.email || '',
-  organization: '',
-})
-
-const isSubmitting = ref(false)
 const rsvpSuccess = ref(false)
 const rsvpToken = ref(existingRsvp.value?.token || '')
-const errorMessage = ref('')
-const isConfirmOpen = ref(false)
 
 const isRegistered = computed(
   () => rsvpSuccess.value || (existingRsvp.value?.is_attending ?? false),
 )
-
-const profileEmail = computed(() => profile.value?.email ?? '')
 
 const sidebarPanel = computed(() =>
   resolveEventSidebarPanel({
@@ -105,39 +84,9 @@ const sidebarPanel = computed(() =>
   }),
 )
 
-async function submitRsvp(name: string, email: string, organization?: string) {
-  if (!event.value) return
-  errorMessage.value = ''
-  isSubmitting.value = true
-
-  try {
-    const res = await submit({
-      eventId: event.value.id,
-      name,
-      email,
-      organization,
-    })
-
-    rsvpToken.value = res.token
-    rsvpSuccess.value = true
-    isConfirmOpen.value = false
-  } catch (err: unknown) {
-    console.log(err)
-    errorMessage.value = 'Gagal mengirim RSVP. Silakan coba lagi.'
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
-async function handleRsvp(e: FormSubmitEvent<RSVPForm>) {
-  await submitRsvp(e.data.name, e.data.email, e.data.organization)
-}
-
-async function handleAuthenticatedRsvp() {
-  const email = profile.value?.email
-  if (!email) return
-  const userName = profile.value?.name || email.split('@')[0] || email
-  await submitRsvp(userName, email)
+function handleRegistered(token: string) {
+  rsvpToken.value = token
+  rsvpSuccess.value = true
 }
 </script>
 
@@ -304,129 +253,24 @@ async function handleAuthenticatedRsvp() {
 
           <!-- authenticated RSVP -->
           <template v-else-if="sidebarPanel === 'rsvp_form'">
-            <header class="space-y-1">
-              <h2 class="text-xl font-bold text-on-surface">RSVP Cepat</h2>
-              <p class="text-on-surface-variant">
-                Masuk sebagai
-                <strong class="text-on-surface">{{ profileEmail }}</strong>
-              </p>
-            </header>
-
-            <UAlert
-              title="ada kesalahan!"
-              v-if="errorMessage"
-              :description="errorMessage"
-              icon="i-lucide-triangle-alert"
-              color="error"
-              variant="subtle"
+            <EventRsvpForm
+              mode="authenticated"
+              :event-id="event.id"
+              :event-title="event.title"
+              :profile="profile"
+              @registered="handleRegistered"
             />
-
-            <UButton
-              color="primary"
-              size="xl"
-              block
-              icon="i-lucide-ticket"
-              @click="isConfirmOpen = true"
-            >
-              RSVP Sekarang
-            </UButton>
-
-            <!-- Confirm Dialog -->
-            <UModal
-              v-model:open="isConfirmOpen"
-              title="Konfirmasi RSVP Anda"
-              :description="`Pesan 1 tempat untuk ${profileEmail} pada acara ${event.title}?`"
-            >
-              <template #footer>
-                <div class="flex justify-end gap-2">
-                  <UButton
-                    color="neutral"
-                    variant="ghost"
-                    @click="isConfirmOpen = false"
-                  >
-                    Batal
-                  </UButton>
-                  <UButton
-                    color="primary"
-                    :loading="isSubmitting"
-                    @click="handleAuthenticatedRsvp"
-                  >
-                    Konfirmasi RSVP
-                  </UButton>
-                </div>
-              </template>
-            </UModal>
           </template>
 
           <!-- Guest Form State -->
           <template v-else>
-            <header>
-              <h3 class="text-xl font-bold text-on-surface">
-                Amankan Tempat Anda
-              </h3>
-
-              <p class="text-on-surface-variant mt-0.5">
-                Tidak memerlukan akun. Pendaftaran cepat dan gratis.
-              </p>
-            </header>
-
-            <UAlert
-              title="ada kesalahan!"
-              v-if="errorMessage"
-              :description="errorMessage"
-              icon="i-lucide-triangle-alert"
-              color="error"
-              variant="subtle"
+            <EventRsvpForm
+              mode="guest"
+              :event-id="event.id"
+              :event-title="event.title"
+              :profile="profile"
+              @registered="handleRegistered"
             />
-
-            <UForm
-              :schema="formSchema"
-              :state="form"
-              @submit="handleRsvp"
-              class="space-y-4"
-            >
-              <UFormField class="space-y-1.5" label="Nama lengkap">
-                <UInput
-                  v-model="form.name"
-                  placeholder="Andi Johan"
-                  required
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField class="space-y-1.5" label="Alamat email">
-                <UInput
-                  v-model="form.email"
-                  type="email"
-                  placeholder="andi@example.com"
-                  required
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField
-                class="space-y-1.5"
-                label="Organisasi / Latar Belakang"
-                hint="opsional"
-              >
-                <UTextarea
-                  v-model="form.organization"
-                  placeholder="Mahasiswa Ilmu Komputer"
-                  :rows="3"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UButton
-                type="submit"
-                color="primary"
-                size="lg"
-                class="w-full justify-center"
-                :loading="isSubmitting"
-              >
-                Konfirmasi RSVP
-              </UButton>
-            </UForm>
           </template>
         </UCard>
       </section>
