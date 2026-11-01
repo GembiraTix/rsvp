@@ -74,31 +74,12 @@ const organizedEventsColumns: TableColumn<Event>[] = [
   },
 ]
 
-import { useOrders } from '@/composables/useOrders'
-import type { OrderWithEvent } from '~~/server/domain/types'
-
-const { fetchOrders, resumePayment } = useOrders()
+const { fetchOrders } = useOrders()
 
 const { data: ordersRes, error: ordersError } = await fetchOrders()
 const orders = computed(() => ordersRes.value?.data ?? [])
 
-const resumingOrderId = ref<string | null>(null)
-const resumeErrorMessage = ref('')
-
-async function handleResumePayment(order: OrderWithEvent) {
-  resumingOrderId.value = order.id
-  resumeErrorMessage.value = ''
-  try {
-    const res = await resumePayment(order.id)
-    await navigateTo(res.data.redirectUrl, { external: true })
-  } catch (err: unknown) {
-    resumeErrorMessage.value =
-      (err as { statusCode?: number; statusMessage?: string })?.statusMessage ||
-      'Gagal melanjutkan pembayaran.'
-  } finally {
-    resumingOrderId.value = null
-  }
-}
+const { resumingOrderId, resumeErrorMessage, resume } = useResumePayment()
 
 const ordersColumns: TableColumn<OrderWithEvent>[] = [
   {
@@ -258,6 +239,10 @@ async function handleLogout() {
               </template>
             </UTable>
           </UCard>
+        </div>
+
+        <div v-if="item.value === 'akun'" class="space-y-6">
+          <ProfileEditForm />
 
           <UCard>
             <template #header>
