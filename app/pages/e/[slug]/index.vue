@@ -90,6 +90,21 @@ const rsvpToken = ref(existingRsvp.value?.token || '')
 const errorMessage = ref('')
 const isConfirmOpen = ref(false)
 
+const isRegistered = computed(
+  () => rsvpSuccess.value || (existingRsvp.value?.is_attending ?? false),
+)
+
+const profileEmail = computed(() => profile.value?.email ?? '')
+
+const sidebarPanel = computed(() =>
+  resolveEventSidebarPanel({
+    isRegistered: isRegistered.value,
+    isLimitReached: isLimitReached.value,
+    hasTickets: hasTickets.value,
+    isLoggedIn: Boolean(profile.value),
+  }),
+)
+
 async function submitRsvp(name: string, email: string, organization?: string) {
   if (!event.value) return
   errorMessage.value = ''
@@ -185,37 +200,39 @@ async function handleAuthenticatedRsvp() {
         </div>
       </section>
 
-      <section class="lg:col-span-5">
+      <section class="lg:col-span-5 space-y-6">
+        <UCard
+          v-if="isAdmin"
+          class="shadow-xl border-outline"
+          :ui="{ body: 'p-6 space-y-4 text-center py-2' }"
+        >
+          <h2 class="text-xl font-bold text-on-surface">Kelola Acara Anda</h2>
+          <p>Sunting detil acara, atau kelola peserta</p>
+
+          <UButton
+            :to="`/e/${event.slug}/edit`"
+            variant="outline"
+            size="lg"
+            icon="i-lucide-pencil"
+            class="w-full justify-center font-bold"
+            label="Edit detil acara"
+          />
+          <UButton
+            :to="`/e/${event.slug}/manage`"
+            color="primary"
+            size="lg"
+            class="w-full justify-center font-bold"
+            icon="i-lucide-settings"
+            label="Kelola Acara & Peserta"
+          />
+        </UCard>
+
         <UCard
           class="sticky top-20 shadow-xl border-outline"
           :ui="{ body: 'p-6 space-y-6' }"
         >
-          <div v-if="isAdmin" class="space-y-4 text-center py-2">
-            <h2 class="text-xl font-bold text-on-surface">Kelola Acara Anda</h2>
-            <p>Sunting detil acara, atau kelola peserta</p>
-
-            <UButton
-              :to="`/e/${event.slug}/edit`"
-              variant="outline"
-              size="lg"
-              icon="i-lucide-pencil"
-              class="w-full justify-center font-bold"
-              label="Edit detil acara"
-            />
-            <UButton
-              :to="`/e/${event.slug}/manage`"
-              color="primary"
-              size="lg"
-              class="w-full justify-center font-bold"
-              icon="i-lucide-settings"
-              label="Kelola Acara & Peserta"
-            />
-          </div>
-
           <div
-            v-else-if="
-              rsvpSuccess || (existingRsvp && existingRsvp.is_attending)
-            "
+            v-if="sidebarPanel === 'confirmed'"
             class="space-y-4 text-center py-4"
           >
             <div
@@ -253,7 +270,7 @@ async function handleAuthenticatedRsvp() {
             </div>
           </div>
 
-          <template v-else-if="isLimitReached">
+          <template v-else-if="sidebarPanel === 'quota_full'">
             <header>
               <h3 class="text-xl font-bold text-on-surface">Kuota penuh</h3>
 
@@ -264,7 +281,7 @@ async function handleAuthenticatedRsvp() {
             </header>
           </template>
 
-          <div v-if="hasTickets" class="space-y-3">
+          <div v-else-if="sidebarPanel === 'buy_tickets'" class="space-y-3">
             <header class="flex justify-between">
               <h2 class="text-xl font-bold text-on-surface">Beli tiket</h2>
               <p class="text-on-surface-variant">
@@ -286,12 +303,12 @@ async function handleAuthenticatedRsvp() {
           </div>
 
           <!-- authenticated RSVP -->
-          <template v-else-if="profile && !isAdmin">
+          <template v-else-if="sidebarPanel === 'rsvp_form'">
             <header class="space-y-1">
               <h2 class="text-xl font-bold text-on-surface">RSVP Cepat</h2>
               <p class="text-on-surface-variant">
                 Masuk sebagai
-                <strong class="text-on-surface">{{ profile.email }}</strong>
+                <strong class="text-on-surface">{{ profileEmail }}</strong>
               </p>
             </header>
 
@@ -309,7 +326,6 @@ async function handleAuthenticatedRsvp() {
               size="xl"
               block
               icon="i-lucide-ticket"
-              :disabled="isLimitReached"
               @click="isConfirmOpen = true"
             >
               RSVP Sekarang
@@ -319,7 +335,7 @@ async function handleAuthenticatedRsvp() {
             <UModal
               v-model:open="isConfirmOpen"
               title="Konfirmasi RSVP Anda"
-              :description="`Pesan 1 tempat untuk ${profile.email} pada acara ${event.title}?`"
+              :description="`Pesan 1 tempat untuk ${profileEmail} pada acara ${event.title}?`"
             >
               <template #footer>
                 <div class="flex justify-end gap-2">
@@ -333,7 +349,6 @@ async function handleAuthenticatedRsvp() {
                   <UButton
                     color="primary"
                     :loading="isSubmitting"
-                    :disabled="isLimitReached"
                     @click="handleAuthenticatedRsvp"
                   >
                     Konfirmasi RSVP
@@ -408,7 +423,6 @@ async function handleAuthenticatedRsvp() {
                 size="lg"
                 class="w-full justify-center"
                 :loading="isSubmitting"
-                :disabled="isLimitReached"
               >
                 Konfirmasi RSVP
               </UButton>
