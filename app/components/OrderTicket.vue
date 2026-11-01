@@ -3,10 +3,13 @@ import type { TicketWithTypeName } from '~~/server/domain/types'
 
 const props = defineProps<{ ticket: TicketWithTypeName }>()
 
+const ticketQrEnabled = useRuntimeConfig().public.ticketQrEnabled
+
 const qrDataUrl = ref('')
 const qrFailed = ref(false)
 
 onMounted(async () => {
+  if (!ticketQrEnabled) return
   try {
     const QRCode = await import('qrcode')
     qrDataUrl.value = await QRCode.toDataURL(props.ticket.token, {
@@ -91,7 +94,10 @@ const fieldsEntries = computed(() =>
           </div>
         </div>
 
-        <div class="flex flex-col items-center gap-2 py-2">
+        <div
+          v-if="ticketQrEnabled"
+          class="flex flex-col items-center gap-2 py-2"
+        >
           <img
             v-if="qrDataUrl"
             :src="qrDataUrl"
