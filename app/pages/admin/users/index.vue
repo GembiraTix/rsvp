@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { z } from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useAdminUsers } from '@/composables/useAdminUsers'
 import type { UserProfile, UserRole } from '~~/server/domain/types'
@@ -80,30 +78,7 @@ const usersColumns: TableColumn<UserProfile>[] = [
   },
 ]
 
-  try {
-    await apiCreateUser({
-      name: e.data.name,
-      email: e.data.email,
-      password: e.data.password,
-      role: e.data.role,
-    })
-    await refreshUsers()
-    createSuccessMessage.value = 'Pengguna berhasil dibuat!'
-    createFormState.name = ''
-    createFormState.email = ''
-    createFormState.password = ''
-    createFormState.role = 'admin'
-    setTimeout(() => {
-      isCreateModalOpen.value = false
-      createSuccessMessage.value = ''
-    }, 1500)
-  } catch (err: unknown) {
-    createErrorMessage.value =
-      err instanceof Error ? err.message : 'Gagal membuat pengguna.'
-  } finally {
-    isCreating.value = false
-  }
-}
+const isCreateModalOpen = ref(false)
 
 // Role editing modal
 const isRoleModalOpen = ref(false)
@@ -252,23 +227,7 @@ function getRoleBadgeColor(role: UserRole) {
       </UTable>
     </UCard>
 
-        <div class="space-y-4 py-2">
-          <UFormField label="Pilih Role Baru">
-            <select
-              v-model="selectedNewRole"
-              class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
-            >
-              <option
-                v-for="opt in roleOptions"
-                :key="opt.value"
-                :value="opt.value"
-              >
-                {{ opt.label }}
-              </option>
-            </select>
-          </UFormField>
-        </div>
-      </template>
+    <CreateUserModal v-model:open="isCreateModalOpen" @saved="refreshUsers" />
 
       <template #footer>
         <div class="flex justify-end gap-2">
