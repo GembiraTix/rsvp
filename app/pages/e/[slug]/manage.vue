@@ -212,8 +212,6 @@ function exportCSV() {
 
 const {
   fetchByEvent: fetchTicketTypes,
-  createTicketType,
-  updateTicketType,
   deleteTicketType,
 } = useTicketTypes()
 const { data: ticketTypesRes, refresh: refreshTicketTypes } =
@@ -222,56 +220,20 @@ const { data: ticketTypesRes, refresh: refreshTicketTypes } =
 const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 
 const isTicketTypeModalOpen = ref(false)
-const isSavingTicketType = ref(false)
-const ticketTypeError = ref('')
-const editingTicketTypeId = ref<number | null>(null)
+const editingTicketType = ref<TicketType | null>(null)
 const ticketTypeToDelete = ref<TicketType | null>(null)
 const isDeleteTicketTypeModalOpen = ref(false)
 const isDeletingTicketType = ref(false)
 const ticketTypeNotice = ref('')
-
-function resetTicketTypeForm() {
-  ticketTypeFormState.name = ''
-  ticketTypeFormState.description = ''
-  ticketTypeFormState.kind = 'single'
-  ticketTypeFormState.price = 0
-  ticketTypeFormState.capacity = undefined
-  ticketTypeFormState.minQty = 1
-  ticketTypeFormState.maxQty = 10
-  ticketTypeFormState.multipleOf = 1
-  ticketTypeFormState.isActive = true
-}
-
-function getErrorMessage(err: unknown, fallback: string) {
-  if (err && typeof err === 'object' && 'data' in err) {
-    const data = (err as { data?: { statusMessage?: string } }).data
-    if (data?.statusMessage) {
-      return data.statusMessage
-    }
-  }
-
-  return err instanceof Error ? err.message : fallback
-}
+const ticketTypeError = ref('')
 
 function openCreateTicketTypeModal() {
-  editingTicketTypeId.value = null
-  ticketTypeError.value = ''
-  resetTicketTypeForm()
+  editingTicketType.value = null
   isTicketTypeModalOpen.value = true
 }
 
 function openEditTicketTypeModal(ticket: TicketType) {
-  editingTicketTypeId.value = ticket.id
-  ticketTypeError.value = ''
-  ticketTypeFormState.name = ticket.name
-  ticketTypeFormState.description = ticket.description ?? ''
-  ticketTypeFormState.kind = ticket.kind
-  ticketTypeFormState.price = ticket.price
-  ticketTypeFormState.capacity = ticket.capacity ?? undefined
-  ticketTypeFormState.minQty = ticket.min_qty
-  ticketTypeFormState.maxQty = ticket.max_qty
-  ticketTypeFormState.multipleOf = ticket.multiple_of
-  ticketTypeFormState.isActive = ticket.is_active
+  editingTicketType.value = ticket
   isTicketTypeModalOpen.value = true
 }
 
@@ -281,33 +243,9 @@ function askDeleteTicketType(ticket: TicketType) {
   isDeleteTicketTypeModalOpen.value = true
 }
 
-async function handleSubmitTicketType({
-  data: body,
-}: FormSubmitEvent<TicketTypeForm>) {
-  isSavingTicketType.value = true
-  ticketTypeError.value = ''
-
-  try {
-    if (editingTicketTypeId.value !== null) {
-      await updateTicketType(event.value.id, editingTicketTypeId.value, body)
-      ticketTypeNotice.value = 'Tipe tiket berhasil diperbarui.'
-    } else {
-      await createTicketType(event.value.id, body)
-      ticketTypeNotice.value = 'Tipe tiket berhasil dibuat.'
-    }
-
-    await refreshTicketTypes()
-    resetTicketTypeForm()
-    editingTicketTypeId.value = null
-    isTicketTypeModalOpen.value = false
-  } catch (err: unknown) {
-    ticketTypeError.value = getErrorMessage(
-      err,
-      'Gagal menyimpan tipe tiket. Silakan coba lagi.',
-    )
-  } finally {
-    isSavingTicketType.value = false
-  }
+function handleTicketTypeSaved(notice: string) {
+  ticketTypeNotice.value = notice
+  refreshTicketTypes()
 }
 
 async function handleDeleteTicketType() {
@@ -657,6 +595,20 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   </div>
                 </template>
               </UTable>
+
+              <UEmpty
+                v-else
+                icon="i-lucide-ticket"
+                title="Belum ada tiket."
+                class="py-4"
+              />
+
+              <TicketTypeModal
+                v-model:open="isTicketTypeModalOpen"
+                :event-id="event.id"
+                :ticket-type="editingTicketType"
+                @saved="handleTicketTypeSaved"
+              />
 
               <UModal
                 v-model:open="isDeleteTicketTypeModalOpen"
