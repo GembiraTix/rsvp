@@ -39,25 +39,20 @@ function goToCheckout() {
 
 <template>
   <div class="py-8 max-w-5xl mx-auto px-4 space-y-8">
-    <UButton
-      :to="`/e/${event.slug}`"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
-    >
-      Kembali ke acara
-    </UButton>
-
-    <header class="space-y-2">
-      <h1 class="text-3xl font-bold text-on-surface">Pilih Tiket</h1>
-      <p class="text-on-surface-variant">
-        {{ event.title }}
-        <template v-if="event.starts_at">
-          · {{ formatDate(event.starts_at) }}
-        </template>
-        <template v-if="event.location"> · {{ event.location }}</template>
-      </p>
-    </header>
+    <PageHeader
+      :back-to="`/e/${event.slug}`"
+      back-label="Kembali ke acara"
+      title="Pilih Tiket"
+      :description="
+        [
+          event.title,
+          event.starts_at ? formatDate(event.starts_at) : null,
+          event.location,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      "
+    />
 
     <UCard v-if="ticketTypes.length === 0">
       <p class="text-on-surface-variant">

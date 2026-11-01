@@ -154,14 +154,7 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
 
 <template>
   <div class="py-8 max-w-3xl mx-auto px-4 space-y-6">
-    <UButton
-      to="/users"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
-    >
-      Kembali ke Dasbor
-    </UButton>
+    <PageHeader back-to="/users" back-label="Kembali ke Dasbor" />
 
     <UCard class="border-outline shadow-md">
       <template #header>

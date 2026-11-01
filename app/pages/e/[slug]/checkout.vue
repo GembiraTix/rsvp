@@ -94,19 +94,12 @@ async function handleBayar() {
 
 <template>
   <div class="py-8 max-w-5xl mx-auto px-4 space-y-8">
-    <UButton
-      :to="`/e/${event.slug}/tickets`"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
-    >
-      Kembali ke pemilihan tiket
-    </UButton>
-
-    <header class="space-y-2">
-      <h1 class="text-3xl font-bold text-on-surface">Checkout</h1>
-      <p class="text-on-surface-variant">{{ event.title }}</p>
-    </header>
+    <PageHeader
+      :back-to="`/e/${event.slug}/tickets`"
+      back-label="Kembali ke pemilihan tiket"
+      title="Checkout"
+      :description="event.title"
+    />
 
     <UAlert v-if="checkoutError" color="error" :description="checkoutError" />
 

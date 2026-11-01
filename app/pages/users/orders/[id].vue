@@ -45,24 +45,17 @@ async function handleResumePayment() {
 
 <template>
   <div class="py-8 max-w-3xl mx-auto px-4 space-y-6">
-    <UButton
-      to="/users?tab=pesanan"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
+    <PageHeader
+      :back-to="'/users?tab=pesanan'"
+      back-label="Kembali ke pesanan"
+      :title="order?.event?.title || 'Detail Pesanan'"
     >
-      Kembali ke pesanan
-    </UButton>
-
-    <template v-if="orderStatus === 'success' && order">
-      <header class="space-y-2">
-        <h1 class="text-3xl font-bold text-on-surface">
-          {{ order.event?.title || 'Detail Pesanan' }}
-        </h1>
+      <template #actions>
         <p class="text-on-surface-variant">
-          No. Pesanan <span class="font-mono">#{{ order.order_number }}</span>
+          No. Pesanan <span class="font-mono">#{{ order?.order_number }}</span>
         </p>
-      </header>
+      </template>
+    </PageHeader>
 
       <UAlert
         v-if="resumeErrorMessage"
