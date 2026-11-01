@@ -71,7 +71,10 @@ function goToCheckout() {
 
     <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <section class="lg:col-span-7 space-y-4">
-        <template v-for="cartLine of cart">
+        <template
+          v-for="cartLine of cart"
+          :key="cartLine.ticketType.id"
+        >
           <TicketSelect
             @select="select(cartLine.ticketType.id)"
             @remove="remove(cartLine.ticketType.id)"

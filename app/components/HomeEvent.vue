@@ -9,7 +9,6 @@ const { event } = defineProps<Props>()
 
 <template>
   <UCard
-    :key="event.id"
     class="flex flex-col h-full overflow-hidden hover:shadow-lg transition-shadow duration-200"
     :ui="{ body: 'p-5 flex-1 flex flex-col justify-between' }"
   >
