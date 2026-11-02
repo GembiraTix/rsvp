@@ -4,9 +4,8 @@ import { z } from 'zod'
 import { useEvents } from '@/composables/useEvents'
 import {
   getLocalTimeZone,
-  ZonedDateTime,
   parseAbsolute,
-  parseZonedDateTime,
+  ZonedDateTime,
 } from '@internationalized/date'
 
 definePageMeta({
@@ -28,70 +27,67 @@ const editSuccessMessage = ref('')
 
 import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 
-const formStateSchema = z.object({
-  title: z.string().min(1, 'Judul acara wajib diisi.'),
-  location: z.string().min(1, 'Lokasi wajib diisi.'),
-  startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
-  endsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
-  description: z.string().optional(),
-  image: z
-    .instanceof(File, { message: 'URL gambar tidak valid.' })
-    .optional()
-    .refine(
-      (file) => {
-        if (!file) return true
+const formStateSchema = z
+  .object({
+    title: z.string().min(1, 'Judul acara wajib diisi.'),
+    location: z.string().min(1, 'Lokasi wajib diisi.'),
+    startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
+    endsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
+    description: z.string().optional(),
+    image: z
+      .instanceof(File, { message: 'URL gambar tidak valid.' })
+      .optional()
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const maxBytes = 5 * 1024 * 1024 // 5MB
-        return file && file.size < maxBytes
-      },
-      { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
-    )
-    .refine(
-      (file) => {
-        if (!file) return true
+          const maxBytes = 5 * 1024 * 1024 // 5MB
+          return file && file.size < maxBytes
+        },
+        { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
+      )
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const allowedTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/webp',
-          'image/gif',
-        ]
-        return file && allowedTypes.includes(file.type)
-      },
-      {
-        message:
-          'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
-      },
-    )
-    .refine(
-      async (file) => {
-        if (!file) return true
+          const allowedTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+          ]
+          return file && allowedTypes.includes(file.type)
+        },
+        {
+          message:
+            'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
+        },
+      )
+      .refine(
+        async (file) => {
+          if (!file) return true
 
-        const buffer = await file.slice(0, 32).arrayBuffer()
-        return isValidImageBuffer(buffer)
-      },
-      { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
-    ),
-  imageUrl: z.url().optional(),
-})
+          const buffer = await file.slice(0, 32).arrayBuffer()
+          return isValidImageBuffer(buffer)
+        },
+        { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
+      ),
+    imageUrl: z.url().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.startsAt &&
+      data.endsAt &&
+      data.endsAt.compare(data.startsAt) < 0
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endsAt'],
+        message: 'Tanggal akhir tidak boleh sebelum tanggal awal.',
+      })
+    }
+  })
 type EditFormState = z.output<typeof formStateSchema>
-
-watch(
-  () => oldEvent!.data,
-  (newEvent) => {
-    if (!newEvent) return
-    formState.title = newEvent.title || ''
-    formState.location = newEvent.location || ''
-    formState.startsAt = newEvent.starts_at
-      ? parseZonedDateTime(newEvent.starts_at)
-      : undefined
-    formState.endsAt = newEvent.ends_at
-      ? parseZonedDateTime(newEvent.ends_at)
-      : undefined
-    formState.description = newEvent.description || undefined
-    formState.imageUrl = newEvent.image_url || undefined
-  },
-)
 
 const formState = shallowReactive<EditFormState>({
   title: oldEvent?.data.title || '',
@@ -111,7 +107,6 @@ watch(
   () => formState.image,
   async (newImage) => {
     if (!newImage) {
-      console.log('no image')
       return
     }
 
@@ -163,127 +158,131 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
 </script>
 
 <template>
-  <div class="py-8 max-w-6xl mx-auto px-4 space-y-">
-    <!-- <UButton -->
-    <!--   to="/users" -->
-    <!--   variant="ghost" -->
-    <!--   color="neutral" -->
-    <!--   icon="i-lucide-arrow-left" -->
-    <!-- > -->
-    <!--   Kembali ke Dasbor -->
-    <!-- </UButton> -->
-
-    <h1>Menyunting {{ oldEvent?.data.title }}</h1>
-
-    <UAlert
-      v-if="editErrorMessage"
-      :title="editErrorMessage"
-      icon="i-lucide-alert-circle"
-      color="error"
-      variant="subtle"
-    />
-
-    <UAlert
-      v-if="editSuccessMessage"
-      :title="editSuccessMessage"
-      icon="i-lucide-check-circle"
-      color="success"
-      variant="subtle"
-    />
-
-    <UForm
-      :schema="formStateSchema"
-      :state="formState"
-      class="space-y-4"
-      @submit="handleUpdateEvent"
+  <div class="py-8 max-w-3xl mx-auto px-4 space-y-6">
+    <UButton
+      to="/users"
+      variant="ghost"
+      color="neutral"
+      icon="i-lucide-arrow-left"
     >
-      <UFormField label="Judul Acara" name="title" required>
-        <UInput
-          id="edit-title"
-          v-model="formState.title"
-          placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
-          name="title"
-          class="w-full"
-          size="xl"
-          required
-        />
-      </UFormField>
+      Kembali ke Dasbor
+    </UButton>
 
-      <UFormField label="Tanggal Awal" name="starts_at" required>
-        <UInputDate
-          id="starts_at"
-          v-model="formState.startsAt"
-          type="date"
-          name="starts_at"
-          class="w-full"
-        />
-      </UFormField>
+    <UCard>
+      <template #header>
+        <h1 class="text-2xl font-bold text-on-surface">
+          Menyunting {{ oldEvent?.data.title }}
+        </h1>
+      </template>
 
-      <UFormField label="Tanggal Akhir" name="ends_at">
-        <UInputDate
-          id="ends_at"
-          v-model="formState.endsAt"
-          :is-date-unavailable="
-            () => {
-              if (formState.endsAt && formState.startsAt) {
-                return formState.endsAt?.toDate() < formState.startsAt?.toDate()
-              } else {
-                return false
-              }
-            }
-          "
-          type="date"
-          name="ends_at"
-          class="w-full"
-        />
-      </UFormField>
+      <UAlert
+        v-if="editErrorMessage"
+        :title="editErrorMessage"
+        icon="i-lucide-alert-circle"
+        color="error"
+        variant="subtle"
+      />
 
-      <UFormField label="Lokasi" name="location" required>
-        <UInput
-          id="edit-location"
-          v-model="formState.location"
-          placeholder="contoh: Auditorium Utama / Ruang 204"
-          name="location"
-          class="w-full"
-          required
-        />
-      </UFormField>
+      <UAlert
+        v-if="editSuccessMessage"
+        :title="editSuccessMessage"
+        icon="i-lucide-check-circle"
+        color="success"
+        variant="subtle"
+      />
 
-      <UFormField
-        label="Gambar Banner Acara"
-        name="imageUrl"
-        description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+      <UForm
+        :schema="formStateSchema"
+        :state="formState"
+        class="grid grid-cols-2 gap-4"
+        @submit="handleUpdateEvent"
       >
-        <div class="space-y-3">
-          <UFileUpload
-            v-model="formState.image"
-            accept="image/*"
-            :loading="isUploadingImage"
-            icon="i-lucide-image"
-            label="Pilih atau seret gambar banner baru ke sini"
-            description="PNG, JPG, WEBP hingga 5MB"
+        <UFormField
+          label="Judul Acara"
+          name="title"
+          class="col-span-full"
+          required
+        >
+          <UInput
+            id="edit-title"
+            v-model="formState.title"
+            placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
+            name="title"
+            class="w-full"
+            size="xl"
+            required
+          />
+        </UFormField>
+
+        <EventDateTimeField
+          v-model="formState.startsAt"
+          name="startsAt"
+          label="Tanggal/waktu awal"
+          required
+        />
+
+        <EventDateTimeField
+          v-model="formState.endsAt"
+          name="endsAt"
+          label="Tanggal/waktu akhir"
+          :min="formState.startsAt"
+          :fallback="formState.startsAt"
+        />
+
+        <UFormField label="Lokasi" name="location" required>
+          <UInput
+            id="edit-location"
+            v-model="formState.location"
+            placeholder="contoh: Auditorium Utama / Ruang 204"
+            name="location"
+            class="w-full"
             size="lg"
+            required
+          />
+        </UFormField>
+
+        <UFormField
+          label="Gambar Banner Acara"
+          name="imageUrl"
+          description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+          class="col-span-full order-first"
+        >
+          <div class="space-y-3">
+            <UFileUpload
+              v-model="formState.image"
+              accept="image/*"
+              :loading="isUploadingImage"
+              icon="i-lucide-image"
+              label="Pilih atau seret gambar banner baru ke sini"
+              description="PNG, JPG, WEBP hingga 5MB"
+              size="lg"
+              class="w-full"
+            />
+          </div>
+        </UFormField>
+
+        <UFormField label="Deskripsi" name="description" class="col-span-full">
+          <UTextarea
+            id="edit-description"
+            v-model="formState.description"
+            :rows="4"
+            placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
+            name="description"
             class="w-full"
           />
-        </div>
-      </UFormField>
+        </UFormField>
 
-      <UFormField label="Deskripsi" name="description">
-        <UTextarea
-          id="edit-description"
-          v-model="formState.description"
-          :rows="4"
-          placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
-          name="description"
-          class="w-full"
-        />
-      </UFormField>
+        <USeparator class="col-span-full" />
 
-      <div class="pt-4 flex justify-end gap-3 border-t border-outline">
-        <UButton color="primary" type="submit" :loading="isUpdatingEvent">
+        <UButton
+          color="primary"
+          type="submit"
+          :loading="isUpdatingEvent"
+          class="-col-end-1 place-self-end"
+        >
           Simpan Perubahan
         </UButton>
-      </div>
-    </UForm>
+      </UForm>
+    </UCard>
   </div>
 </template>
