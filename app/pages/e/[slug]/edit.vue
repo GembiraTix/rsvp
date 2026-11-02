@@ -4,10 +4,7 @@ import { z } from 'zod'
 import { useEvents } from '@/composables/useEvents'
 import {
   getLocalTimeZone,
-  now,
   parseAbsolute,
-  toCalendarDate,
-  toTime,
   ZonedDateTime,
 } from '@internationalized/date'
 
@@ -106,78 +103,10 @@ const formState = shallowReactive<EditFormState>({
   image: undefined,
 })
 
-const isStartCalendarOpen = ref(false)
-const isEndCalendarOpen = ref(false)
-
-const startsAtModel = computed({
-  get: () => formState.startsAt,
-  set: (value) => {
-    const date = value ? toCalendarDate(value) : undefined
-    if (!date) return
-    formState.startsAt = (formState.startsAt ?? now(getLocalTimeZone())).set({
-      year: date.year,
-      month: date.month,
-      day: date.day,
-    })
-    isStartCalendarOpen.value = false
-  },
-})
-
-const endsAtModel = computed({
-  get: () => formState.endsAt,
-  set: (value) => {
-    const date = value ? toCalendarDate(value) : undefined
-    if (!date) return
-
-    formState.endsAt = (
-      formState.endsAt ??
-      formState.startsAt ??
-      now(getLocalTimeZone())
-    ).set({
-      year: date.year,
-      month: date.month,
-      day: date.day,
-    })
-    isEndCalendarOpen.value = false
-  },
-})
-
-const startsAtTimeModel = computed({
-  get: () => (formState.startsAt ? toTime(formState.startsAt) : undefined),
-  set: (value) => {
-    if (!value) return
-
-    const base = formState.startsAt ?? now(getLocalTimeZone())
-    formState.startsAt = base.set({
-      hour: value.hour,
-      minute: value.minute,
-      second: 0,
-      millisecond: 0,
-    })
-  },
-})
-
-const endsAtTimeModel = computed({
-  get: () => (formState.endsAt ? toTime(formState.endsAt) : undefined),
-  set: (value) => {
-    if (!value) return
-    const base =
-      formState.endsAt ?? formState.startsAt ?? now(getLocalTimeZone())
-
-    formState.endsAt = base.set({
-      hour: value.hour,
-      minute: value.minute,
-      second: 0,
-      millisecond: 0,
-    })
-  },
-})
-
 watch(
   () => formState.image,
   async (newImage) => {
     if (!newImage) {
-      console.log('no image')
       return
     }
 
@@ -285,84 +214,20 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
           />
         </UFormField>
 
-        <UFormField label="Tanggal/waktu awal" name="startsAt" required>
-          <div class="flex gap-2">
-            <UPopover v-model:open="isStartCalendarOpen" class="flex-1">
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-calendar"
-                trailing-icon="i-lucide-chevron-down"
-                class="w-full justify-between font-normal"
-              >
-                {{
-                  formState.startsAt
-                    ? formatDate(formState.startsAt.toDate(), {
-                        dateStyle: 'long',
-                        timeZone: undefined,
-                      })
-                    : 'Pilih tanggal'
-                }}
-              </UButton>
+        <EventDateTimeField
+          v-model="formState.startsAt"
+          name="startsAt"
+          label="Tanggal/waktu awal"
+          required
+        />
 
-              <template #content>
-                <UCalendar
-                  v-model="startsAtModel"
-                  locale="id-ID"
-                  initial-focus
-                  prevent-deselect
-                />
-              </template>
-            </UPopover>
-
-            <UInputTime
-              v-model="startsAtTimeModel"
-              :hour-cycle="24"
-              locale="id-ID"
-              class="w-32"
-            />
-          </div>
-        </UFormField>
-
-        <UFormField label="Tanggal/waktu akhir" name="endsAt">
-          <div class="flex gap-2">
-            <UPopover v-model:open="isEndCalendarOpen" class="flex-1">
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-calendar"
-                trailing-icon="i-lucide-chevron-down"
-                class="w-full justify-between font-normal"
-              >
-                {{
-                  formState.endsAt
-                    ? formatDate(formState.endsAt.toDate(), {
-                        dateStyle: 'long',
-                        timeZone: undefined,
-                      })
-                    : 'Pilih tanggal'
-                }}
-              </UButton>
-
-              <template #content>
-                <UCalendar
-                  v-model="endsAtModel"
-                  :min-value="formState.startsAt"
-                  locale="id-ID"
-                  initial-focus
-                  prevent-deselect
-                />
-              </template>
-            </UPopover>
-
-            <UInputTime
-              v-model="endsAtTimeModel"
-              :hour-cycle="24"
-              locale="id-ID"
-              class="w-32"
-            />
-          </div>
-        </UFormField>
+        <EventDateTimeField
+          v-model="formState.endsAt"
+          name="endsAt"
+          label="Tanggal/waktu akhir"
+          :min="formState.startsAt"
+          :fallback="formState.startsAt"
+        />
 
         <UFormField label="Lokasi" name="location" required>
           <UInput

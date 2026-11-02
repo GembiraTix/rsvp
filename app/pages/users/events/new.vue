@@ -3,7 +3,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useSiteName } from '@/composables/useSiteName'
 import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
-import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date'
+import { getLocalTimeZone, now, ZonedDateTime } from '@internationalized/date'
 
 definePageMeta({
   middleware: 'auth',
@@ -19,10 +19,8 @@ const user = useSupabaseUser()
 const formStateSchema = z
   .object({
     title: z.string().min(1, 'Judul acara wajib diisi.'),
-    date: z.object({
-      starts_at: z.instanceof(CalendarDate),
-      ends_at: z.instanceof(CalendarDate),
-    }),
+    startsAt: z.instanceof(ZonedDateTime),
+    endsAt: z.instanceof(ZonedDateTime),
     is_one_day: z.boolean(),
     location: z.string().min(1, 'Lokasi wajib diisi.'),
     imageUrl: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
@@ -67,13 +65,10 @@ const formStateSchema = z
     description: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (
-      !data.is_one_day &&
-      data.date.ends_at.compare(data.date.starts_at) < 0
-    ) {
+    if (!data.is_one_day && data.endsAt.compare(data.startsAt) < 0) {
       ctx.addIssue({
         code: 'custom',
-        path: ['date', 'ends_at'],
+        path: ['endsAt'],
         message: 'Tanggal akhir tidak boleh sebelum tanggal awal.',
       })
     }
@@ -81,12 +76,13 @@ const formStateSchema = z
 
 type FormState = z.output<typeof formStateSchema>
 
+const defaultDate = () =>
+  now(getLocalTimeZone()).set({ hour: 9, minute: 0, second: 0, millisecond: 0 })
+
 const formState = shallowReactive<FormState>({
   title: '',
-  date: {
-    starts_at: today(getLocalTimeZone()),
-    ends_at: today(getLocalTimeZone()),
-  },
+  startsAt: defaultDate(),
+  endsAt: defaultDate(),
   is_one_day: true,
   location: '',
   image: undefined,
@@ -94,32 +90,10 @@ const formState = shallowReactive<FormState>({
   description: '',
 })
 
-const isStartCalendarOpen = ref(false)
-const isEndCalendarOpen = ref(false)
-
-const startsAtModel = computed({
-  get: () => formState.date.starts_at,
-  set: (value: unknown) => {
-    if (!(value instanceof CalendarDate)) return
-    formState.date = { ...formState.date, starts_at: value }
-    isStartCalendarOpen.value = false
-  },
-})
-
-const endsAtModel = computed({
-  get: () => formState.date.ends_at,
-  set: (value: unknown) => {
-    if (!(value instanceof CalendarDate)) return
-    formState.date = { ...formState.date, ends_at: value }
-    isEndCalendarOpen.value = false
-  },
-})
-
 watch(
   () => formState.image,
   async (newImage) => {
     if (!newImage) {
-      console.log('no image')
       return
     }
 
@@ -152,12 +126,10 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
   errorMessage.value = ''
 
   try {
-    const startsAt = e.data.date.starts_at
-      .toDate(getLocalTimeZone())
-      .toISOString()
+    const startsAt = e.data.startsAt.toDate().toISOString()
     const endsAt = e.data.is_one_day
       ? null
-      : e.data.date.ends_at.toDate(getLocalTimeZone()).toISOString()
+      : e.data.endsAt.toDate().toISOString()
 
     const res = await createEvent({
       title: e.data.title,
@@ -246,68 +218,27 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           />
         </UFormField>
 
-        <UFormField label="Tanggal Awal" name="date.starts_at" required>
-          <UPopover v-model:open="isStartCalendarOpen">
-            <UButton
-              color="neutral"
-              variant="outline"
-              icon="i-lucide-calendar"
-              trailing-icon="i-lucide-chevron-down"
-              class="w-full justify-between font-normal"
-            >
-              {{
-                formatDate(
-                  formState.date.starts_at.toDate(getLocalTimeZone()),
-                  { dateStyle: 'long', timeZone: undefined },
-                )
-              }}
-            </UButton>
+        <EventDateTimeField
+          v-model="formState.startsAt"
+          name="startsAt"
+          label="Tanggal/waktu awal"
+          required
+        />
 
-            <template #content>
-              <UCalendar
-                v-model="startsAtModel"
-                locale="id-ID"
-                initial-focus
-                prevent-deselect
-              />
-            </template>
-          </UPopover>
-        </UFormField>
+        <EventDateTimeField
+          v-show="!formState.is_one_day"
+          v-model="formState.endsAt"
+          name="endsAt"
+          label="Tanggal/waktu akhir"
+          :min="formState.startsAt"
+        />
 
         <UFormField
-          v-show="!formState.is_one_day"
-          label="Tanggal Akhir"
-          name="date.ends_at"
+          label="Lokasi"
+          name="location"
+          class="col-span-full"
+          required
         >
-          <UPopover v-model:open="isEndCalendarOpen">
-            <UButton
-              color="neutral"
-              variant="outline"
-              icon="i-lucide-calendar"
-              trailing-icon="i-lucide-chevron-down"
-              class="w-full justify-between font-normal"
-            >
-              {{
-                formatDate(formState.date.ends_at.toDate(getLocalTimeZone()), {
-                  dateStyle: 'long',
-                  timeZone: undefined,
-                })
-              }}
-            </UButton>
-
-            <template #content>
-              <UCalendar
-                v-model="endsAtModel"
-                :min-value="formState.date.starts_at"
-                locale="id-ID"
-                initial-focus
-                prevent-deselect
-              />
-            </template>
-          </UPopover>
-        </UFormField>
-
-        <UFormField label="Lokasi" name="location" required>
           <UInput
             id="location"
             v-model="formState.location"
