@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEvents } from '@/composables/useEvents'
 import { useTicketTypes } from '@/composables/useTicketTypes'
-import { formatRupiah } from '@/utils'
+import { formatRupiah, formatCountdown } from '@/utils'
 import { useUserProfile } from '@/composables/useUserProfile'
 
 const route = useRoute()
@@ -56,6 +56,27 @@ const isLoading = ref(false)
 const checkoutResult = ref<CheckoutResult | null>(null)
 const checkoutError = ref('')
 
+const ORDER_TIME_LIMIT_MS = 10 * 60 * 1000 // 10 minutes
+
+const remainingMs = ref(ORDER_TIME_LIMIT_MS)
+let deadline = 0
+let countdown: ReturnType<typeof setInterval> | undefined
+
+onMounted(() => {
+  deadline = Date.now() + ORDER_TIME_LIMIT_MS
+  countdown = setInterval(() => {
+    remainingMs.value = Math.max(0, deadline - Date.now())
+  }, 1000)
+})
+
+onUnmounted(() => clearInterval(countdown))
+
+watch(remainingMs, (ms) => {
+  if (ms === 0 && !checkoutResult.value) {
+    navigateTo(`/e/${event.value.slug}`)
+  }
+})
+
 async function handleBayar() {
   if (!profile.value) {
     checkoutError.value =
@@ -106,6 +127,21 @@ async function handleBayar() {
       title="Checkout"
       :description="event.title"
     />
+
+    <UBanner
+      v-if="selectedLines.length > 0 && !checkoutResult"
+      color="warning"
+      icon="i-lucide-timer"
+    >
+      <template #title>
+        <span class="flex items-center gap-2">
+          Sisa waktu pemesanan
+          <span class="font-mono tabular-nums font-bold">
+            {{ formatCountdown(remainingMs) }}
+          </span>
+        </span>
+      </template>
+    </UBanner>
 
     <UAlert v-if="checkoutError" color="error" :description="checkoutError" />
 
