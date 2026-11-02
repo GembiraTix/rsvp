@@ -196,7 +196,7 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
       Kembali ke Dasbor
     </UButton>
 
-    <UCard class="border-outline shadow-md">
+    <UCard>
       <template #header>
         <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
       </template>
@@ -213,94 +213,99 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
       <UForm
         :schema="formStateSchema"
         :state="formState"
-        class="space-y-4"
+        class="grid grid-cols-2 gap-4"
         @submit="handleSubmit"
       >
-        <UFormField label="Judul Acara" name="title" required>
+        <UFormField
+          label="Judul Acara"
+          name="title"
+          class="col-span-full"
+          required
+        >
           <UInput
             id="title"
             v-model="formState.title"
             placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
             name="title"
             class="w-full"
+            size="xl"
             required
           />
         </UFormField>
 
-        <div class="grid gap-4">
-          <UFormField
-            label="Satu hari?"
+        <UFormField
+          label="Satu hari?"
+          name="is_one_day"
+          help="Nyalakan bila acara hanya berlangsung dalam satu hari"
+          class="col-span-full"
+        >
+          <UCheckbox
+            id="is_one_day"
+            v-model="formState.is_one_day"
             name="is_one_day"
-            help="Nyalakan bila acara hanya berlangsung dalam satu hari"
-          >
-            <UCheckbox
-              id="is_one_day"
-              v-model="formState.is_one_day"
-              name="is_one_day"
-            />
-          </UFormField>
+          />
+        </UFormField>
 
-          <UFormField label="Tanggal Awal" name="date.starts_at" required>
-            <UPopover v-model:open="isStartCalendarOpen">
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-calendar"
-                trailing-icon="i-lucide-chevron-down"
-                class="w-full justify-between font-normal"
-              >
-                {{
-                  formatDate(
-                    formState.date.starts_at.toDate(getLocalTimeZone()),
-                    { dateStyle: 'long', timeZone: undefined },
-                  )
-                }}
-              </UButton>
+        <UFormField label="Tanggal Awal" name="date.starts_at" required>
+          <UPopover v-model:open="isStartCalendarOpen">
+            <UButton
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-calendar"
+              trailing-icon="i-lucide-chevron-down"
+              class="w-full justify-between font-normal"
+            >
+              {{
+                formatDate(
+                  formState.date.starts_at.toDate(getLocalTimeZone()),
+                  { dateStyle: 'long', timeZone: undefined },
+                )
+              }}
+            </UButton>
 
-              <template #content>
-                <UCalendar
-                  v-model="startsAtModel"
-                  locale="id-ID"
-                  initial-focus
-                  prevent-deselect
-                />
-              </template>
-            </UPopover>
-          </UFormField>
+            <template #content>
+              <UCalendar
+                v-model="startsAtModel"
+                locale="id-ID"
+                initial-focus
+                prevent-deselect
+              />
+            </template>
+          </UPopover>
+        </UFormField>
 
-          <UFormField
-            v-show="!formState.is_one_day"
-            label="Tanggal Akhir"
-            name="date.ends_at"
-          >
-            <UPopover v-model:open="isEndCalendarOpen">
-              <UButton
-                color="neutral"
-                variant="outline"
-                icon="i-lucide-calendar"
-                trailing-icon="i-lucide-chevron-down"
-                class="w-full justify-between font-normal"
-              >
-                {{
-                  formatDate(
-                    formState.date.ends_at.toDate(getLocalTimeZone()),
-                    { dateStyle: 'long', timeZone: undefined },
-                  )
-                }}
-              </UButton>
+        <UFormField
+          v-show="!formState.is_one_day"
+          label="Tanggal Akhir"
+          name="date.ends_at"
+        >
+          <UPopover v-model:open="isEndCalendarOpen">
+            <UButton
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-calendar"
+              trailing-icon="i-lucide-chevron-down"
+              class="w-full justify-between font-normal"
+            >
+              {{
+                formatDate(formState.date.ends_at.toDate(getLocalTimeZone()), {
+                  dateStyle: 'long',
+                  timeZone: undefined,
+                })
+              }}
+            </UButton>
 
-              <template #content>
-                <UCalendar
-                  v-model="endsAtModel"
-                  :min-value="formState.date.starts_at"
-                  locale="id-ID"
-                  initial-focus
-                  prevent-deselect
-                />
-              </template>
-            </UPopover>
-          </UFormField>
-        </div>
+            <template #content>
+              <UCalendar
+                v-model="endsAtModel"
+                :min-value="formState.date.starts_at"
+                locale="id-ID"
+                initial-focus
+                prevent-deselect
+              />
+            </template>
+          </UPopover>
+        </UFormField>
 
         <UFormField label="Lokasi" name="location" required>
           <UInput
@@ -317,21 +322,23 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           label="Gambar Banner Acara"
           name="image"
           description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+          class="order-first col-span-full"
         >
           <div class="space-y-3">
             <UFileUpload
               v-model="formState.image"
               accept="image/*"
               :loading="isUploadingImage"
-              icon="i-lucide-upload-cloud"
+              icon="i-lucide-image"
               label="Pilih atau seret gambar banner ke sini"
               description="PNG, JPG, WEBP hingga 5MB"
+              size="lg"
               class="w-full"
             />
           </div>
         </UFormField>
 
-        <UFormField label="Deskripsi" name="description">
+        <UFormField label="Deskripsi" name="description" class="col-span-full">
           <UTextarea
             id="description"
             v-model="formState.description"
@@ -342,7 +349,9 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           />
         </UFormField>
 
-        <div class="pt-4 flex justify-end gap-3 border-t border-outline">
+        <USeparator class="col-span-full" />
+
+        <div class="-col-end-1 flex justify-end gap-3">
           <UButton to="/users" variant="ghost" color="neutral"> Batal </UButton>
           <UButton
             class="active:translate-y-1"

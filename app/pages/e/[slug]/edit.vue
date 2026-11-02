@@ -190,159 +190,177 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
 </script>
 
 <template>
-  <div class="py-8 max-w-6xl mx-auto px-4 space-y-">
-    <!-- <UButton -->
-    <!--   to="/users" -->
-    <!--   variant="ghost" -->
-    <!--   color="neutral" -->
-    <!--   icon="i-lucide-arrow-left" -->
-    <!-- > -->
-    <!--   Kembali ke Dasbor -->
-    <!-- </UButton> -->
-
-    <h1>Menyunting {{ oldEvent?.data.title }}</h1>
-
-    <UAlert
-      v-if="editErrorMessage"
-      :title="editErrorMessage"
-      icon="i-lucide-alert-circle"
-      color="error"
-      variant="subtle"
-    />
-
-    <UAlert
-      v-if="editSuccessMessage"
-      :title="editSuccessMessage"
-      icon="i-lucide-check-circle"
-      color="success"
-      variant="subtle"
-    />
-
-    <UForm
-      :schema="formStateSchema"
-      :state="formState"
-      class="space-y-4"
-      @submit="handleUpdateEvent"
+  <div class="py-8 max-w-3xl mx-auto px-4 space-y-6">
+    <UButton
+      to="/users"
+      variant="ghost"
+      color="neutral"
+      icon="i-lucide-arrow-left"
     >
-      <UFormField label="Judul Acara" name="title" required>
-        <UInput
-          id="edit-title"
-          v-model="formState.title"
-          placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
-          name="title"
-          class="w-full"
-          size="xl"
-          required
-        />
-      </UFormField>
+      Kembali ke Dasbor
+    </UButton>
 
-      <UFormField label="Tanggal Awal" name="startsAt" required>
-        <UPopover v-model:open="isStartCalendarOpen">
-          <UButton
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-calendar"
-            trailing-icon="i-lucide-chevron-down"
-            class="w-full justify-between font-normal"
-          >
-            {{
-              formState.startsAt
-                ? formatDate(formState.startsAt.toDate(), {
-                    dateStyle: 'long',
-                    timeZone: undefined,
-                  })
-                : 'Pilih tanggal'
-            }}
-          </UButton>
+    <UCard>
+      <template #header>
+        <h1 class="text-2xl font-bold text-on-surface">
+          Menyunting {{ oldEvent?.data.title }}
+        </h1>
+      </template>
 
-          <template #content>
-            <UCalendar
-              v-model="startsAtModel"
-              locale="id-ID"
-              initial-focus
-              prevent-deselect
-            />
-          </template>
-        </UPopover>
-      </UFormField>
+      <UAlert
+        v-if="editErrorMessage"
+        :title="editErrorMessage"
+        icon="i-lucide-alert-circle"
+        color="error"
+        variant="subtle"
+      />
 
-      <UFormField label="Tanggal Akhir" name="endsAt">
-        <UPopover v-model:open="isEndCalendarOpen">
-          <UButton
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-calendar"
-            trailing-icon="i-lucide-chevron-down"
-            class="w-full justify-between font-normal"
-          >
-            {{
-              formState.endsAt
-                ? formatDate(formState.endsAt.toDate(), {
-                    dateStyle: 'long',
-                    timeZone: undefined,
-                  })
-                : 'Pilih tanggal'
-            }}
-          </UButton>
+      <UAlert
+        v-if="editSuccessMessage"
+        :title="editSuccessMessage"
+        icon="i-lucide-check-circle"
+        color="success"
+        variant="subtle"
+      />
 
-          <template #content>
-            <UCalendar
-              v-model="endsAtModel"
-              :min-value="formState.startsAt"
-              locale="id-ID"
-              initial-focus
-              prevent-deselect
-            />
-          </template>
-        </UPopover>
-      </UFormField>
-
-      <UFormField label="Lokasi" name="location" required>
-        <UInput
-          id="edit-location"
-          v-model="formState.location"
-          placeholder="contoh: Auditorium Utama / Ruang 204"
-          name="location"
-          class="w-full"
-          required
-        />
-      </UFormField>
-
-      <UFormField
-        label="Gambar Banner Acara"
-        name="imageUrl"
-        description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+      <UForm
+        :schema="formStateSchema"
+        :state="formState"
+        class="grid grid-cols-2 gap-4"
+        @submit="handleUpdateEvent"
       >
-        <div class="space-y-3">
-          <UFileUpload
-            v-model="formState.image"
-            accept="image/*"
-            :loading="isUploadingImage"
-            icon="i-lucide-image"
-            label="Pilih atau seret gambar banner baru ke sini"
-            description="PNG, JPG, WEBP hingga 5MB"
+        <UFormField
+          label="Judul Acara"
+          name="title"
+          class="col-span-full"
+          required
+        >
+          <UInput
+            id="edit-title"
+            v-model="formState.title"
+            placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
+            name="title"
+            class="w-full"
+            size="xl"
+            required
+          />
+        </UFormField>
+
+        <UFormField label="Tanggal Awal" name="startsAt" required>
+          <UPopover v-model:open="isStartCalendarOpen">
+            <UButton
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-calendar"
+              trailing-icon="i-lucide-chevron-down"
+              class="w-full justify-between font-normal"
+            >
+              {{
+                formState.startsAt
+                  ? formatDate(formState.startsAt.toDate(), {
+                      dateStyle: 'long',
+                      timeZone: undefined,
+                    })
+                  : 'Pilih tanggal'
+              }}
+            </UButton>
+
+            <template #content>
+              <UCalendar
+                v-model="startsAtModel"
+                locale="id-ID"
+                initial-focus
+                prevent-deselect
+              />
+            </template>
+          </UPopover>
+        </UFormField>
+
+        <UFormField label="Tanggal Akhir" name="endsAt">
+          <UPopover v-model:open="isEndCalendarOpen">
+            <UButton
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-calendar"
+              trailing-icon="i-lucide-chevron-down"
+              class="w-full justify-between font-normal"
+            >
+              {{
+                formState.endsAt
+                  ? formatDate(formState.endsAt.toDate(), {
+                      dateStyle: 'long',
+                      timeZone: undefined,
+                    })
+                  : 'Pilih tanggal'
+              }}
+            </UButton>
+
+            <template #content>
+              <UCalendar
+                v-model="endsAtModel"
+                :min-value="formState.startsAt"
+                locale="id-ID"
+                initial-focus
+                prevent-deselect
+              />
+            </template>
+          </UPopover>
+        </UFormField>
+
+        <UFormField label="Lokasi" name="location" required>
+          <UInput
+            id="edit-location"
+            v-model="formState.location"
+            placeholder="contoh: Auditorium Utama / Ruang 204"
+            name="location"
+            class="w-full"
             size="lg"
+            required
+          />
+        </UFormField>
+
+        <UFormField
+          label="Gambar Banner Acara"
+          name="imageUrl"
+          description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+          class="col-span-full order-first"
+        >
+          <div class="space-y-3">
+            <UFileUpload
+              v-model="formState.image"
+              accept="image/*"
+              :loading="isUploadingImage"
+              icon="i-lucide-image"
+              label="Pilih atau seret gambar banner baru ke sini"
+              description="PNG, JPG, WEBP hingga 5MB"
+              size="lg"
+              class="w-full"
+            />
+          </div>
+        </UFormField>
+
+        <UFormField label="Deskripsi" name="description" class="col-span-full">
+          <UTextarea
+            id="edit-description"
+            v-model="formState.description"
+            :rows="4"
+            placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
+            name="description"
             class="w-full"
           />
-        </div>
-      </UFormField>
+        </UFormField>
 
-      <UFormField label="Deskripsi" name="description">
-        <UTextarea
-          id="edit-description"
-          v-model="formState.description"
-          :rows="4"
-          placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
-          name="description"
-          class="w-full"
-        />
-      </UFormField>
+        <USeparator class="col-span-full" />
 
-      <div class="pt-4 flex justify-end gap-3 border-t border-outline">
-        <UButton color="primary" type="submit" :loading="isUpdatingEvent">
+        <UButton
+          color="primary"
+          type="submit"
+          :loading="isUpdatingEvent"
+          class="-col-end-1 place-self-end"
+        >
           Simpan Perubahan
         </UButton>
-      </div>
-    </UForm>
+      </UForm>
+    </UCard>
   </div>
 </template>
