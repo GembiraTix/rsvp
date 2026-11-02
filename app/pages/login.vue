@@ -199,6 +199,7 @@ async function handleResendConfirmation() {
           variant="outline"
           label="kirimkan ulang email konfirmasi"
           :loading="isLoading"
+          @click="handleResendConfirmation"
         />
       </div>
     </header>

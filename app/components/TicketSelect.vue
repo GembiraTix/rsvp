@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { TicketType } from '~~/server/domain/types'
+import { clampQty } from '~~/shared/utils/ticket-qty'
 
 const ticketQty = defineModel<number>({ default: 0 })
 
@@ -63,7 +64,12 @@ const e = defineEmits<{
                 title="kurangi tiket"
                 size="md"
                 variant="ghost"
-                @click="ticketQty -= line.ticketType.multiple_of"
+                @click="
+                  ticketQty = clampQty(
+                    line.ticketType,
+                    ticketQty - line.ticketType.multiple_of,
+                  )
+                "
               />
             </template>
             <template #increment>
@@ -72,7 +78,12 @@ const e = defineEmits<{
                 title="tambah tiket"
                 size="md"
                 variant="ghost"
-                @click="ticketQty += line.ticketType.multiple_of"
+                @click="
+                  ticketQty = clampQty(
+                    line.ticketType,
+                    ticketQty + line.ticketType.multiple_of,
+                  )
+                "
               />
             </template>
           </UInputNumber>

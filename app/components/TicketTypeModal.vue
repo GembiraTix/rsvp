@@ -215,9 +215,9 @@ async function handleSubmit({ data: body }: FormSubmitEvent<TicketTypeForm>) {
           orientation="horizontal"
         >
           <USwitch
-            uncheckedIcon="i-lucide-x"
-            checkedIcon="i-lucide-check"
             v-model="ticketTypeFormState.isActive"
+            unchecked-icon="i-lucide-x"
+            checked-icon="i-lucide-check"
             name="is_active"
           />
         </UFormField>

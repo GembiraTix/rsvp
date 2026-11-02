@@ -52,35 +52,35 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
     <UAlert
       v-if="profileErrorMessage"
       :title="profileErrorMessage"
-      @update:open="profileErrorMessage = ''"
       icon="i-lucide-alert-circle"
       color="error"
       variant="subtle"
       class="my-4"
       close
+      @update:open="profileErrorMessage = ''"
     />
 
     <UAlert
       v-if="profileSuccessMessage"
       :title="profileSuccessMessage"
-      @update:open="profileSuccessMessage = ''"
       icon="i-lucide-check-circle"
       color="success"
       class="my-4"
       variant="subtle"
       close
+      @update:open="profileSuccessMessage = ''"
     />
 
     <div class="grid gap-4 md:grid-cols-3">
       <div class="flex items-center gap-4">
         <UFileUpload
+          v-slot="{ open }"
           v-model="profileFormState.profile"
           accept="image/*"
           icon="i-lucide-upload-cloud"
           label="Pilih atau seret gambar foto profil baru ke sini"
           description="PNG, JPG, WEBP hingga 5MB"
           class="w-full"
-          v-slot="{ open }"
           disabled
         >
           <div class="flex flex-col gap-4 items-center">
@@ -92,9 +92,9 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
             />
             <UButton
               variant="outline"
-              @click="open()"
               label="Unggah foto baru"
               disabled
+              @click="open()"
             />
           </div>
         </UFileUpload>

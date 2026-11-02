@@ -1,6 +1,6 @@
-import type { TicketType } from '~~/server/domain/types'
-import { computed } from 'vue'
 import { z } from 'zod'
+import type { TicketType } from '~~/server/domain/types'
+import { clampQty, isValidTicketQty } from '~~/shared/utils/ticket-qty'
 
 export type CartLine = {
   ticketType: TicketType
@@ -24,26 +24,22 @@ export interface TicketCart {
   remove(id: number): void
 }
 
-export function firstValidQty(ticketType: TicketType): number | null {
-  const { min_qty, max_qty, multiple_of } = ticketType
-  let qty = min_qty
-  while (qty % multiple_of !== 0) {
-    qty += 1
-  }
-  if (qty > max_qty) {
-    return null
-  }
-  return qty
-}
+export function useTicketCart(
+  iticketTypes: MaybeRefOrGetter<TicketType[]>,
+): TicketCart {
+  const ticketTypes = computed(() => toValue(iticketTypes))
 
-export function useTicketCart(iticketTypes: Ref<TicketType[]>): TicketCart {
-  const ticketTypes = ref<TicketType[]>(toValue(iticketTypes))
+  const cart = ref<CartLine[]>([])
 
-  const cart = ref<CartLine[]>(
-    ticketTypes.value.map((t) => ({
-      ticketType: t,
-      qty: 0,
-    })),
+  watch(
+    ticketTypes,
+    (types) => {
+      cart.value = types.map((t) => ({
+        ticketType: t,
+        qty: cart.value.find((c) => c.ticketType.id === t.id)?.qty ?? 0,
+      }))
+    },
+    { immediate: true },
   )
 
   const selectedLines = computed(() => {
@@ -73,13 +69,11 @@ export function useTicketCart(iticketTypes: Ref<TicketType[]>): TicketCart {
     const ticketType = ticketTypes.value.find((t) => t.id === id)
     if (!ticketType) return
 
-    const nextValidQty = ticketType.multiple_of
-
     cart.value = cart.value.map((c) => {
       if (c.ticketType.id !== id) return c
       return {
         ticketType,
-        qty: nextValidQty,
+        qty: clampQty(ticketType, ticketType.multiple_of),
       }
     })
   }
@@ -137,12 +131,7 @@ export function useTicketCart(iticketTypes: Ref<TicketType[]>): TicketCart {
         throw createError('invalid ticket type id') // TODO: better error handling
       }
 
-      const { min_qty, max_qty, multiple_of } = ticketType
-      if (
-        d.qty < min_qty ||
-        d.qty > max_qty ||
-        d.qty % multiple_of !== 0
-      ) {
+      if (!isValidTicketQty(ticketType, d.qty)) {
         throw createError('invalid ticket quantity')
       }
 

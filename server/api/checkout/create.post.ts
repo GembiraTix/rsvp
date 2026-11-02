@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { useOrderService } from '#server/utils/order-service'
 import { useTicketTypeService } from '#server/utils/ticket-type-service'
+import {
+  CheckoutValidationError,
+  resolveCheckoutLines,
+} from '#server/services/checkout-validation'
 
 const checkoutSchema = z.object({
   eventId: z.coerce.number().positive(),
@@ -33,23 +37,27 @@ export default defineEventHandler(async (event) => {
   const orderService = await useOrderService(event)
   const ticketTypeService = await useTicketTypeService(event)
 
-  // TODO: decide what to do if we receive a request to check out tickets for an event that has none
   const ticketTypes = await ticketTypeService.findByEventId(body.eventId)
 
-  // turn IDs into ticket types
-  const linesWithPrice = body.lines.map((line) => {
-    const ticketType = ticketTypes.find((tt) => tt.id == line.ticketTypeId)
+  if (ticketTypes.length === 0) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Acara tidak ditemukan atau tidak menjual tiket.',
+    })
+  }
 
-    if (!ticketType) throw new Error('nonexistent ticket type id') // TODO: decide what to do if client sends a nonexistent ticketTypeId
-    if (ticketType.price < 0) throw new Error('invalid ticket type price')
-
-    return {
-      ticketTypeId: ticketType.id,
-      name: ticketType.name,
-      unitPrice: ticketType.price,
-      qty: line.qty,
+  let linesWithPrice
+  try {
+    linesWithPrice = resolveCheckoutLines(ticketTypes, body.lines)
+  } catch (err: unknown) {
+    if (err instanceof CheckoutValidationError) {
+      throw createError({
+        statusCode: err.statusCode,
+        statusMessage: err.message,
+      })
     }
-  })
+    throw err
+  }
 
   try {
     const result = await orderService.createOrder({
