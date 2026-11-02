@@ -3,7 +3,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useSiteName } from '@/composables/useSiteName'
 import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
-import { getLocalTimeZone, now, ZonedDateTime } from '@internationalized/date'
+import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date'
 
 definePageMeta({
   middleware: 'auth',
@@ -16,63 +16,76 @@ useSeoMeta({
 
 const user = useSupabaseUser()
 
-const formStateSchema = z.object({
-  title: z.string().min(1, 'Judul acara wajib diisi.'),
-  date: z.object({
-    starts_at: z.instanceof(ZonedDateTime),
-    ends_at: z.instanceof(ZonedDateTime),
-  }),
-  is_one_day: z.boolean(),
-  location: z.string().min(1, 'Lokasi wajib diisi.'),
-  imageUrl: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
-  image: z
-    .instanceof(File, { message: 'URL gambar tidak valid.' })
-    .optional()
-    .refine(
-      (file) => {
-        if (!file) return true
+const formStateSchema = z
+  .object({
+    title: z.string().min(1, 'Judul acara wajib diisi.'),
+    date: z.object({
+      starts_at: z.instanceof(CalendarDate),
+      ends_at: z.instanceof(CalendarDate),
+    }),
+    is_one_day: z.boolean(),
+    location: z.string().min(1, 'Lokasi wajib diisi.'),
+    imageUrl: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
+    image: z
+      .instanceof(File, { message: 'URL gambar tidak valid.' })
+      .optional()
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const maxBytes = 5 * 1024 * 1024 // 5MB
-        return file && file.size < maxBytes
-      },
-      { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
-    )
-    .refine(
-      (file) => {
-        if (!file) return true
+          const maxBytes = 5 * 1024 * 1024 // 5MB
+          return file && file.size < maxBytes
+        },
+        { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
+      )
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const allowedTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/webp',
-          'image/gif',
-        ]
-        return file && allowedTypes.includes(file.type)
-      },
-      {
-        message:
-          'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
-      },
-    )
-    .refine(
-      async (file) => {
-        if (!file) return true
+          const allowedTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+          ]
+          return file && allowedTypes.includes(file.type)
+        },
+        {
+          message:
+            'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
+        },
+      )
+      .refine(
+        async (file) => {
+          if (!file) return true
 
-        const buffer = await file.slice(0, 32).arrayBuffer()
-        return isValidImageBuffer(buffer)
-      },
-      { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
-    ),
-  description: z.string().optional(),
-})
+          const buffer = await file.slice(0, 32).arrayBuffer()
+          return isValidImageBuffer(buffer)
+        },
+        { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
+      ),
+    description: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      !data.is_one_day &&
+      data.date.ends_at.compare(data.date.starts_at) < 0
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['date', 'ends_at'],
+        message: 'Tanggal akhir tidak boleh sebelum tanggal awal.',
+      })
+    }
+  })
 
 type FormState = z.output<typeof formStateSchema>
 
 const formState = shallowReactive<FormState>({
   title: '',
   date: {
-    starts_at: now(getLocalTimeZone()),
-    ends_at: now(getLocalTimeZone()),
+    starts_at: today(getLocalTimeZone()),
+    ends_at: today(getLocalTimeZone()),
   },
   is_one_day: true,
   location: '',
@@ -80,6 +93,22 @@ const formState = shallowReactive<FormState>({
   imageUrl: '',
   description: '',
 })
+
+const isStartCalendarOpen = ref(false)
+const isEndCalendarOpen = ref(false)
+const dateFormatter = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' })
+
+function pickStartDate(value: unknown) {
+  if (!(value instanceof CalendarDate)) return
+  formState.date = { ...formState.date, starts_at: value }
+  isStartCalendarOpen.value = false
+}
+
+function pickEndDate(value: unknown) {
+  if (!(value instanceof CalendarDate)) return
+  formState.date = { ...formState.date, ends_at: value }
+  isEndCalendarOpen.value = false
+}
 
 watch(
   () => formState.image,
@@ -119,12 +148,11 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
 
   try {
     const startsAt = e.data.date.starts_at
-      ? e.data.date.starts_at.toDate().toUTCString()
-      : ''
-    const endsAt =
-      e.data.is_one_day && e.data.date.ends_at
-        ? e.data.date.ends_at.toDate().toUTCString()
-        : null
+      .toDate(getLocalTimeZone())
+      .toISOString()
+    const endsAt = e.data.is_one_day
+      ? null
+      : e.data.date.ends_at.toDate(getLocalTimeZone()).toISOString()
 
     const res = await createEvent({
       title: e.data.title,
@@ -208,30 +236,61 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           </UFormField>
 
           <UFormField label="Tanggal Awal" name="date.starts_at" required>
-            <UInputDate
-              id="starts_at"
-              v-model="formState.date.starts_at"
-              type="date"
-              name="starts_at"
-              class="w-full"
-            />
+            <UPopover v-model:open="isStartCalendarOpen">
+              <UButton
+                color="neutral"
+                variant="outline"
+                icon="i-lucide-calendar"
+                trailing-icon="i-lucide-chevron-down"
+                class="w-full justify-between font-normal"
+              >
+                {{
+                  dateFormatter.format(
+                    formState.date.starts_at.toDate(getLocalTimeZone()),
+                  )
+                }}
+              </UButton>
+
+              <template #content>
+                <UCalendar
+                  :model-value="formState.date.starts_at"
+                  locale="id-ID"
+                  initial-focus
+                  prevent-deselect
+                  @update:model-value="pickStartDate"
+                />
+              </template>
+            </UPopover>
           </UFormField>
 
           <div v-show="!formState.is_one_day">
             <UFormField label="Tanggal Akhir" name="date.ends_at">
-              <UInputDate
-                id="ends_at"
-                v-model="formState.date.ends_at"
-                :defaultValue="now(getLocalTimeZone())"
-                :is-date-unavailable="
-                  () =>
-                    formState.date.ends_at.toDate() <
-                    formState.date.starts_at.toDate()
-                "
-                type="date"
-                name="ends_at"
-                class="w-full"
-              />
+              <UPopover v-model:open="isEndCalendarOpen">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-calendar"
+                  trailing-icon="i-lucide-chevron-down"
+                  class="w-full justify-between font-normal"
+                >
+                  {{
+                    dateFormatter.format(
+                      formState.date.ends_at.toDate(getLocalTimeZone()),
+                    )
+                  }}
+                </UButton>
+
+                <template #content>
+                  <UCalendar
+                    :model-value="formState.date.ends_at"
+                    :min-value="formState.date.starts_at"
+                    locale="id-ID"
+                    initial-focus
+                    prevent-deselect
+                    @update:model-value="pickEndDate"
+                  />
+                </template>
+              </UPopover>
             </UFormField>
           </div>
         </div>

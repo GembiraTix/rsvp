@@ -3,10 +3,11 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useEvents } from '@/composables/useEvents'
 import {
+  CalendarDate,
   getLocalTimeZone,
-  ZonedDateTime,
+  now,
   parseAbsolute,
-  parseZonedDateTime,
+  ZonedDateTime,
 } from '@internationalized/date'
 
 definePageMeta({
@@ -28,70 +29,67 @@ const editSuccessMessage = ref('')
 
 import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 
-const formStateSchema = z.object({
-  title: z.string().min(1, 'Judul acara wajib diisi.'),
-  location: z.string().min(1, 'Lokasi wajib diisi.'),
-  startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
-  endsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
-  description: z.string().optional(),
-  image: z
-    .instanceof(File, { message: 'URL gambar tidak valid.' })
-    .optional()
-    .refine(
-      (file) => {
-        if (!file) return true
+const formStateSchema = z
+  .object({
+    title: z.string().min(1, 'Judul acara wajib diisi.'),
+    location: z.string().min(1, 'Lokasi wajib diisi.'),
+    startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
+    endsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
+    description: z.string().optional(),
+    image: z
+      .instanceof(File, { message: 'URL gambar tidak valid.' })
+      .optional()
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const maxBytes = 5 * 1024 * 1024 // 5MB
-        return file && file.size < maxBytes
-      },
-      { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
-    )
-    .refine(
-      (file) => {
-        if (!file) return true
+          const maxBytes = 5 * 1024 * 1024 // 5MB
+          return file && file.size < maxBytes
+        },
+        { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
+      )
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const allowedTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/webp',
-          'image/gif',
-        ]
-        return file && allowedTypes.includes(file.type)
-      },
-      {
-        message:
-          'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
-      },
-    )
-    .refine(
-      async (file) => {
-        if (!file) return true
+          const allowedTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+          ]
+          return file && allowedTypes.includes(file.type)
+        },
+        {
+          message:
+            'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
+        },
+      )
+      .refine(
+        async (file) => {
+          if (!file) return true
 
-        const buffer = await file.slice(0, 32).arrayBuffer()
-        return isValidImageBuffer(buffer)
-      },
-      { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
-    ),
-  imageUrl: z.url().optional(),
-})
+          const buffer = await file.slice(0, 32).arrayBuffer()
+          return isValidImageBuffer(buffer)
+        },
+        { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
+      ),
+    imageUrl: z.url().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.startsAt &&
+      data.endsAt &&
+      data.endsAt.compare(data.startsAt) < 0
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endsAt'],
+        message: 'Tanggal akhir tidak boleh sebelum tanggal awal.',
+      })
+    }
+  })
 type EditFormState = z.output<typeof formStateSchema>
-
-watch(
-  () => oldEvent!.data,
-  (newEvent) => {
-    if (!newEvent) return
-    formState.title = newEvent.title || ''
-    formState.location = newEvent.location || ''
-    formState.startsAt = newEvent.starts_at
-      ? parseZonedDateTime(newEvent.starts_at)
-      : undefined
-    formState.endsAt = newEvent.ends_at
-      ? parseZonedDateTime(newEvent.ends_at)
-      : undefined
-    formState.description = newEvent.description || undefined
-    formState.imageUrl = newEvent.image_url || undefined
-  },
-)
 
 const formState = shallowReactive<EditFormState>({
   title: oldEvent?.data.title || '',
@@ -106,6 +104,30 @@ const formState = shallowReactive<EditFormState>({
   imageUrl: oldEvent?.data.image_url || undefined,
   image: undefined,
 })
+
+const isStartCalendarOpen = ref(false)
+const isEndCalendarOpen = ref(false)
+const dateFormatter = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' })
+
+function pickStartDate(value: unknown) {
+  if (!(value instanceof CalendarDate)) return
+  formState.startsAt = (formState.startsAt ?? now(getLocalTimeZone())).set({
+    year: value.year,
+    month: value.month,
+    day: value.day,
+  })
+  isStartCalendarOpen.value = false
+}
+
+function pickEndDate(value: unknown) {
+  if (!(value instanceof CalendarDate)) return
+  formState.endsAt = (formState.endsAt ?? now(getLocalTimeZone())).set({
+    year: value.year,
+    month: value.month,
+    day: value.day,
+  })
+  isEndCalendarOpen.value = false
+}
 
 watch(
   () => formState.image,
@@ -209,33 +231,61 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
         />
       </UFormField>
 
-      <UFormField label="Tanggal Awal" name="starts_at" required>
-        <UInputDate
-          id="starts_at"
-          v-model="formState.startsAt"
-          type="date"
-          name="starts_at"
-          class="w-full"
-        />
+      <UFormField label="Tanggal Awal" name="startsAt" required>
+        <UPopover v-model:open="isStartCalendarOpen">
+          <UButton
+            color="neutral"
+            variant="outline"
+            icon="i-lucide-calendar"
+            trailing-icon="i-lucide-chevron-down"
+            class="w-full justify-between font-normal"
+          >
+            {{
+              formState.startsAt
+                ? dateFormatter.format(formState.startsAt.toDate())
+                : 'Pilih tanggal'
+            }}
+          </UButton>
+
+          <template #content>
+            <UCalendar
+              v-model="formState.startsAt"
+              locale="id-ID"
+              initial-focus
+              prevent-deselect
+              @update:model-value="pickStartDate"
+            />
+          </template>
+        </UPopover>
       </UFormField>
 
-      <UFormField label="Tanggal Akhir" name="ends_at">
-        <UInputDate
-          id="ends_at"
-          v-model="formState.endsAt"
-          :is-date-unavailable="
-            () => {
-              if (formState.endsAt && formState.startsAt) {
-                return formState.endsAt?.toDate() < formState.startsAt?.toDate()
-              } else {
-                return false
-              }
-            }
-          "
-          type="date"
-          name="ends_at"
-          class="w-full"
-        />
+      <UFormField label="Tanggal Akhir" name="endsAt">
+        <UPopover v-model:open="isEndCalendarOpen">
+          <UButton
+            color="neutral"
+            variant="outline"
+            icon="i-lucide-calendar"
+            trailing-icon="i-lucide-chevron-down"
+            class="w-full justify-between font-normal"
+          >
+            {{
+              formState.endsAt
+                ? dateFormatter.format(formState.endsAt.toDate())
+                : 'Pilih tanggal'
+            }}
+          </UButton>
+
+          <template #content>
+            <UCalendar
+              v-model="formState.endsAt"
+              :min-value="formState.startsAt"
+              locale="id-ID"
+              initial-focus
+              prevent-deselect
+              @update:model-value="pickEndDate"
+            />
+          </template>
+        </UPopover>
       </UFormField>
 
       <UFormField label="Lokasi" name="location" required>
