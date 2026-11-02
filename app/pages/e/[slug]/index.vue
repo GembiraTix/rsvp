@@ -155,9 +155,13 @@ async function handleAuthenticatedRsvp() {
         </figure>
 
         <div class="space-y-4">
-          <h1 class="text-3xl font-bold text-on-surface">
-            {{ event.title }}
-          </h1>
+          <div class="flex items-start justify-between gap-4">
+            <h1 class="text-3xl font-bold text-on-surface">
+              {{ event.title }}
+            </h1>
+
+            <EventShareButton :title="event.title" />
+          </div>
 
           <article
             class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl bg-surface-container border border-outline text-sm"
