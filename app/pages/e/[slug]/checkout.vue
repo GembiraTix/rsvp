@@ -59,6 +59,7 @@ const checkoutError = ref('')
 const ORDER_TIME_LIMIT_MS = 10 * 60 * 1000 // 10 minutes
 
 const remainingMs = ref(ORDER_TIME_LIMIT_MS)
+const isTimeUp = ref(false)
 let deadline = 0
 let countdown: ReturnType<typeof setInterval> | undefined
 
@@ -73,7 +74,7 @@ onUnmounted(() => clearInterval(countdown))
 
 watch(remainingMs, (ms) => {
   if (ms === 0 && !checkoutResult.value) {
-    navigateTo(`/e/${event.value.slug}`)
+    isTimeUp.value = true
   }
 })
 
@@ -244,5 +245,24 @@ async function handleBayar() {
         </UCard>
       </section>
     </div>
+
+    <UModal
+      v-model:open="isTimeUp"
+      :close="false"
+      :dismissible="false"
+      title="Waktu pemesanan habis"
+      description="Batas waktu 10 menit untuk menyelesaikan pesanan sudah terlewati. Silakan kembali ke halaman tiket."
+    >
+      <template #footer>
+        <UButton
+          size="lg"
+          block
+          icon="i-lucide-arrow-left"
+          @click="navigateTo(`/e/${event.slug}`)"
+        >
+          Kembali ke acara
+        </UButton>
+      </template>
+    </UModal>
   </div>
 </template>
