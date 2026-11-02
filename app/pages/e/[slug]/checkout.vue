@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCountdown } from '@vueuse/core'
 import { useEvents } from '@/composables/useEvents'
 import { useTicketTypes } from '@/composables/useTicketTypes'
 import { formatRupiah, formatCountdown } from '@/utils'
@@ -56,27 +57,15 @@ const isLoading = ref(false)
 const checkoutResult = ref<CheckoutResult | null>(null)
 const checkoutError = ref('')
 
-const ORDER_TIME_LIMIT_MS = 10 * 60 * 1000 // 10 minutes
+const ORDER_TIME_LIMIT_S = 10 * 60 // 10 minutes
 
-const remainingMs = ref(ORDER_TIME_LIMIT_MS)
-const isTimeUp = ref(false)
-let deadline = 0
-let countdown: ReturnType<typeof setInterval> | undefined
+const { remaining, start } = useCountdown(ORDER_TIME_LIMIT_S)
 
 onMounted(() => {
-  deadline = Date.now() + ORDER_TIME_LIMIT_MS
-  countdown = setInterval(() => {
-    remainingMs.value = Math.max(0, deadline - Date.now())
-  }, 1000)
+  start()
 })
 
-onUnmounted(() => clearInterval(countdown))
-
-watch(remainingMs, (ms) => {
-  if (ms === 0 && !checkoutResult.value) {
-    isTimeUp.value = true
-  }
-})
+const isTimeUp = computed(() => remaining.value === 0 && !checkoutResult.value)
 
 async function handleBayar() {
   if (!profile.value) {
@@ -138,7 +127,7 @@ async function handleBayar() {
         <span class="flex items-center gap-2">
           Sisa waktu pemesanan
           <span class="font-mono tabular-nums font-bold">
-            {{ formatCountdown(remainingMs) }}
+            {{ formatCountdown(remaining) }}
           </span>
         </span>
       </template>
@@ -247,7 +236,7 @@ async function handleBayar() {
     </div>
 
     <UModal
-      v-model:open="isTimeUp"
+      :open="isTimeUp"
       :close="false"
       :dismissible="false"
       title="Waktu pemesanan habis"
