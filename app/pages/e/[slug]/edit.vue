@@ -107,27 +107,32 @@ const formState = shallowReactive<EditFormState>({
 
 const isStartCalendarOpen = ref(false)
 const isEndCalendarOpen = ref(false)
-const dateFormatter = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' })
 
-function pickStartDate(value: unknown) {
-  if (!(value instanceof CalendarDate)) return
-  formState.startsAt = (formState.startsAt ?? now(getLocalTimeZone())).set({
-    year: value.year,
-    month: value.month,
-    day: value.day,
-  })
-  isStartCalendarOpen.value = false
-}
+const startsAtModel = computed({
+  get: () => formState.startsAt,
+  set: (value: unknown) => {
+    if (!(value instanceof CalendarDate)) return
+    formState.startsAt = (formState.startsAt ?? now(getLocalTimeZone())).set({
+      year: value.year,
+      month: value.month,
+      day: value.day,
+    })
+    isStartCalendarOpen.value = false
+  },
+})
 
-function pickEndDate(value: unknown) {
-  if (!(value instanceof CalendarDate)) return
-  formState.endsAt = (formState.endsAt ?? now(getLocalTimeZone())).set({
-    year: value.year,
-    month: value.month,
-    day: value.day,
-  })
-  isEndCalendarOpen.value = false
-}
+const endsAtModel = computed({
+  get: () => formState.endsAt,
+  set: (value: unknown) => {
+    if (!(value instanceof CalendarDate)) return
+    formState.endsAt = (formState.endsAt ?? now(getLocalTimeZone())).set({
+      year: value.year,
+      month: value.month,
+      day: value.day,
+    })
+    isEndCalendarOpen.value = false
+  },
+})
 
 watch(
   () => formState.image,
@@ -242,18 +247,20 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
           >
             {{
               formState.startsAt
-                ? dateFormatter.format(formState.startsAt.toDate())
+                ? formatDate(formState.startsAt.toDate(), {
+                    dateStyle: 'long',
+                    timeZone: undefined,
+                  })
                 : 'Pilih tanggal'
             }}
           </UButton>
 
           <template #content>
             <UCalendar
-              v-model="formState.startsAt"
+              v-model="startsAtModel"
               locale="id-ID"
               initial-focus
               prevent-deselect
-              @update:model-value="pickStartDate"
             />
           </template>
         </UPopover>
@@ -270,19 +277,21 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
           >
             {{
               formState.endsAt
-                ? dateFormatter.format(formState.endsAt.toDate())
+                ? formatDate(formState.endsAt.toDate(), {
+                    dateStyle: 'long',
+                    timeZone: undefined,
+                  })
                 : 'Pilih tanggal'
             }}
           </UButton>
 
           <template #content>
             <UCalendar
-              v-model="formState.endsAt"
+              v-model="endsAtModel"
               :min-value="formState.startsAt"
               locale="id-ID"
               initial-focus
               prevent-deselect
-              @update:model-value="pickEndDate"
             />
           </template>
         </UPopover>

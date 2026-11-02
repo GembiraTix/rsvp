@@ -96,19 +96,24 @@ const formState = shallowReactive<FormState>({
 
 const isStartCalendarOpen = ref(false)
 const isEndCalendarOpen = ref(false)
-const dateFormatter = new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' })
 
-function pickStartDate(value: unknown) {
-  if (!(value instanceof CalendarDate)) return
-  formState.date = { ...formState.date, starts_at: value }
-  isStartCalendarOpen.value = false
-}
+const startsAtModel = computed({
+  get: () => formState.date.starts_at,
+  set: (value: unknown) => {
+    if (!(value instanceof CalendarDate)) return
+    formState.date = { ...formState.date, starts_at: value }
+    isStartCalendarOpen.value = false
+  },
+})
 
-function pickEndDate(value: unknown) {
-  if (!(value instanceof CalendarDate)) return
-  formState.date = { ...formState.date, ends_at: value }
-  isEndCalendarOpen.value = false
-}
+const endsAtModel = computed({
+  get: () => formState.date.ends_at,
+  set: (value: unknown) => {
+    if (!(value instanceof CalendarDate)) return
+    formState.date = { ...formState.date, ends_at: value }
+    isEndCalendarOpen.value = false
+  },
+})
 
 watch(
   () => formState.image,
@@ -245,54 +250,56 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
                 class="w-full justify-between font-normal"
               >
                 {{
-                  dateFormatter.format(
+                  formatDate(
                     formState.date.starts_at.toDate(getLocalTimeZone()),
+                    { dateStyle: 'long', timeZone: undefined },
                   )
                 }}
               </UButton>
 
               <template #content>
                 <UCalendar
-                  :model-value="formState.date.starts_at"
+                  v-model="startsAtModel"
                   locale="id-ID"
                   initial-focus
                   prevent-deselect
-                  @update:model-value="pickStartDate"
                 />
               </template>
             </UPopover>
           </UFormField>
 
-          <div v-show="!formState.is_one_day">
-            <UFormField label="Tanggal Akhir" name="date.ends_at">
-              <UPopover v-model:open="isEndCalendarOpen">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-calendar"
-                  trailing-icon="i-lucide-chevron-down"
-                  class="w-full justify-between font-normal"
-                >
-                  {{
-                    dateFormatter.format(
-                      formState.date.ends_at.toDate(getLocalTimeZone()),
-                    )
-                  }}
-                </UButton>
+          <UFormField
+            v-show="!formState.is_one_day"
+            label="Tanggal Akhir"
+            name="date.ends_at"
+          >
+            <UPopover v-model:open="isEndCalendarOpen">
+              <UButton
+                color="neutral"
+                variant="outline"
+                icon="i-lucide-calendar"
+                trailing-icon="i-lucide-chevron-down"
+                class="w-full justify-between font-normal"
+              >
+                {{
+                  formatDate(
+                    formState.date.ends_at.toDate(getLocalTimeZone()),
+                    { dateStyle: 'long', timeZone: undefined },
+                  )
+                }}
+              </UButton>
 
-                <template #content>
-                  <UCalendar
-                    :model-value="formState.date.ends_at"
-                    :min-value="formState.date.starts_at"
-                    locale="id-ID"
-                    initial-focus
-                    prevent-deselect
-                    @update:model-value="pickEndDate"
-                  />
-                </template>
-              </UPopover>
-            </UFormField>
-          </div>
+              <template #content>
+                <UCalendar
+                  v-model="endsAtModel"
+                  :min-value="formState.date.starts_at"
+                  locale="id-ID"
+                  initial-focus
+                  prevent-deselect
+                />
+              </template>
+            </UPopover>
+          </UFormField>
         </div>
 
         <UFormField label="Lokasi" name="location" required>
