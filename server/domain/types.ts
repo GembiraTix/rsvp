@@ -95,7 +95,12 @@ export interface RsvpWithEvent extends Rsvp {
 
 export type CreateRsvpInput = Omit<Rsvp, 'id' | 'created_at'>
 export type UpdateRsvpInput = Partial<Omit<Rsvp, 'id' | 'created_at' | 'token'>>
-export type TicketTypeKind = 'single' | 'couple' | 'berempat'
+
+export interface TicketCategory {
+  id: number
+  name: string
+  created_at: string
+}
 
 export type TicketType = {
   capacity: number | null
@@ -104,7 +109,7 @@ export type TicketType = {
   event_id: number
   id: number
   is_active: boolean
-  kind: TicketTypeKind
+  category_id: number
   max_qty: number
   min_qty: number
   multiple_of: number

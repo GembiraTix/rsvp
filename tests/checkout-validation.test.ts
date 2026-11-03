@@ -11,7 +11,7 @@ function makeTicketType(overrides: Partial<TicketType> = {}): TicketType {
     event_id: 1,
     name: 'Reguler',
     description: null,
-    kind: 'single',
+    category_id: 1,
     price: 50000,
     capacity: null,
     min_qty: 1,
