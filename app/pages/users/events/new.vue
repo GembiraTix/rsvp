@@ -16,64 +16,73 @@ useSeoMeta({
 
 const user = useSupabaseUser()
 
-const formStateSchema = z.object({
-  title: z.string().min(1, 'Judul acara wajib diisi.'),
-  date: z.object({
-    starts_at: z.instanceof(ZonedDateTime),
-    ends_at: z.instanceof(ZonedDateTime),
-  }),
-  is_one_day: z.boolean(),
-  location: z.string().min(1, 'Lokasi wajib diisi.'),
-  imageUrl: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
-  image: z
-    .instanceof(File, { message: 'URL gambar tidak valid.' })
-    .optional()
-    .refine(
-      (file) => {
-        if (!file) return true
+const formStateSchema = z
+  .object({
+    title: z.string().min(1, 'Judul acara wajib diisi.'),
+    startsAt: z.instanceof(ZonedDateTime),
+    endsAt: z.instanceof(ZonedDateTime),
+    is_one_day: z.boolean(),
+    location: z.string().min(1, 'Lokasi wajib diisi.'),
+    imageUrl: z.url('URL gambar tidak valid.').optional().or(z.literal('')),
+    image: z
+      .instanceof(File, { message: 'URL gambar tidak valid.' })
+      .optional()
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const maxBytes = 5 * 1024 * 1024 // 5MB
-        return file && file.size < maxBytes
-      },
-      { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
-    )
-    .refine(
-      (file) => {
-        if (!file) return true
+          const maxBytes = 5 * 1024 * 1024 // 5MB
+          return file && file.size < maxBytes
+        },
+        { message: 'Ukuran berkas melebihi batas maksimum 5MB.' },
+      )
+      .refine(
+        (file) => {
+          if (!file) return true
 
-        const allowedTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/webp',
-          'image/gif',
-        ]
-        return file && allowedTypes.includes(file.type)
-      },
-      {
-        message:
-          'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
-      },
-    )
-    .refine(
-      async (file) => {
-        if (!file) return true
+          const allowedTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+          ]
+          return file && allowedTypes.includes(file.type)
+        },
+        {
+          message:
+            'Tipe berkas tidak didukung. Harap unggah gambar JPG, PNG, WEBP, atau GIF.',
+        },
+      )
+      .refine(
+        async (file) => {
+          if (!file) return true
 
-        const buffer = await file.slice(0, 32).arrayBuffer()
-        return isValidImageBuffer(buffer)
-      },
-      { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
-    ),
-  description: z.string().optional(),
-})
+          const buffer = await file.slice(0, 32).arrayBuffer()
+          return isValidImageBuffer(buffer)
+        },
+        { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
+      ),
+    description: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.is_one_day && data.endsAt.compare(data.startsAt) < 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endsAt'],
+        message: 'Tanggal akhir tidak boleh sebelum tanggal awal.',
+      })
+    }
+  })
 
 type FormState = z.output<typeof formStateSchema>
 
+const defaultDate = () =>
+  now(getLocalTimeZone()).set({ hour: 9, minute: 0, second: 0, millisecond: 0 })
+
 const formState = shallowReactive<FormState>({
   title: '',
-  date: {
-    starts_at: now(getLocalTimeZone()),
-    ends_at: now(getLocalTimeZone()),
-  },
+  startsAt: defaultDate(),
+  endsAt: defaultDate(),
   is_one_day: true,
   location: '',
   image: undefined,
@@ -118,13 +127,10 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
   errorMessage.value = ''
 
   try {
-    const startsAt = e.data.date.starts_at
-      ? e.data.date.starts_at.toDate().toUTCString()
-      : ''
-    const endsAt =
-      e.data.is_one_day && e.data.date.ends_at
-        ? e.data.date.ends_at.toDate().toUTCString()
-        : null
+    const startsAt = e.data.startsAt.toDate().toISOString()
+    const endsAt = e.data.is_one_day
+      ? null
+      : e.data.endsAt.toDate().toISOString()
 
     const res = await createEvent({
       title: e.data.title,
@@ -156,7 +162,7 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
   <div class="py-8 max-w-3xl mx-auto px-4 space-y-6">
     <PageHeader back-to="/users" back-label="Kembali ke Dasbor" />
 
-    <UCard class="border-outline shadow-md">
+    <UCard>
       <template #header>
         <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
       </template>
@@ -173,63 +179,60 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
       <UForm
         :schema="formStateSchema"
         :state="formState"
-        class="space-y-4"
+        class="grid grid-cols-2 gap-4"
         @submit="handleSubmit"
       >
-        <UFormField label="Judul Acara" name="title" required>
+        <UFormField
+          label="Judul Acara"
+          name="title"
+          class="col-span-full"
+          required
+        >
           <UInput
             id="title"
             v-model="formState.title"
             placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
             name="title"
             class="w-full"
+            size="xl"
             required
           />
         </UFormField>
 
-        <div class="grid gap-4">
-          <UFormField
-            label="Satu hari?"
+        <UFormField
+          label="Satu hari?"
+          name="is_one_day"
+          help="Nyalakan bila acara hanya berlangsung dalam satu hari"
+          class="col-span-full"
+        >
+          <UCheckbox
+            id="is_one_day"
+            v-model="formState.is_one_day"
             name="is_one_day"
-            help="Nyalakan bila acara hanya berlangsung dalam satu hari"
-          >
-            <UCheckbox
-              id="is_one_day"
-              v-model="formState.is_one_day"
-              name="is_one_day"
-            />
-          </UFormField>
+          />
+        </UFormField>
 
-          <UFormField label="Tanggal Awal" name="date.starts_at" required>
-            <UInputDate
-              id="starts_at"
-              v-model="formState.date.starts_at"
-              type="date"
-              name="starts_at"
-              class="w-full"
-            />
-          </UFormField>
+        <EventDateTimeField
+          v-model="formState.startsAt"
+          name="startsAt"
+          label="Tanggal/waktu awal"
+          required
+        />
 
-          <div v-show="!formState.is_one_day">
-            <UFormField label="Tanggal Akhir" name="date.ends_at">
-              <UInputDate
-                id="ends_at"
-                v-model="formState.date.ends_at"
-                :default-value="now(getLocalTimeZone())"
-                :is-date-unavailable="
-                  () =>
-                    formState.date.ends_at.toDate() <
-                    formState.date.starts_at.toDate()
-                "
-                type="date"
-                name="ends_at"
-                class="w-full"
-              />
-            </UFormField>
-          </div>
-        </div>
+        <EventDateTimeField
+          v-show="!formState.is_one_day"
+          v-model="formState.endsAt"
+          name="endsAt"
+          label="Tanggal/waktu akhir"
+          :min="formState.startsAt"
+        />
 
-        <UFormField label="Lokasi" name="location" required>
+        <UFormField
+          label="Lokasi"
+          name="location"
+          class="col-span-full"
+          required
+        >
           <UInput
             id="location"
             v-model="formState.location"
@@ -244,21 +247,23 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           label="Gambar Banner Acara"
           name="image"
           description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+          class="order-first col-span-full"
         >
           <div class="space-y-3">
             <UFileUpload
               v-model="formState.image"
               accept="image/*"
               :loading="isUploadingImage"
-              icon="i-lucide-upload-cloud"
+              icon="i-lucide-image"
               label="Pilih atau seret gambar banner ke sini"
               description="PNG, JPG, WEBP hingga 5MB"
+              size="lg"
               class="w-full"
             />
           </div>
         </UFormField>
 
-        <UFormField label="Deskripsi" name="description">
+        <UFormField label="Deskripsi" name="description" class="col-span-full">
           <UTextarea
             id="description"
             v-model="formState.description"
@@ -269,7 +274,9 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           />
         </UFormField>
 
-        <div class="pt-4 flex justify-end gap-3 border-t border-outline">
+        <USeparator class="col-span-full" />
+
+        <div class="-col-end-1 flex justify-end gap-3">
           <UButton to="/users" variant="ghost" color="neutral"> Batal </UButton>
           <UButton
             class="active:translate-y-1"

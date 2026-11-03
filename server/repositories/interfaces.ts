@@ -74,6 +74,14 @@ export interface IEmailLogRepository {
     messageId?: string | null
     error?: string
   }): Promise<void>
+
+  updateDeliverability(entry: {
+    providerMessageId: string
+    status: 'sent' | 'delivered' | 'bounced' | 'failed'
+    errorMessage?: string | null
+    deliveredAt?: string | null
+    metadata?: Record<string, unknown>
+  }): Promise<void>
 }
 
 export interface ITicketTypeRepository {
