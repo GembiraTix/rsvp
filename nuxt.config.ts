@@ -27,6 +27,7 @@ export default defineNuxtConfig({
     },
 
     resendApiKey: process.env.NUXT_RESEND_API_KEY,
+    resendWebhookSecret: process.env.NUXT_RESEND_WEBHOOK_SECRET,
     emailFrom: process.env.NUXT_EMAIL_FROM,
 
     midtransServerKey: process.env.MIDTRANS_SERVER_KEY,

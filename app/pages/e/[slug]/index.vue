@@ -51,11 +51,9 @@ useSeoMeta({
   description: () => event.value?.description || '',
 })
 
-const {
-  data: existingRsvp,
-  refresh: refreshExistingRsvp,
-} = await useAsyncData(`event-rsvp-${event.value.id}-${profile.value?.email}`, () =>
-  getRsvpByEventAndEmail(event.value.id, profile.value?.email ?? ''),
+const { data: existingRsvp, refresh: refreshExistingRsvp } = await useAsyncData(
+  `event-rsvp-${event.value.id}-${profile.value?.email}`,
+  () => getRsvpByEventAndEmail(event.value.id, profile.value?.email ?? ''),
 )
 
 const rsvpToken = computed(() => existingRsvp.value?.token ?? '')
@@ -108,7 +106,7 @@ const sidebarPanel = computed(() =>
               {{ event.title }}
             </h1>
 
-            <EventShareButton :title="event.title" />
+            <EventShareButton :title="event.title ?? `event #${event.id}`" />
           </div>
 
           <article
