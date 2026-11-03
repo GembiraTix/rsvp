@@ -188,7 +188,6 @@ export interface OrderItem {
   ticket_type_id: number
   total: number
   unit_price: number
-  attendee_data: Record<string, unknown>
   created_at: string
 }
 

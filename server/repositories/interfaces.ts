@@ -161,7 +161,6 @@ export interface ITicketRepository {
       qty: number
       unit_price: number
       total: number
-      attendee_data: Record<string, unknown>
     }[]
   }): Promise<OrderItem[]>
   createTickets(input: {

@@ -16,7 +16,6 @@ export class SupabaseTicketRepository implements ITicketRepository {
       qty: number
       unit_price: number
       total: number
-      attendee_data: Record<string, unknown>
     }[]
   }): Promise<OrderItem[]> {
     const payload: OrderItemInsert[] = input.items.map((item) => ({
@@ -25,9 +24,6 @@ export class SupabaseTicketRepository implements ITicketRepository {
       qty: item.qty,
       unit_price: item.unit_price,
       total: item.total,
-      attendee_data: item.attendee_data as NonNullable<
-        Database['public']['Tables']['order_items']['Insert']['attendee_data']
-      >,
     }))
 
     const { data, error } = await this.client
