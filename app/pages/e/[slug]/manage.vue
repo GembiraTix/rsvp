@@ -2,15 +2,11 @@
 import { useEvents } from '@/composables/useEvents'
 import { useUserProfile } from '@/composables/useUserProfile'
 import { useTicketTypes } from '@/composables/useTicketTypes'
+import { useTicketCategories } from '@/composables/useTicketCategories'
 import { useAttendees } from '@/composables/useAttendees'
 import { useTabQuery } from '@/composables/useTabQuery'
 import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
-import type {
-  Event,
-  Rsvp,
-  TicketType,
-  TicketTypeKind,
-} from '~~/server/domain/types'
+import type { Event, Rsvp, TicketType } from '~~/server/domain/types'
 import { z } from 'zod'
 
 definePageMeta({
@@ -294,11 +290,16 @@ async function handleDeleteTicketType() {
   }
 }
 
-const ticketTypeKindLabels: Record<TicketTypeKind, string> = {
-  single: 'Single',
-  couple: 'Couple',
-  berempat: 'Berempat',
-}
+const { fetchAll: fetchTicketCategories } = useTicketCategories()
+const { data: ticketCategoriesRes } = await fetchTicketCategories()
+
+const categoryNameById = computed(() => {
+  const map = new Map<number, string>()
+  for (const category of ticketCategoriesRes.value?.data ?? []) {
+    map.set(category.id, category.name)
+  }
+  return map
+})
 
 const ticketTypeColumns: TableColumn<TicketType>[] = [
   {
@@ -306,9 +307,10 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
     header: 'Nama Tiket',
   },
   {
-    id: 'kind',
-    header: 'Tipe',
-    cell: ({ row }) => ticketTypeKindLabels[row.original.kind],
+    id: 'category',
+    header: 'Kategori',
+    cell: ({ row }) =>
+      categoryNameById.value.get(row.original.category_id) ?? 'Reguler',
   },
   {
     accessorKey: 'price',
