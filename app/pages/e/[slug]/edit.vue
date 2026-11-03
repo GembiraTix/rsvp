@@ -34,8 +34,6 @@ const isUploadingImage = ref(false)
 const editErrorMessage = ref('')
 const editSuccessMessage = ref('')
 
-import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
-
 const formStateSchema = z
   .object({
     title: z.string().min(1, 'Judul acara wajib diisi.'),
@@ -179,7 +177,7 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
     <UCard>
       <template #header>
         <h1 class="text-2xl font-bold text-on-surface">
-          Menyunting {{ oldEvent?.data.title }}
+          Menyunting {{ oldEvent?.title }}
         </h1>
       </template>
 
