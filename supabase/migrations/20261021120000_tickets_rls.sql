@@ -41,6 +41,20 @@ CREATE POLICY "Admins can delete event payment settings"
   TO authenticated
   USING (public.is_admin());
 
+-- ticket_categories: anyone can read, admins manage (managed via migration seed for now)
+CREATE POLICY "Anyone can read ticket categories"
+  ON public.ticket_categories
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
+CREATE POLICY "Admins can manage ticket categories"
+  ON public.ticket_categories
+  FOR ALL
+  TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
 -- ticket_types: public can read active ticket types for published events
 CREATE POLICY "Anyone can read active ticket types"
   ON public.ticket_types
