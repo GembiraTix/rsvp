@@ -25,15 +25,12 @@ const tabItems = computed(() => {
       value: 'registrasi',
       icon: 'i-lucide-ticket',
     },
-  ]
-
-  if (isSuperAdmin.value) {
-    items.push({
+    {
       label: 'More',
       value: 'more',
       icon: 'i-lucide-settings-2',
-    })
-  }
+    },
+  ]
 
   return items
 })
