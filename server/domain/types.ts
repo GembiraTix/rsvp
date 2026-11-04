@@ -14,8 +14,42 @@ export interface Event {
   is_draft: boolean
 }
 
-export type CreateEventInput = Omit<Event, 'id' | 'created_at'>
-export type UpdateEventInput = Partial<Omit<Event, 'id' | 'created_at' | 'created_by'>>
+export interface UpdateableEvent {
+  created_at?: string | undefined
+  created_by?: string | undefined
+  deleted_at?: string | null | undefined
+  description?: string | null | undefined
+  ends_at?: string | null | undefined
+  id?: number | undefined
+  image_url?: string | null | undefined
+  is_draft?: boolean | undefined
+  location?: string | null | undefined
+  registration_limit?: number | null | undefined
+  slug?: string | undefined
+  starts_at?: string | null | undefined
+  title?: string | null | undefined
+}
+
+export interface InsertableEvent {
+  created_at?: string | undefined
+  created_by: string
+  deleted_at?: string | null | undefined
+  description?: string | null | undefined
+  ends_at?: string | null | undefined
+  id?: number | undefined
+  image_url?: string | null | undefined
+  is_draft: boolean
+  location?: string | null | undefined
+  registration_limit?: number | null | undefined
+  slug: string
+  starts_at?: string | null | undefined
+  title?: string | null | undefined
+}
+
+export type CreateEventInput = Omit<InsertableEvent, 'id' | 'created_at'>
+export type UpdateEventInput = Partial<
+  Omit<UpdateableEvent, 'id' | 'created_at' | 'created_by'>
+>
 
 import type { Database } from '~/types/database.types'
 

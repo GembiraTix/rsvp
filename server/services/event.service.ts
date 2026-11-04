@@ -131,4 +131,8 @@ export class EventService {
     this.logger.info('Updating event registration limit', { id, limit })
     return this.eventRepo.updateRegistrationLimit(id, limit)
   }
+
+  async updateDraftStatus(id: number, isDraft: boolean) {
+    this.eventRepo.update(id, { is_draft: isDraft })
+  }
 }
