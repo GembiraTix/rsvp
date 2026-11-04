@@ -3,6 +3,7 @@ import type {
   CreateEventInput,
   UpdateEventInput,
   UserProfile,
+  UserRole,
   UpdateUserProfileInput,
   Rsvp,
   CreateRsvpInput,
