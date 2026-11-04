@@ -1,17 +1,23 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
-import type { IEventRepository } from './interfaces'
+import type { EventFindOptions, IEventRepository } from './interfaces'
 import type { Event, CreateEventInput, UpdateEventInput } from '../domain/types'
 
 export class SupabaseEventRepository implements IEventRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
-  async findAll(): Promise<Event[]> {
-    const { data, error } = await this.client
+  async find({ withDraft }: EventFindOptions): Promise<Event[]> {
+    let query = this.client
       .from('events')
       .select('*')
       .is('deleted_at', null)
       .order('starts_at', { ascending: true })
+
+    if (withDraft !== undefined) {
+      query = query.eq('is_draft', withDraft)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
     return data ?? []

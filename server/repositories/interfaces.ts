@@ -9,8 +9,15 @@ import type {
   CreateRsvpInput,
 } from '../domain/types'
 
+export type EventFindOptions = {
+  withDraft?: boolean
+}
+
 export interface IEventRepository {
-  findAll(): Promise<Event[]>
+  /**
+   * by default returns all events that are not drafts and are not deleted
+   * */
+  find(options?: EventFindOptions): Promise<Event[]>
   findBySlug(slug: string): Promise<Event | null>
   findById(id: number): Promise<Event | null>
   create(payload: CreateEventInput): Promise<Event>
