@@ -132,10 +132,18 @@ async function saveRegistrationLimit(
   }
 }
 
-const draftFormState = reactive({ isDraft: false })
+const isUpdatingDraftStatus = ref(false)
+const draftFormState = reactive({ isDraft: event.value.is_draft })
 
 async function handleSetEventDraft(state: { isDraft: boolean }) {
-  await updateDraftStatus(event.value.id, state.isDraft)
+  isUpdatingDraftStatus.value = true
+  try {
+    await updateDraftStatus(event.value.id, state.isDraft)
+  } catch (err: unknown) {
+    console.log(err)
+  } finally {
+    isUpdatingDraftStatus.value = false
+  }
 }
 
 const isDeletingEvent = ref(false)
@@ -390,7 +398,7 @@ async function removeAttendee(id: number) {
                     Sembunyikan acara
                   </h3>
                   <p class="text-on-surface-variant">
-                    Acara disembunyikan tidak akan ditampilkan ke pengguna.
+                    Acara yang disembunyikan tidak akan ditampilkan ke pengguna.
                   </p>
                 </div>
 
@@ -401,12 +409,28 @@ async function removeAttendee(id: number) {
                   <UButton label="Ubah status draf" />
 
                   <template #body>
-                    <UForm @submit="() => handleSetEventDraft(draftFormState)">
-                      <UFormField label="sembunyikan acara">
+                    <UForm
+                      @submit="() => handleSetEventDraft(draftFormState)"
+                      class="space-y-4"
+                    >
+                      <UFormField
+                        size="lg"
+                        label="sembunyikan acara"
+                        :description="
+                          !draftFormState.isDraft
+                            ? 'anda akan menampilkan acara ini untuk pengguna.'
+                            : undefined
+                        "
+                        orientation="horizontal"
+                      >
                         <USwitch v-model="draftFormState.isDraft" />
                       </UFormField>
 
-                      <UButton type="submit" label="Simpan" />
+                      <UButton
+                        type="submit"
+                        label="Simpan"
+                        :loading="isUpdatingDraftStatus"
+                      />
                     </UForm>
                   </template>
                 </UModal>
