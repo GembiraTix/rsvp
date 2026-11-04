@@ -7,15 +7,19 @@ import type {
 import type { ILogger } from './logger.service'
 import { nanoid } from 'nanoid'
 
+type EventGetAllOptions = {
+  withDraft?: boolean
+}
+
 export class EventService {
   constructor(
     private readonly eventRepo: IEventRepository,
     private readonly logger: ILogger,
   ) {}
 
-  async getAllEvents(): Promise<Event[]> {
+  async getAllEvents({ withDraft }: EventGetAllOptions): Promise<Event[]> {
     this.logger.info('Fetching all events')
-    return this.eventRepo.findAll()
+    return this.eventRepo.find({ withDraft })
   }
 
   async getEventById(id: number): Promise<Event | null> {
@@ -89,6 +93,7 @@ export class EventService {
       description?: string | null
       imageUrl?: string | null
       registrationLimit?: number | null
+      isDraft?: boolean
     },
   ): Promise<Event> {
     const existing = await this.eventRepo.findById(id)
@@ -103,6 +108,7 @@ export class EventService {
       ends_at: input.endsAt || null,
       description: input.description || null,
       image_url: input.imageUrl || null,
+      is_draft: input.isDraft || true,
     }
 
     if (input.registrationLimit !== undefined) {
@@ -124,5 +130,9 @@ export class EventService {
 
     this.logger.info('Updating event registration limit', { id, limit })
     return this.eventRepo.updateRegistrationLimit(id, limit)
+  }
+
+  async updateDraftStatus(id: number, isDraft: boolean) {
+    this.eventRepo.update(id, { is_draft: isDraft })
   }
 }

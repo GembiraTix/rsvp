@@ -139,6 +139,7 @@ export type Database = {
           ends_at: string | null
           id: number
           image_url: string | null
+          is_draft: boolean
           location: string | null
           registration_limit: number | null
           slug: string
@@ -154,6 +155,7 @@ export type Database = {
           ends_at?: string | null
           id?: number
           image_url?: string | null
+          is_draft?: boolean
           location?: string | null
           registration_limit?: number | null
           slug: string
@@ -168,6 +170,7 @@ export type Database = {
           ends_at?: string | null
           id?: number
           image_url?: string | null
+          is_draft?: boolean
           location?: string | null
           registration_limit?: number | null
           slug?: string

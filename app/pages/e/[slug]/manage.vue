@@ -32,15 +32,12 @@ const tabItems = computed(() => {
       value: 'registrasi',
       icon: 'i-lucide-ticket',
     },
-  ]
-
-  if (isSuperAdmin.value) {
-    items.push({
+    {
       label: 'More',
       value: 'more',
       icon: 'i-lucide-settings-2',
-    })
-  }
+    },
+  ]
 
   return items
 })
@@ -50,6 +47,7 @@ const selectedTab = useTabQuery('overview')
 const {
   fetchBySlug,
   updateRegistrationLimit: apiUpdateRegistrationLimit,
+  updateDraftStatus,
   deleteEvent: apiDeleteEvent,
 } = useEvents()
 const { data: eventRes, error: eventError } = await fetchBySlug(eventSlug)
@@ -60,12 +58,13 @@ if (eventError.value || !eventRes.value?.data) {
 
 const event = computed(() => eventRes.value!.data)
 
+const isSavingRegistration = ref(false)
+
 const { fetchProfile } = useUserProfile()
 const { data: profileRes } = await fetchProfile()
-const profile = computed(() => profileRes.value?.data || null)
-const isSuperAdmin = computed(() => profile.value?.role === 'super_admin')
-
-const isSavingRegistration = ref(false)
+const isSuperAdmin = computed(
+  () => profileRes.value?.data.role === 'super_admin',
+)
 
 const eventLimitFormSchema = z.object({
   enabled: z.boolean().default(false),
@@ -112,6 +111,20 @@ async function saveRegistrationLimit(
     }
   } finally {
     isSavingRegistration.value = false
+  }
+}
+
+const isUpdatingDraftStatus = ref(false)
+const draftFormState = reactive({ isDraft: event.value.is_draft })
+
+async function handleSetEventDraft(state: { isDraft: boolean }) {
+  isUpdatingDraftStatus.value = true
+  try {
+    await updateDraftStatus(event.value.id, state.isDraft)
+  } catch (err: unknown) {
+    console.log(err)
+  } finally {
+    isUpdatingDraftStatus.value = false
   }
 }
 
@@ -657,6 +670,58 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
 
           <section v-else-if="item.value === 'more'" class="space-y-6">
             <UCard>
+              <template #header>
+                <h2 class="text-lg font-bold">Pengaturan</h2>
+              </template>
+
+              <article
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+              >
+                <div>
+                  <h3 class="font-semibold text-on-surface">
+                    Sembunyikan acara
+                  </h3>
+                  <p class="text-on-surface-variant">
+                    Acara yang disembunyikan tidak akan ditampilkan ke pengguna.
+                  </p>
+                </div>
+
+                <UModal
+                  title="Ubah status draf"
+                  description="Acara disembunyikan tidak akan ditampilkan ke pengguna."
+                >
+                  <UButton label="Ubah status draf" />
+
+                  <template #body>
+                    <UForm
+                      @submit="() => handleSetEventDraft(draftFormState)"
+                      class="space-y-4"
+                    >
+                      <UFormField
+                        size="lg"
+                        label="sembunyikan acara"
+                        :description="
+                          !draftFormState.isDraft
+                            ? 'anda akan menampilkan acara ini untuk pengguna.'
+                            : undefined
+                        "
+                        orientation="horizontal"
+                      >
+                        <USwitch v-model="draftFormState.isDraft" />
+                      </UFormField>
+
+                      <UButton
+                        type="submit"
+                        label="Simpan"
+                        :loading="isUpdatingDraftStatus"
+                      />
+                    </UForm>
+                  </template>
+                </UModal>
+              </article>
+            </UCard>
+
+            <UCard v-if="isSuperAdmin">
               <template #header>
                 <div class="flex items-center gap-2 text-error">
                   <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
