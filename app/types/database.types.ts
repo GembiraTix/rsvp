@@ -94,6 +94,7 @@ export type Database = {
           ends_at: string | null
           id: number
           image_url: string | null
+          is_draft: boolean
           location: string | null
           registration_limit: number | null
           slug: string
@@ -109,6 +110,7 @@ export type Database = {
           ends_at?: string | null
           id?: number
           image_url?: string | null
+          is_draft: boolean
           location?: string | null
           registration_limit?: number | null
           slug: string
@@ -123,6 +125,7 @@ export type Database = {
           ends_at?: string | null
           id?: number
           image_url?: string | null
+          is_draft?: boolean
           location?: string | null
           registration_limit?: number | null
           slug?: string
@@ -211,7 +214,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
     }
     Enums: {
       user_role: 'user' | 'admin' | 'super_admin'

@@ -19,9 +19,18 @@ export interface UpdateEventBody {
   registrationLimit?: number | null
 }
 
+type EventFetchOptions = {
+  withDraft?: boolean
+}
+
 export function useEvents() {
-  function fetchAll() {
-    return useFetch<{ success: boolean; data: Event[] }>('/api/events')
+  function fetchAll(options?: EventFetchOptions) {
+    let url = '/api/events'
+    if (options?.withDraft !== undefined) {
+      url += `?with_draft=${options.withDraft}`
+    }
+
+    return useFetch<{ success: boolean; data: Event[] }>(url)
   }
 
   function fetchBySlug(slug: MaybeRefOrGetter<string>) {
@@ -63,6 +72,13 @@ export function useEvents() {
     )
   }
 
+  async function updateDraftStatus(id: number, isDraft: boolean) {
+    return $fetch(`/api/events/${id}/draft`, {
+      method: 'POST',
+      body: { isDraft },
+    })
+  }
+
   async function uploadEventImage(file: File) {
     const formData = new FormData()
     formData.append('file', file)
@@ -82,6 +98,7 @@ export function useEvents() {
     createEvent,
     updateEvent,
     updateRegistrationLimit,
+    updateDraftStatus,
     deleteEvent,
     uploadEventImage,
   }

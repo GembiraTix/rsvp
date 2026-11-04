@@ -8,7 +8,7 @@ useSeoMeta({
 })
 
 const { fetchAll } = useEvents()
-const { data: res, error } = await fetchAll()
+const { data: res, error } = await fetchAll({ withDraft: false })
 const events = computed(() => res.value?.data || [])
 </script>
 
