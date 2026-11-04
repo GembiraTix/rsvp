@@ -3,7 +3,7 @@ import type {
   IEventRepository,
   IEmailLogRepository,
 } from '#server/repositories/interfaces'
-import type { Rsvp } from '#server/domain/types'
+import type { Rsvp, RsvpWithEvent } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 import { useResend } from '#server/utils/resend'
 
@@ -143,6 +143,23 @@ export class RsvpService {
   ): Promise<Rsvp | null> {
     this.logger.info('Checking existing RSVP', { eventId, email })
     return this.rsvpRepo.findByEventAndEmail(eventId, email)
+  }
+
+  async listAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {
+    return this.rsvpRepo.findAttendingByEmail(email)
+  }
+
+  async countAttendingByEventId(eventId: number): Promise<number> {
+    return this.rsvpRepo.countAttendingByEventId(eventId)
+  }
+
+  async getRsvpById(id: number): Promise<Rsvp | null> {
+    return this.rsvpRepo.findById(id)
+  }
+
+  async deleteRsvp(id: number): Promise<void> {
+    this.logger.info('Deleting RSVP', { rsvpId: id })
+    await this.rsvpRepo.delete(id)
   }
 }
 

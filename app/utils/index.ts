@@ -15,3 +15,17 @@ export function formatDate(
     .format(new Date(date))
   return formatted
 }
+
+export function formatRupiah(value: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
+export function formatCountdown(totalSeconds: number): string {
+  const seconds = Math.max(0, totalSeconds)
+  const minutes = Math.floor(seconds / 60)
+  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+}

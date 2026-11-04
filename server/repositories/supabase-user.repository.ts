@@ -1,7 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { IUserRepository } from './interfaces'
-import type { UserProfile, UpdateUserProfileInput } from '../domain/types'
+import type {
+  UserProfile,
+  UpdateUserProfileInput,
+  UserRole,
+} from '../domain/types'
 
 export class SupabaseUserRepository implements IUserRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}

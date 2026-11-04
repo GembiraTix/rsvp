@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { useRsvp } from '@/composables/useRsvp'
 
+import { useSiteName } from '@/composables/useSiteName'
+
 const route = useRoute()
 const token = computed(() => route.params.token as string)
 
 const { fetchByToken } = useRsvp()
 const { data: rsvp, error } = await fetchByToken(token)
-
-import { useSiteName } from '@/composables/useSiteName'
 const siteName = useSiteName()
 
 useSeoMeta({
@@ -17,9 +17,7 @@ useSeoMeta({
 
 <template>
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
-    <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left">
-      Kembali ke Beranda
-    </UButton>
+    <PageHeader back-to="/" back-label="Kembali ke Beranda" />
 
     <div
       v-if="error || !rsvp"
@@ -57,8 +55,8 @@ useSeoMeta({
           </h2>
           <div class="text-on-surface-variant space-y-1">
             <time
-              :datetime="rsvp.events.starts_at"
               v-if="rsvp.events.starts_at"
+              :datetime="rsvp.events.starts_at"
             >
               {{ formatDate(rsvp.events.starts_at) }}
             </time>

@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { StateMachine } from '~/utils/statemachine'
 
 useSeoMeta({
-  title: 'Masuk / Daftar - Admin Bursa Kerja FPCE',
+  title: 'Masuk / Daftar - GembiraTix',
 })
 
 const user = useSupabaseUser()
@@ -141,28 +141,34 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
 
 async function handleResendConfirmation() {
   isLoading.value = true
+  errorMessage.value = ''
 
-  // should we wrap this in a try?
-  // nah i'd win
-  const { data, error } = await supabase.auth.resend({
-    type: 'signup',
-    email: formState.email,
-    options: {
-      emailRedirectTo: `${url.origin}/confirm`,
-    },
-  })
+  try {
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email: formState.email,
+      options: {
+        emailRedirectTo: `${url.origin}/confirm`,
+      },
+    })
 
-  if (error) {
-    errorMessage.value = error.message
-    return
+    if (error) {
+      errorMessage.value = error.message
+      return
+    }
+
+    if (data.session) {
+      const redirectPath = (route.query.redirectTo as string) || '/'
+      return await navigateTo(redirectPath)
+    }
+  } catch (err: unknown) {
+    errorMessage.value =
+      err instanceof Error
+        ? err.message
+        : 'Gagal mengirim ulang email konfirmasi.'
+  } finally {
+    isLoading.value = false
   }
-
-  if (data.session) {
-    const redirectPath = (route.query.redirectTo as string) || '/'
-    return await navigateTo(redirectPath)
-  }
-
-  isLoading.value = false
 }
 </script>
 
@@ -180,11 +186,20 @@ async function handleResendConfirmation() {
       <div class="my-4 space-y-2">
         <p class="text-on-surface-variant">Tidak mendapatkan email?</p>
 
+        <UAlert
+          v-if="errorMessage"
+          :title="errorMessage"
+          color="error"
+          icon="i-lucide-triangle-alert"
+          variant="subtle"
+        />
+
         <UButton
-          @click="handleResendConfirmation"
           size="lg"
           variant="outline"
           label="kirimkan ulang email konfirmasi"
+          :loading="isLoading"
+          @click="handleResendConfirmation"
         />
       </div>
     </header>
@@ -273,7 +288,6 @@ async function handleResendConfirmation() {
 
       <template #footer>
         <UButton
-          @click="toggleForms"
           variant="ghost"
           class="w-full justify-center"
           :label="
@@ -281,6 +295,7 @@ async function handleResendConfirmation() {
               ? 'Sudah punya akun? Masuk'
               : 'Belum punya akun? Daftar'
           "
+          @click="toggleForms"
         />
       </template>
     </UCard>

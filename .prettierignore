@@ -1,2 +1,6 @@
 dist/
-
+.kilo/
+.zcode/
+pnpm-lock.yaml
+supabase/.temp/
+supabase/templates/
