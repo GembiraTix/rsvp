@@ -52,6 +52,7 @@ export class EventService {
       description: input.description || null,
       image_url: input.imageUrl || null,
       created_by: input.createdBy,
+      is_draft: true,
     }
 
     this.logger.info('Creating new event', {
@@ -108,11 +109,14 @@ export class EventService {
       ends_at: input.endsAt || null,
       description: input.description || null,
       image_url: input.imageUrl || null,
-      is_draft: input.isDraft || true,
     }
 
     if (input.registrationLimit !== undefined) {
       payload.registration_limit = input.registrationLimit
+    }
+
+    if (input.isDraft !== undefined) {
+      payload.is_draft = input.isDraft
     }
 
     this.logger.info('Updating event', { id, title: input.title, userId })
