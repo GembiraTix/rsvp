@@ -8,7 +8,6 @@ import {
   type AttendeeDraft,
 } from '@/composables/useAttendeeDraft'
 import { isValidWhatsapp } from '~~/shared/utils/whatsapp'
-import { isValidTicketQty } from '~~/shared/utils/ticket-qty'
 
 definePageMeta({
   middleware: 'auth',
