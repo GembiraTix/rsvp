@@ -4,18 +4,11 @@ import type {
 } from '#server/repositories/interfaces'
 import type {
   TicketType,
-  TicketTypeKind,
   UserRole,
   CreateTicketTypeInput,
   UpdateTicketTypeInput,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
-
-const DEFAULT_MULTIPLE_OF: Record<TicketTypeKind, number> = {
-  single: 1,
-  couple: 2,
-  berempat: 4,
-}
 
 const DEFAULT_MAX_QTY = 10
 
@@ -108,7 +101,7 @@ export class TicketTypeService {
     input: {
       name: string
       description?: string | null
-      kind?: TicketTypeKind
+      categoryId?: number
       price?: number
       capacity?: number | null
       minQty?: number
@@ -124,7 +117,6 @@ export class TicketTypeService {
 
     this.assertCanManage(event.created_by, currentUser)
 
-    const kind: TicketTypeKind = input.kind ?? 'single'
     const name = input.name.trim()
 
     if (!name) {
@@ -133,7 +125,7 @@ export class TicketTypeService {
 
     const minQty = input.minQty ?? 1
     const maxQty = input.maxQty ?? input.capacity ?? DEFAULT_MAX_QTY
-    const multipleOf = input.multipleOf ?? DEFAULT_MULTIPLE_OF[kind]
+    const multipleOf = input.multipleOf ?? 1
     const capacity = input.capacity ?? null
     const price = input.price ?? 0
 
@@ -145,7 +137,7 @@ export class TicketTypeService {
       event_id: event.id,
       name,
       description: input.description?.trim() || null,
-      kind,
+      category_id: input.categoryId ?? 1,
       price,
       capacity,
       min_qty: minQty,
@@ -171,7 +163,7 @@ export class TicketTypeService {
     input: {
       name?: string
       description?: string | null
-      kind?: TicketTypeKind
+      categoryId?: number
       price?: number
       capacity?: number | null
       minQty?: number
@@ -192,7 +184,6 @@ export class TicketTypeService {
       throw new Error('Tipe tiket tidak ditemukan pada acara ini')
     }
 
-    const kind = input.kind ?? ticketType.kind
     const name = input.name?.trim() ?? ticketType.name
 
     if (!name) {
@@ -214,7 +205,7 @@ export class TicketTypeService {
         input.description === undefined
           ? ticketType.description
           : input.description?.trim() || null,
-      kind,
+      category_id: input.categoryId ?? ticketType.category_id,
       price,
       capacity,
       min_qty: minQty,

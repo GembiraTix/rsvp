@@ -8,7 +8,7 @@ const paramsSchema = z.object({
 const createTicketTypeSchema = z.object({
   name: z.string().min(1, 'Nama tiket wajib diisi.'),
   description: z.string().optional(),
-  kind: z.enum(['single', 'couple', 'berempat']).default('single'),
+  categoryId: z.number().int().positive().default(1),
   price: z.number().int().min(0, 'Harga tidak valid.').default(0),
   capacity: z.number().int().positive().optional().nullable(),
   minQty: z.number().int().min(1).optional(),
@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
       {
         name: body.name,
         description: body.description,
-        kind: body.kind,
+        categoryId: body.categoryId,
         price: body.price,
         capacity: body.capacity ?? null,
         minQty: body.minQty,

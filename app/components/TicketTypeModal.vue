@@ -2,6 +2,7 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 import { useTicketTypes } from '@/composables/useTicketTypes'
+import { useTicketCategories } from '@/composables/useTicketCategories'
 import type { TicketType } from '~~/server/domain/types'
 
 const props = defineProps<{
@@ -14,6 +15,18 @@ const emit = defineEmits<{ saved: [notice: string] }>()
 const isModalOpen = defineModel<boolean>('open', { required: true })
 
 const { createTicketType, updateTicketType } = useTicketTypes()
+const { fetchAll } = useTicketCategories()
+const { data: categoriesRes } = await fetchAll()
+const categories = computed(() => categoriesRes.value?.data ?? [])
+
+const categoryItems = computed(() =>
+  categories.value.map((category) => ({
+    label: category.name,
+    value: category.id,
+  })),
+)
+
+const defaultCategoryId = computed(() => categories.value[0]?.id ?? 1)
 
 const isSaving = ref(false)
 const errorMessage = ref('')
@@ -21,7 +34,7 @@ const errorMessage = ref('')
 const ticketTypeFormSchema = z.object({
   name: z.string().nonempty('Nama tiket wajib diisi.'),
   description: z.string().optional(),
-  kind: z.enum(['single', 'couple', 'berempat']),
+  categoryId: z.number().int().positive('Kategori tidak valid.'),
   price: z.coerce.number().int().min(0, 'Harga tidak valid.'),
   capacity: z.preprocess(
     (value) =>
@@ -39,7 +52,7 @@ type TicketTypeForm = z.output<typeof ticketTypeFormSchema>
 const ticketTypeFormState = reactive<TicketTypeForm>({
   name: '',
   description: '',
-  kind: 'single',
+  categoryId: defaultCategoryId.value,
   price: 0,
   capacity: undefined,
   minQty: 1,
@@ -56,7 +69,7 @@ watch(
     if (ticket) {
       ticketTypeFormState.name = ticket.name
       ticketTypeFormState.description = ticket.description ?? ''
-      ticketTypeFormState.kind = ticket.kind
+      ticketTypeFormState.categoryId = ticket.category_id
       ticketTypeFormState.price = ticket.price
       ticketTypeFormState.capacity = ticket.capacity ?? undefined
       ticketTypeFormState.minQty = ticket.min_qty
@@ -66,7 +79,7 @@ watch(
     } else {
       ticketTypeFormState.name = ''
       ticketTypeFormState.description = ''
-      ticketTypeFormState.kind = 'single'
+      ticketTypeFormState.categoryId = defaultCategoryId.value
       ticketTypeFormState.price = 0
       ticketTypeFormState.capacity = undefined
       ticketTypeFormState.minQty = 1
@@ -144,15 +157,11 @@ async function handleSubmit({ data: body }: FormSubmitEvent<TicketTypeForm>) {
           />
         </UFormField>
 
-        <UFormField label="Tipe tiket" name="kind">
+        <UFormField label="Kategori" name="categoryId">
           <USelect
-            v-model="ticketTypeFormState.kind"
-            name="kind"
-            :items="[
-              { label: 'Single (1 orang)', value: 'single' },
-              { label: 'Couple (2 orang)', value: 'couple' },
-              { label: 'Berempat (4 orang)', value: 'berempat' },
-            ]"
+            v-model="ticketTypeFormState.categoryId"
+            name="categoryId"
+            :items="categoryItems"
             class="w-full"
           />
         </UFormField>

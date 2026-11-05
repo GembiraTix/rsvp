@@ -1,9 +1,9 @@
-import type { TicketType, TicketTypeKind } from '~~/server/domain/types'
+import type { TicketType } from '~~/server/domain/types'
 
 export interface CreateTicketTypeBody {
   name: string
   description?: string | null
-  kind?: TicketTypeKind
+  categoryId?: number
   price?: number
   capacity?: number | null
   minQty?: number
