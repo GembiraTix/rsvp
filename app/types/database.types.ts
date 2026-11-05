@@ -76,11 +76,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "confirmation_emails_rsvp_id_fkey"
-            columns: ["rsvp_id"]
+            foreignKeyName: 'confirmation_emails_rsvp_id_fkey'
+            columns: ['rsvp_id']
             isOneToOne: false
-            referencedRelation: "rsvps"
-            referencedColumns: ["id"]
+            referencedRelation: 'rsvps'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -120,11 +120,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "event_payment_settings_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: 'event_payment_settings_event_id_fkey'
+            columns: ['event_id']
             isOneToOne: true
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            referencedRelation: 'events'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -176,11 +176,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "events_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'events_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -214,18 +214,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: 'order_items_order_id_fkey'
+            columns: ['order_id']
             isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "order_items_ticket_type_id_fkey"
-            columns: ["ticket_type_id"]
+            foreignKeyName: 'order_items_ticket_type_id_fkey'
+            columns: ['ticket_type_id']
             isOneToOne: false
-            referencedRelation: "ticket_types"
-            referencedColumns: ["id"]
+            referencedRelation: 'ticket_types'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -243,10 +243,10 @@ export type Database = {
           order_number: string
           paid_at: string | null
           payment_method: string | null
-          payment_status: Database["public"]["Enums"]["payment_status"]
+          payment_status: Database['public']['Enums']['payment_status']
           refund_amount: number | null
           refunded_at: string | null
-          status: Database["public"]["Enums"]["order_status"]
+          status: Database['public']['Enums']['order_status']
           subtotal: number
           token: string
           total: number | null
@@ -266,10 +266,10 @@ export type Database = {
           order_number: string
           paid_at?: string | null
           payment_method?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_status?: Database['public']['Enums']['payment_status']
           refund_amount?: number | null
           refunded_at?: string | null
-          status?: Database["public"]["Enums"]["order_status"]
+          status?: Database['public']['Enums']['order_status']
           subtotal?: number
           token: string
           total?: number | null
@@ -289,10 +289,10 @@ export type Database = {
           order_number?: string
           paid_at?: string | null
           payment_method?: string | null
-          payment_status?: Database["public"]["Enums"]["payment_status"]
+          payment_status?: Database['public']['Enums']['payment_status']
           refund_amount?: number | null
           refunded_at?: string | null
-          status?: Database["public"]["Enums"]["order_status"]
+          status?: Database['public']['Enums']['order_status']
           subtotal?: number
           token?: string
           total?: number | null
@@ -301,18 +301,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orders_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: 'orders_event_id_fkey'
+            columns: ['event_id']
             isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            referencedRelation: 'events'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "orders_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'orders_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -358,11 +358,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "payment_events_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: 'payment_events_order_id_fkey'
+            columns: ['order_id']
             isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -399,23 +399,41 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rsvps_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: 'rsvps_event_id_fkey'
+            columns: ['event_id']
             isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            referencedRelation: 'events'
+            referencedColumns: ['id']
           },
         ]
+      }
+      ticket_categories: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
       }
       ticket_types: {
         Row: {
           capacity: number | null
+          category_id: number
           created_at: string
           description: string | null
           event_id: number
           id: number
           is_active: boolean
-          kind: Database["public"]["Enums"]["ticket_type_kind"]
           max_qty: number
           min_qty: number
           multiple_of: number
@@ -426,12 +444,12 @@ export type Database = {
         }
         Insert: {
           capacity?: number | null
+          category_id?: number
           created_at?: string
           description?: string | null
           event_id: number
           id?: number
           is_active?: boolean
-          kind?: Database["public"]["Enums"]["ticket_type_kind"]
           max_qty: number
           min_qty?: number
           multiple_of?: number
@@ -442,12 +460,12 @@ export type Database = {
         }
         Update: {
           capacity?: number | null
+          category_id?: number
           created_at?: string
           description?: string | null
           event_id?: number
           id?: number
           is_active?: boolean
-          kind?: Database["public"]["Enums"]["ticket_type_kind"]
           max_qty?: number
           min_qty?: number
           multiple_of?: number
@@ -458,11 +476,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ticket_types_event_id_fkey"
-            columns: ["event_id"]
+            foreignKeyName: 'ticket_types_category_id_fkey'
+            columns: ['category_id']
             isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            referencedRelation: 'ticket_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ticket_types_event_id_fkey'
+            columns: ['event_id']
+            isOneToOne: false
+            referencedRelation: 'events'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -475,10 +500,10 @@ export type Database = {
           checkin_by: string
           created_at: string
           fields: Json | null
-          gender: Database["public"]["Enums"]["attendee_gender"] | null
+          gender: Database['public']['Enums']['attendee_gender'] | null
           id: number
           identity_number: string | null
-          identity_type: Database["public"]["Enums"]["identity_type"] | null
+          identity_type: Database['public']['Enums']['identity_type'] | null
           order_id: string
           ticket_type_id: number
           token: string
@@ -492,10 +517,10 @@ export type Database = {
           checkin_by: string
           created_at?: string
           fields?: Json | null
-          gender?: Database["public"]["Enums"]["attendee_gender"] | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
           identity_number?: string | null
-          identity_type?: Database["public"]["Enums"]["identity_type"] | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           order_id: string
           ticket_type_id: number
           token?: string
@@ -509,10 +534,10 @@ export type Database = {
           checkin_by?: string
           created_at?: string
           fields?: Json | null
-          gender?: Database["public"]["Enums"]["attendee_gender"] | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
           identity_number?: string | null
-          identity_type?: Database["public"]["Enums"]["identity_type"] | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           order_id?: string
           ticket_type_id?: number
           token?: string
@@ -520,25 +545,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tickets_checkin_by_fkey"
-            columns: ["checkin_by"]
+            foreignKeyName: 'tickets_checkin_by_fkey'
+            columns: ['checkin_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "tickets_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: 'tickets_order_id_fkey'
+            columns: ['order_id']
             isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "tickets_ticket_type_id_fkey"
-            columns: ["ticket_type_id"]
+            foreignKeyName: 'tickets_ticket_type_id_fkey'
+            columns: ['ticket_type_id']
             isOneToOne: false
-            referencedRelation: "ticket_types"
-            referencedColumns: ["id"]
+            referencedRelation: 'ticket_types'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -548,21 +573,21 @@ export type Database = {
           email: string
           id: string
           name: string | null
-          role: Database["public"]["Enums"]["user_role"]
+          role: Database['public']['Enums']['user_role']
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
           name?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database['public']['Enums']['user_role']
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
           name?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database['public']['Enums']['user_role']
         }
         Relationships: []
       }
@@ -575,29 +600,28 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      attendee_gender: "laki-laki" | "perempuan"
-      identity_type: "ktp" | "sim" | "paspor" | "kartu_pelajar"
+      attendee_gender: 'laki-laki' | 'perempuan'
+      identity_type: 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
       order_status:
-        | "draft"
-        | "pending"
-        | "paid"
-        | "cancelled"
-        | "expired"
-        | "refunded"
-        | "partial_refund"
-        | "failed"
+        | 'draft'
+        | 'pending'
+        | 'paid'
+        | 'cancelled'
+        | 'expired'
+        | 'refunded'
+        | 'partial_refund'
+        | 'failed'
       payment_status:
-        | "pending"
-        | "awaiting_payment"
-        | "settled"
-        | "paid"
-        | "cancelled"
-        | "expired"
-        | "failed"
-        | "refunded"
-        | "partial_refund"
-      ticket_type_kind: "single" | "couple" | "berempat"
-      user_role: "user" | "admin" | "super_admin"
+        | 'pending'
+        | 'awaiting_payment'
+        | 'settled'
+        | 'paid'
+        | 'cancelled'
+        | 'expired'
+        | 'failed'
+        | 'refunded'
+        | 'partial_refund'
+      user_role: 'user' | 'admin' | 'super_admin'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -605,33 +629,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] &
+        DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -640,23 +664,22 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -665,23 +688,22 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -690,36 +712,35 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
@@ -728,32 +749,30 @@ export const Constants = {
   },
   public: {
     Enums: {
-      attendee_gender: ["laki-laki", "perempuan"],
-      identity_type: ["ktp", "sim", "paspor", "kartu_pelajar"],
+      attendee_gender: ['laki-laki', 'perempuan'],
+      identity_type: ['ktp', 'sim', 'paspor', 'kartu_pelajar'],
       order_status: [
-        "draft",
-        "pending",
-        "paid",
-        "cancelled",
-        "expired",
-        "refunded",
-        "partial_refund",
-        "failed",
+        'draft',
+        'pending',
+        'paid',
+        'cancelled',
+        'expired',
+        'refunded',
+        'partial_refund',
+        'failed',
       ],
       payment_status: [
-        "pending",
-        "awaiting_payment",
-        "settled",
-        "paid",
-        "cancelled",
-        "expired",
-        "failed",
-        "refunded",
-        "partial_refund",
+        'pending',
+        'awaiting_payment',
+        'settled',
+        'paid',
+        'cancelled',
+        'expired',
+        'failed',
+        'refunded',
+        'partial_refund',
       ],
-      ticket_type_kind: ["single", "couple", "berempat"],
-      user_role: ["user", "admin", "super_admin"],
+      user_role: ['user', 'admin', 'super_admin'],
     },
   },
 } as const
-
