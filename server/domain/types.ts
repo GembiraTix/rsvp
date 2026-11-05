@@ -198,6 +198,10 @@ export interface Ticket {
   attendee_name: string
   attendee_email: string
   attendee_phone: string | null
+  identity_type: IdentityType | null
+  identity_number: string | null
+  whatsapp: string | null
+  gender: AttendeeGender | null
   token: string
   fields: Record<string, unknown> | null
   checkin_at: string | null
