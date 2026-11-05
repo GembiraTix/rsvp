@@ -32,6 +32,14 @@ export class RsvpService {
       throw new Error('Acara tidak ditemukan')
     }
 
+    const existing = await this.rsvpRepo.findByEventAndEmail(
+      input.eventId,
+      input.email,
+    )
+    if (existing) {
+      throw new Error('Email sudah terdaftar untuk acara ini.')
+    }
+
     if (
       event.registration_limit !== null &&
       event.registration_limit !== undefined
@@ -143,6 +151,13 @@ export class RsvpService {
   ): Promise<Rsvp | null> {
     this.logger.info('Checking existing RSVP', { eventId, email })
     return this.rsvpRepo.findByEventAndEmail(eventId, email)
+  }
+
+  async findRegisteredEmails(
+    eventId: number,
+    emails: string[],
+  ): Promise<string[]> {
+    return this.rsvpRepo.findRegisteredEmails(eventId, emails)
   }
 
   async listAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {

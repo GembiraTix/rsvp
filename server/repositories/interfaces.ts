@@ -18,6 +18,8 @@ import type {
   TicketWithTypeName,
   OrderStatus,
   PaymentStatus,
+  AttendeeGender,
+  IdentityType,
 } from '../domain/types'
 
 export type EventFindOptions = {
@@ -58,6 +60,7 @@ export interface IRsvpRepository {
   findAttendingByEmail(email: string): Promise<RsvpWithEvent[]>
   countAttendingByEventId(eventId: number): Promise<number>
   findByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null>
+  findRegisteredEmails(eventId: number, emails: string[]): Promise<string[]>
   create(payload: CreateRsvpInput): Promise<Rsvp>
   createBatch(input: {
     items: {
@@ -161,7 +164,6 @@ export interface ITicketRepository {
       qty: number
       unit_price: number
       total: number
-      attendee_data: Record<string, unknown>
     }[]
   }): Promise<OrderItem[]>
   createTickets(input: {
@@ -169,11 +171,18 @@ export interface ITicketRepository {
     user_id: string
     items: {
       ticket_type_id: number
-      qty: number
-      attendee_name: string
-      attendee_email: string
-      attendee_phone: string | null
+      attendees: {
+        name: string
+        email: string
+        phone: string | null
+        identity_type: IdentityType
+        identity_number: string
+        whatsapp: string
+        gender: AttendeeGender
+      }[]
     }[]
   }): Promise<Ticket[]>
   findTicketsByOrderId(orderId: string): Promise<TicketWithTypeName[]>
+  countPendingOrderTicketsByEventId(eventId: number): Promise<number>
+  deleteByOrderId(orderId: string): Promise<void>
 }

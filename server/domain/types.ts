@@ -128,6 +128,19 @@ export type UpdateTicketTypeInput = Partial<
   Omit<CreateTicketTypeInput, 'event_id' | 'sort_order'>
 >
 
+export type AttendeeGender = 'laki-laki' | 'perempuan'
+
+export type IdentityType = 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
+
+export type OrderAttendeeInput = {
+  name: string
+  identityType: IdentityType
+  identityNumber: string
+  email: string
+  whatsapp: string
+  gender: AttendeeGender
+}
+
 export type OrderStatus =
   | 'draft'
   | 'pending'
@@ -188,7 +201,6 @@ export interface OrderItem {
   ticket_type_id: number
   total: number
   unit_price: number
-  attendee_data: Record<string, unknown>
   created_at: string
 }
 
@@ -199,6 +211,10 @@ export interface Ticket {
   attendee_name: string
   attendee_email: string
   attendee_phone: string | null
+  identity_type: IdentityType | null
+  identity_number: string | null
+  whatsapp: string | null
+  gender: AttendeeGender | null
   token: string
   fields: Record<string, unknown> | null
   checkin_at: string | null
@@ -217,5 +233,6 @@ export interface CreateOrderInput {
     name: string
     unitPrice: number
     qty: number
+    attendees: OrderAttendeeInput[]
   }[]
 }

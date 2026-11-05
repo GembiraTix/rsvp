@@ -696,8 +696,8 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
 
                   <template #body>
                     <UForm
-                      @submit="() => handleSetEventDraft(draftFormState)"
                       class="space-y-4"
+                      @submit="() => handleSetEventDraft(draftFormState)"
                     >
                       <UFormField
                         size="lg"

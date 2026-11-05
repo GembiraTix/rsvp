@@ -48,7 +48,6 @@ export type Database = {
           subject: string
           updated_at: string
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           error_message?: string | null
@@ -97,7 +96,6 @@ export type Database = {
           refund_default_cents: number | null
           updated_at: string
         }
-        ComputedFields: never
         Insert: {
           admin_fee_fixed_cents?: number
           admin_fee_mode?: string
@@ -146,7 +144,6 @@ export type Database = {
           starts_at: string | null
           title: string | null
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           created_by: string
@@ -189,7 +186,6 @@ export type Database = {
       }
       order_items: {
         Row: {
-          attendee_data: NonNullable<Json>
           created_at: string
           id: number
           order_id: string
@@ -198,9 +194,7 @@ export type Database = {
           total: number
           unit_price: number
         }
-        ComputedFields: never
         Insert: {
-          attendee_data: NonNullable<Json>
           created_at?: string
           id?: number
           order_id: string
@@ -210,7 +204,6 @@ export type Database = {
           unit_price?: number
         }
         Update: {
-          attendee_data?: NonNullable<Json>
           created_at?: string
           id?: number
           order_id?: string
@@ -260,7 +253,6 @@ export type Database = {
           updated_at: string
           user_id: string
         }
-        ComputedFields: never
         Insert: {
           admin_fee?: number
           checkout_url: string
@@ -333,12 +325,11 @@ export type Database = {
           midtrans_order_id: string | null
           midtrans_transaction_id: string | null
           order_id: string | null
-          payload: NonNullable<Json>
+          payload: Json
           processed: boolean
           processed_at: string | null
           signature_valid: boolean | null
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           error?: string | null
@@ -347,7 +338,7 @@ export type Database = {
           midtrans_order_id?: string | null
           midtrans_transaction_id?: string | null
           order_id?: string | null
-          payload: NonNullable<Json>
+          payload: Json
           processed?: boolean
           processed_at?: string | null
           signature_valid?: boolean | null
@@ -360,7 +351,7 @@ export type Database = {
           midtrans_order_id?: string | null
           midtrans_transaction_id?: string | null
           order_id?: string | null
-          payload?: NonNullable<Json>
+          payload?: Json
           processed?: boolean
           processed_at?: string | null
           signature_valid?: boolean | null
@@ -386,7 +377,6 @@ export type Database = {
           organization: string | null
           token: string
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           email?: string | null
@@ -417,15 +407,33 @@ export type Database = {
           },
         ]
       }
+      ticket_categories: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       ticket_types: {
         Row: {
           capacity: number | null
+          category_id: number
           created_at: string
           description: string | null
           event_id: number
           id: number
           is_active: boolean
-          kind: Database['public']['Enums']['ticket_type_kind']
           max_qty: number
           min_qty: number
           multiple_of: number
@@ -434,15 +442,14 @@ export type Database = {
           sort_order: number
           updated_at: string
         }
-        ComputedFields: never
         Insert: {
           capacity?: number | null
+          category_id?: number
           created_at?: string
           description?: string | null
           event_id: number
           id?: number
           is_active?: boolean
-          kind?: Database['public']['Enums']['ticket_type_kind']
           max_qty: number
           min_qty?: number
           multiple_of?: number
@@ -453,12 +460,12 @@ export type Database = {
         }
         Update: {
           capacity?: number | null
+          category_id?: number
           created_at?: string
           description?: string | null
           event_id?: number
           id?: number
           is_active?: boolean
-          kind?: Database['public']['Enums']['ticket_type_kind']
           max_qty?: number
           min_qty?: number
           multiple_of?: number
@@ -468,6 +475,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'ticket_types_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'ticket_categories'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'ticket_types_event_id_fkey'
             columns: ['event_id']
@@ -486,12 +500,15 @@ export type Database = {
           checkin_by: string
           created_at: string
           fields: Json | null
+          gender: Database['public']['Enums']['attendee_gender'] | null
           id: number
+          identity_number: string | null
+          identity_type: Database['public']['Enums']['identity_type'] | null
           order_id: string
           ticket_type_id: number
           token: string
+          whatsapp: string | null
         }
-        ComputedFields: never
         Insert: {
           attendee_email: string
           attendee_name: string
@@ -500,10 +517,14 @@ export type Database = {
           checkin_by: string
           created_at?: string
           fields?: Json | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           order_id: string
           ticket_type_id: number
           token?: string
+          whatsapp?: string | null
         }
         Update: {
           attendee_email?: string
@@ -513,10 +534,14 @@ export type Database = {
           checkin_by?: string
           created_at?: string
           fields?: Json | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           order_id?: string
           ticket_type_id?: number
           token?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -550,7 +575,6 @@ export type Database = {
           name: string | null
           role: Database['public']['Enums']['user_role']
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           email: string
@@ -573,9 +597,11 @@ export type Database = {
     }
     Functions: {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
-      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      attendee_gender: 'laki-laki' | 'perempuan'
+      identity_type: 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
       order_status:
         | 'draft'
         | 'pending'
@@ -595,7 +621,6 @@ export type Database = {
         | 'failed'
         | 'refunded'
         | 'partial_refund'
-      ticket_type_kind: 'single' | 'couple' | 'berempat'
       user_role: 'user' | 'admin' | 'super_admin'
     }
     CompositeTypes: {
@@ -724,6 +749,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      attendee_gender: ['laki-laki', 'perempuan'],
+      identity_type: ['ktp', 'sim', 'paspor', 'kartu_pelajar'],
       order_status: [
         'draft',
         'pending',
@@ -745,7 +772,6 @@ export const Constants = {
         'refunded',
         'partial_refund',
       ],
-      ticket_type_kind: ['single', 'couple', 'berempat'],
       user_role: ['user', 'admin', 'super_admin'],
     },
   },
