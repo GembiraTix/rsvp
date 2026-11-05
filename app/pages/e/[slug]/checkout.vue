@@ -4,6 +4,10 @@ import { useEvents } from '@/composables/useEvents'
 import { useTicketTypes } from '@/composables/useTicketTypes'
 import { formatRupiah, formatCountdown } from '@/utils'
 import { useUserProfile } from '@/composables/useUserProfile'
+import {
+  useAttendeeDraft,
+  type AttendeeDraft,
+} from '@/composables/useAttendeeDraft'
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
@@ -32,6 +36,10 @@ const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 const { cart, selectedLines, subtotal, totalQty, decode } =
   useTicketCart(ticketTypes)
 
+const { load: loadDraft, clear: clearDraft } = useAttendeeDraft(eventSlug)
+
+const attendeeDraft = ref<AttendeeDraft[]>([])
+
 onMounted(() => {
   // TODO: handle nonexistent cart param
   try {
@@ -40,6 +48,12 @@ onMounted(() => {
     cart.value = []
     checkoutError.value =
       'Keranjang tidak valid. Silakan pilih tiket kembali dari halaman acara.'
+    return
+  }
+
+  attendeeDraft.value = loadDraft()
+  if (attendeeDraft.value.length === 0) {
+    navigateTo(`/e/${eventSlug.value}/tickets`)
   }
 })
 
@@ -91,11 +105,22 @@ async function handleBayar() {
         lines: selectedLines.value.map((l) => ({
           ticketTypeId: l.ticketType.id,
           qty: l.qty,
+          attendees: attendeeDraft.value
+            .filter((u) => u.ticketTypeId === l.ticketType.id)
+            .map((u) => ({
+              name: u.name,
+              identityType: u.identityType,
+              identityNumber: u.identityNumber,
+              email: u.email,
+              whatsapp: u.whatsapp,
+              gender: u.gender,
+            })),
         })),
       },
     })
 
     checkoutResult.value = res
+    clearDraft()
 
     navigateTo(checkoutResult.value.data.redirectUrl, { external: true })
   } catch (err: unknown) {
@@ -112,8 +137,8 @@ async function handleBayar() {
 <template>
   <div class="py-8 max-w-5xl mx-auto px-4 space-y-8">
     <PageHeader
-      :back-to="`/e/${event.slug}/tickets`"
-      back-label="Kembali ke pemilihan tiket"
+      :back-to="`/e/${event.slug}/register`"
+      back-label="Kembali ke data peserta"
       title="Checkout"
       :description="event.title"
     />
