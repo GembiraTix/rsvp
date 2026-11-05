@@ -2,9 +2,8 @@
 import { useEvents } from '@/composables/useEvents'
 
 useSeoMeta({
-  title: 'Bursa Kerja FPCE - RSVP Acara',
-  description:
-    'Jelajahi sesi bursa kerja FPCE mendatang, presentasi perusahaan, dan lakukan RSVP secara langsung.',
+  title: 'GembiraTix',
+  description: 'Selamat datang di GembiraTix!',
 })
 
 const { fetchAll } = useEvents()
