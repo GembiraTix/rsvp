@@ -145,6 +145,13 @@ export class RsvpService {
     return this.rsvpRepo.findByEventAndEmail(eventId, email)
   }
 
+  async findRegisteredEmails(
+    eventId: number,
+    emails: string[],
+  ): Promise<string[]> {
+    return this.rsvpRepo.findRegisteredEmails(eventId, emails)
+  }
+
   async listAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {
     return this.rsvpRepo.findAttendingByEmail(email)
   }
