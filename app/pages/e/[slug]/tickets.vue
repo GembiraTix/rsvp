@@ -31,9 +31,9 @@ useSeoMeta({
   description: () => event.value?.description || '',
 })
 
-function goToCheckout() {
+function goToRegister() {
   const cartParam = encode(selectedLines.value)
-  router.push(`/e/${eventSlug.value}/checkout?cart=${cartParam}`)
+  router.push(`/e/${eventSlug.value}/register?cart=${cartParam}`)
 }
 </script>
 
@@ -71,10 +71,7 @@ function goToCheckout() {
 
     <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       <section class="lg:col-span-7 space-y-4">
-        <template
-          v-for="cartLine of cart"
-          :key="cartLine.ticketType.id"
-        >
+        <template v-for="cartLine of cart" :key="cartLine.ticketType.id">
           <TicketSelect
             v-model="cartLine.qty"
             :line="cartLine"
@@ -122,9 +119,9 @@ function goToCheckout() {
             size="lg"
             block
             :disabled="subtotal === 0"
-            @click="goToCheckout"
+            @click="goToRegister"
           >
-            Lanjut ke Pembayaran
+            Lanjut ke Data Peserta
           </UButton>
         </UCard>
       </section>
