@@ -37,8 +37,7 @@ const { fetchPublicByEvent } = useTicketTypes()
 const { data: ticketTypesRes } = await fetchPublicByEvent(eventSlug)
 const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 
-const { cart, selectedLines, encode, decode, remove } =
-  useTicketCart(ticketTypes)
+const { cart, selectedLines, encode, decode } = useTicketCart(ticketTypes)
 
 const { load: loadDraft, save: saveDraft } = useAttendeeDraft(eventSlug)
 
@@ -163,23 +162,6 @@ function emailFlag(unit: AttendeeDraft): 'duplicate' | 'registered' | null {
   return null
 }
 
-function removeUnit(unit: AttendeeDraft) {
-  const line = cart.value.find((c) => c.ticketType.id === unit.ticketTypeId)
-  if (!line) return
-
-  const newQty = line.qty - 1
-  if (isValidTicketQty(line.ticketType, newQty)) {
-    line.qty = newQty
-    const index = state.attendees.indexOf(unit)
-    if (index !== -1) state.attendees.splice(index, 1)
-  } else {
-    remove(line.ticketType.id)
-    state.attendees = state.attendees.filter(
-      (u) => u.ticketTypeId !== unit.ticketTypeId,
-    )
-  }
-}
-
 async function handleContinue() {
   submitError.value = ''
 
@@ -205,7 +187,7 @@ async function handleContinue() {
     registeredEmails.value = res.data.registered
     if (res.data.registered.length > 0) {
       submitError.value =
-        'Beberapa peserta sudah terdaftar untuk acara ini. Ubah email atau hapus peserta yang ditandai.'
+        'Beberapa peserta sudah terdaftar untuk acara ini. Ubah data peserta yang ditandai.'
       return
     }
 
@@ -270,15 +252,6 @@ async function handleContinue() {
                 <p class="font-medium text-on-surface">
                   Peserta {{ count + 1 }}
                 </p>
-                <UButton
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  icon="i-lucide-trash-2"
-                  @click="removeUnit(unit)"
-                >
-                  Hapus
-                </UButton>
               </div>
             </template>
 
@@ -296,7 +269,7 @@ async function handleContinue() {
                 color="error"
                 variant="subtle"
                 icon="i-lucide-user-check"
-                description="Email ini sudah terdaftar untuk acara ini. Ubah email atau hapus peserta ini."
+                description="Email ini sudah terdaftar untuk acara ini. Ubah data peserta ini atau ubah tiket yang dipesan."
               />
 
               <div class="grid sm:grid-cols-2 gap-4">
