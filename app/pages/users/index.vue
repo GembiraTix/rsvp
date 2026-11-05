@@ -7,7 +7,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'Dasbor Saya - Bursa Kerja FPCE',
+  title: 'Dasbor Saya - GembiraTix',
 })
 
 const supabase = useSupabaseClient()
