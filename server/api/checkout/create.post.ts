@@ -5,6 +5,16 @@ import {
   CheckoutValidationError,
   resolveCheckoutLines,
 } from '#server/services/checkout-validation'
+import { normalizeWhatsapp } from '../../../shared/utils/whatsapp'
+
+const attendeeSchema = z.object({
+  name: z.string().trim().min(1, 'Nama lengkap wajib diisi.'),
+  identityType: z.enum(['ktp', 'sim', 'paspor', 'kartu_pelajar']),
+  identityNumber: z.string().trim().min(1, 'Nomor identitas wajib diisi.'),
+  email: z.email('Masukkan alamat email yang valid.'),
+  whatsapp: z.string().min(1, 'Nomor WhatsApp wajib diisi.'),
+  gender: z.enum(['laki-laki', 'perempuan']),
+})
 
 const checkoutSchema = z.object({
   eventId: z.coerce.number().positive(),
@@ -12,6 +22,7 @@ const checkoutSchema = z.object({
     z.object({
       ticketTypeId: z.coerce.number().positive(),
       qty: z.coerce.number().int().positive(),
+      attendees: z.array(attendeeSchema),
     }),
   ),
 })
@@ -48,7 +59,13 @@ export default defineEventHandler(async (event) => {
 
   let linesWithPrice
   try {
-    linesWithPrice = resolveCheckoutLines(ticketTypes, body.lines)
+    linesWithPrice = resolveCheckoutLines(
+      ticketTypes,
+      body.lines.map((line) => ({
+        ticketTypeId: line.ticketTypeId,
+        qty: line.qty,
+      })),
+    )
   } catch (err: unknown) {
     if (err instanceof CheckoutValidationError) {
       throw createError({
@@ -59,11 +76,19 @@ export default defineEventHandler(async (event) => {
     throw err
   }
 
+  const linesWithAttendees = linesWithPrice.map((line, i) => ({
+    ...line,
+    attendees: (body.lines[i]?.attendees ?? []).map((attendee) => ({
+      ...attendee,
+      whatsapp: normalizeWhatsapp(attendee.whatsapp),
+    })),
+  }))
+
   try {
     const result = await orderService.createOrder({
       eventId: body.eventId,
       userId: auth.user.sub,
-      lines: linesWithPrice,
+      lines: linesWithAttendees,
     })
 
     return {
@@ -75,6 +100,12 @@ export default defineEventHandler(async (event) => {
       },
     }
   } catch (err: unknown) {
+    if (err instanceof CheckoutValidationError) {
+      throw createError({
+        statusCode: err.statusCode,
+        statusMessage: err.message,
+      })
+    }
     const message =
       err instanceof Error ? err.message : 'Gagal membuat pesanan.'
     throw createError({

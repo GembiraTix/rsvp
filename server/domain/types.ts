@@ -128,6 +128,19 @@ export type UpdateTicketTypeInput = Partial<
   Omit<CreateTicketTypeInput, 'event_id' | 'sort_order'>
 >
 
+export type AttendeeGender = 'laki-laki' | 'perempuan'
+
+export type IdentityType = 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
+
+export type OrderAttendeeInput = {
+  name: string
+  identityType: IdentityType
+  identityNumber: string
+  email: string
+  whatsapp: string
+  gender: AttendeeGender
+}
+
 export type OrderStatus =
   | 'draft'
   | 'pending'
@@ -220,5 +233,6 @@ export interface CreateOrderInput {
     name: string
     unitPrice: number
     qty: number
+    attendees: OrderAttendeeInput[]
   }[]
 }

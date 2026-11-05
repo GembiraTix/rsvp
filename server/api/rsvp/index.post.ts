@@ -22,7 +22,11 @@ export default defineEventHandler(async (event) => {
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : 'Gagal membuat reservasi.'
-    const statusCode = message === 'Kuota penuh' ? 409 : 400
+    const statusCode =
+      message === 'Kuota penuh' ||
+      message === 'Email sudah terdaftar untuk acara ini.'
+        ? 409
+        : 400
     throw createError({
       statusCode,
       statusMessage: message,
