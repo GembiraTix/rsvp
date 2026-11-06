@@ -1,3 +1,18 @@
+<script lang="ts" setup>
+import type { NavigationMenuItem } from '@nuxt/ui/runtime/components/NavigationMenu.vue.js'
+
+const navItems: NavigationMenuItem[] = [
+  {
+    label: 'Dashboard',
+    to: '/admin/',
+  },
+  {
+    label: 'User management',
+    to: '/admin/users',
+  },
+]
+</script>
+
 <template>
   <UDashboardGroup>
     <UDashboardSidebar>
@@ -10,10 +25,22 @@
           <span>GembiraTix</span>
         </NuxtLink>
       </template>
+
+      <template #default>
+        <UNavigationMenu orientation="vertical" :items="navItems" />
+      </template>
     </UDashboardSidebar>
 
-    <section class="space-y-4 mx-auto px-12 py-12">
-      <slot />
-    </section>
+    <UDashboardPanel>
+      <UDashboardNavbar>
+        <template #left>
+          <UNavigationMenu :items="[{ label: 'Beranda', to: '/' }]" />
+        </template>
+      </UDashboardNavbar>
+
+      <section class="space-y-4 mx-auto px-12 py-12">
+        <slot />
+      </section>
+    </UDashboardPanel>
   </UDashboardGroup>
 </template>
