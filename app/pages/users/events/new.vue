@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
-import { useSiteName } from '@/composables/useSiteName'
 import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 import { getLocalTimeZone, now, ZonedDateTime } from '@internationalized/date'
 
@@ -9,9 +8,8 @@ definePageMeta({
   middleware: 'auth',
 })
 
-const siteName = useSiteName()
 useSeoMeta({
-  title: `Buat Acara Baru - ${siteName}`,
+  title: `Buat Acara Baru - GembiraTix`,
 })
 
 const user = useSupabaseUser()

@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { id } from '@nuxt/ui/locale'
-import { useSiteName } from '@/composables/useSiteName'
-import { ref } from 'vue'
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 useHead({
@@ -12,9 +10,8 @@ useHead({
   },
 })
 
-const siteName = useSiteName()
-const title = `${siteName} - RSVP Acara`
-const description = `Portal RSVP untuk ${siteName}`
+const title = `RSVP Acara - GembiraTix`
+const description = `Portal RSVP untuk GembiraTix`
 
 useSeoMeta({
   title,
@@ -46,14 +43,14 @@ if (!user.value) {
 
 <template>
   <UApp :locale="id">
-    <UHeader :title="useSiteName()">
+    <UHeader title="GembiraTix">
       <template #left>
         <img src="/logo/gembiratix.svg" width="40" height="40" alt="" />
         <NuxtLink
           to="/"
           class="flex items-center gap-2 font-bold text-on-surface text-base hover:opacity-90 transition-opacity"
         >
-          <span>{{ useSiteName() }}</span>
+          <span>GembiraTix</span>
         </NuxtLink>
       </template>
 

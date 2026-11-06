@@ -7,11 +7,8 @@ const token = computed(() => route.params.token as string)
 const { fetchByToken } = useRsvp()
 const { data: rsvp, error } = await fetchByToken(token)
 
-import { useSiteName } from '@/composables/useSiteName'
-const siteName = useSiteName()
-
 useSeoMeta({
-  title: `Kelola RSVP - ${siteName}`,
+  title: `Kelola RSVP - GembiraTix`,
 })
 </script>
 
