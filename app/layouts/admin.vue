@@ -32,15 +32,19 @@ const navItems: NavigationMenuItem[] = [
     </UDashboardSidebar>
 
     <UDashboardPanel>
-      <UDashboardNavbar>
-        <template #left>
-          <UNavigationMenu :items="[{ label: 'Beranda', to: '/' }]" />
-        </template>
-      </UDashboardNavbar>
+      <template #header>
+        <UDashboardNavbar>
+          <template #left>
+            <UNavigationMenu :items="[{ label: 'Beranda', to: '/' }]" />
+          </template>
+        </UDashboardNavbar>
+      </template>
 
-      <section class="space-y-4 mx-auto px-12 py-12">
-        <slot />
-      </section>
+      <template #body>
+        <section class="max-w-6xl mx-auto w-full space-y-4">
+          <slot />
+        </section>
+      </template>
     </UDashboardPanel>
   </UDashboardGroup>
 </template>
