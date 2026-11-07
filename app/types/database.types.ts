@@ -48,7 +48,6 @@ export type Database = {
           subject: string
           updated_at: string
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           error_message?: string | null
@@ -97,7 +96,6 @@ export type Database = {
           refund_default_cents: number | null
           updated_at: string
         }
-        ComputedFields: never
         Insert: {
           admin_fee_fixed_cents?: number
           admin_fee_mode?: string
@@ -134,6 +132,8 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          custom_question_label: string | null
+          custom_question_required: boolean
           deleted_at: string | null
           description: string | null
           ends_at: string | null
@@ -146,10 +146,11 @@ export type Database = {
           starts_at: string | null
           title: string | null
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           created_by: string
+          custom_question_label?: string | null
+          custom_question_required?: boolean
           deleted_at?: string | null
           description?: string | null
           ends_at?: string | null
@@ -165,6 +166,8 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          custom_question_label?: string | null
+          custom_question_required?: boolean
           deleted_at?: string | null
           description?: string | null
           ends_at?: string | null
@@ -189,7 +192,6 @@ export type Database = {
       }
       order_items: {
         Row: {
-          attendee_data: NonNullable<Json>
           created_at: string
           id: number
           order_id: string
@@ -198,9 +200,7 @@ export type Database = {
           total: number
           unit_price: number
         }
-        ComputedFields: never
         Insert: {
-          attendee_data: NonNullable<Json>
           created_at?: string
           id?: number
           order_id: string
@@ -210,7 +210,6 @@ export type Database = {
           unit_price?: number
         }
         Update: {
-          attendee_data?: NonNullable<Json>
           created_at?: string
           id?: number
           order_id?: string
@@ -260,7 +259,6 @@ export type Database = {
           updated_at: string
           user_id: string
         }
-        ComputedFields: never
         Insert: {
           admin_fee?: number
           checkout_url: string
@@ -333,12 +331,11 @@ export type Database = {
           midtrans_order_id: string | null
           midtrans_transaction_id: string | null
           order_id: string | null
-          payload: NonNullable<Json>
+          payload: Json
           processed: boolean
           processed_at: string | null
           signature_valid: boolean | null
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           error?: string | null
@@ -347,7 +344,7 @@ export type Database = {
           midtrans_order_id?: string | null
           midtrans_transaction_id?: string | null
           order_id?: string | null
-          payload: NonNullable<Json>
+          payload: Json
           processed?: boolean
           processed_at?: string | null
           signature_valid?: boolean | null
@@ -360,7 +357,7 @@ export type Database = {
           midtrans_order_id?: string | null
           midtrans_transaction_id?: string | null
           order_id?: string | null
-          payload?: NonNullable<Json>
+          payload?: Json
           processed?: boolean
           processed_at?: string | null
           signature_valid?: boolean | null
@@ -378,34 +375,45 @@ export type Database = {
       rsvps: {
         Row: {
           created_at: string
+          custom_question_answer: string | null
           email: string | null
           event_id: number | null
+          gender: Database['public']['Enums']['attendee_gender'] | null
           id: number
+          identity_number: string | null
+          identity_type: Database['public']['Enums']['identity_type'] | null
           is_attending: boolean
           name: string
-          organization: string | null
           token: string
+          whatsapp: string | null
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
+          custom_question_answer?: string | null
           email?: string | null
           event_id?: number | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           is_attending?: boolean
           name: string
-          organization?: string | null
           token: string
+          whatsapp?: string | null
         }
         Update: {
           created_at?: string
+          custom_question_answer?: string | null
           email?: string | null
           event_id?: number | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           is_attending?: boolean
           name?: string
-          organization?: string | null
           token?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -423,7 +431,6 @@ export type Database = {
           id: number
           name: string
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           id?: number
@@ -453,7 +460,6 @@ export type Database = {
           sort_order: number
           updated_at: string
         }
-        ComputedFields: never
         Insert: {
           capacity?: number | null
           category_id?: number
@@ -512,12 +518,15 @@ export type Database = {
           checkin_by: string
           created_at: string
           fields: Json | null
+          gender: Database['public']['Enums']['attendee_gender'] | null
           id: number
+          identity_number: string | null
+          identity_type: Database['public']['Enums']['identity_type'] | null
           order_id: string
           ticket_type_id: number
           token: string
+          whatsapp: string | null
         }
-        ComputedFields: never
         Insert: {
           attendee_email: string
           attendee_name: string
@@ -526,10 +535,14 @@ export type Database = {
           checkin_by: string
           created_at?: string
           fields?: Json | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           order_id: string
           ticket_type_id: number
           token?: string
+          whatsapp?: string | null
         }
         Update: {
           attendee_email?: string
@@ -539,10 +552,14 @@ export type Database = {
           checkin_by?: string
           created_at?: string
           fields?: Json | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           order_id?: string
           ticket_type_id?: number
           token?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -576,7 +593,6 @@ export type Database = {
           name: string | null
           role: Database['public']['Enums']['user_role']
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           email: string
@@ -599,9 +615,11 @@ export type Database = {
     }
     Functions: {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
-      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      attendee_gender: 'laki-laki' | 'perempuan'
+      identity_type: 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
       order_status:
         | 'draft'
         | 'pending'
@@ -749,6 +767,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      attendee_gender: ['laki-laki', 'perempuan'],
+      identity_type: ['ktp', 'sim', 'paspor', 'kartu_pelajar'],
       order_status: [
         'draft',
         'pending',
