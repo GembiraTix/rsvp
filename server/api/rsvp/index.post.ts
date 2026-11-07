@@ -5,7 +5,11 @@ const bodySchema = z.object({
   eventId: z.number(),
   name: z.string().min(1, 'Nama lengkap wajib diisi.'),
   email: z.email('Masukkan alamat email yang valid.'),
-  organization: z.string().optional(),
+  customQuestionAnswer: z.string().optional(),
+  identityType: z.enum(['ktp', 'sim', 'paspor', 'kartu_pelajar']).optional(),
+  identityNumber: z.string().optional(),
+  whatsapp: z.string().optional(),
+  gender: z.enum(['laki-laki', 'perempuan']).optional(),
 })
 
 export default defineEventHandler(async (event) => {

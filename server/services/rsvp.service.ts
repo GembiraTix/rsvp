@@ -3,9 +3,16 @@ import type {
   IEventRepository,
   IEmailLogRepository,
 } from '#server/repositories/interfaces'
-import type { Rsvp, RsvpWithEvent } from '#server/domain/types'
+import type {
+  AttendeeGender,
+  IdentityType,
+  Rsvp,
+  RsvpWithEvent,
+} from '#server/domain/types'
 import type { ILogger } from './logger.service'
 import { useResend } from '#server/utils/resend'
+import { isValidWhatsapp, normalizeWhatsapp } from '../../shared/utils/whatsapp'
+import { PostgrestError } from '@supabase/supabase-js'
 
 export class RsvpService {
   constructor(
@@ -19,7 +26,11 @@ export class RsvpService {
     eventId: number
     name: string
     email: string
-    organization?: string
+    customQuestionAnswer?: string
+    identityType?: IdentityType
+    identityNumber?: string
+    whatsapp?: string
+    gender?: AttendeeGender
     origin: string
   }): Promise<Rsvp> {
     this.logger.info('Creating RSVP', {
@@ -30,6 +41,24 @@ export class RsvpService {
     const event = await this.eventRepo.findById(input.eventId)
     if (!event) {
       throw new Error('Acara tidak ditemukan')
+    }
+
+    const isCustomQExists = Boolean(event.custom_question_label)
+    const isCustomQAnswerEmpty = !input.customQuestionAnswer?.trim()
+    if (
+      isCustomQExists &&
+      event.custom_question_required &&
+      isCustomQAnswerEmpty
+    ) {
+      throw new Error(`${event.custom_question_label} wajib diisi.`)
+    }
+
+    let whatsapp: string | null = null
+    if (input.whatsapp?.trim()) {
+      whatsapp = normalizeWhatsapp(input.whatsapp)
+      if (!isValidWhatsapp(whatsapp)) {
+        throw new Error('Nomor WhatsApp tidak valid.')
+      }
     }
 
     const existing = await this.rsvpRepo.findByEventAndEmail(
@@ -52,14 +81,30 @@ export class RsvpService {
     }
 
     const token = crypto.randomUUID()
-    const rsvp = await this.rsvpRepo.create({
-      event_id: input.eventId,
-      name: input.name,
-      email: input.email,
-      organization: input.organization ?? null,
-      token,
-      is_attending: true,
-    })
+    let rsvp: Rsvp
+    try {
+      rsvp = await this.rsvpRepo.create({
+        event_id: input.eventId,
+        name: input.name,
+        email: input.email,
+        custom_question_answer: input.customQuestionAnswer?.trim() || null,
+        identity_type: input.identityType ?? null,
+        identity_number: input.identityNumber?.trim() || null,
+        whatsapp,
+        gender: input.gender ?? null,
+        token,
+        is_attending: true,
+      })
+    } catch (err: unknown) {
+      // Case-variant duplicates slip past findByEventAndEmail and hit the
+      // unique index on (event_id, lower(email)) instead
+      if (err instanceof PostgrestError && err.code === '23505') {
+        throw new Error('Email sudah terdaftar untuk acara ini.', {
+          cause: err,
+        })
+      }
+      throw new Error('Gagal membuat reservasi.', { cause: err })
+    }
 
     const ticketUrl = `${input.origin}/rsvp/${rsvp.token}`
     const subject = `Konfirmasi RSVP: ${event.title}`

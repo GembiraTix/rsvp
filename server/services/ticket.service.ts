@@ -2,7 +2,7 @@ import type {
   ITicketRepository,
   IRsvpRepository,
 } from '#server/repositories/interfaces'
-import type { Ticket } from '#server/domain/types'
+import type { CreateRsvpInput, Ticket } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 
 export class TicketService {
@@ -33,14 +33,7 @@ export class TicketService {
       ).map((email) => email.toLowerCase()),
     )
 
-    const items: {
-      event_id: number
-      name: string
-      email: string | null
-      organization: string | null
-      token: string
-      is_attending: boolean
-    }[] = []
+    const items: CreateRsvpInput[] = []
     let skipped = 0
 
     for (const ticket of tickets) {
@@ -58,7 +51,11 @@ export class TicketService {
         event_id: input.eventId,
         name: ticket.attendee_name,
         email: ticket.attendee_email,
-        organization: null,
+        custom_question_answer: null,
+        identity_type: ticket.identity_type,
+        identity_number: ticket.identity_number,
+        whatsapp: ticket.whatsapp,
+        gender: ticket.gender,
         token: crypto.randomUUID(),
         is_attending: true,
       })
