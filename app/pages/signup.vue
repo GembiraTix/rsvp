@@ -119,106 +119,108 @@ async function handleResendConfirmation() {
 </script>
 
 <template>
-  <header
-    v-if="currentAuthState === 'waiting_confirmation'"
-    class="text-center space-y-1 bg-surface-container px-16 py-12 rounded-md"
-  >
-    <h1 class="text-3xl font-bold text-on-surface">Akun berhasil dibuat!</h1>
-    <p class="text-on-surface mt-2">
-      Silahkan cek email anda. Jika tidak ada di inbox, cek spam ya
-    </p>
-
-    <div class="my-4 space-y-2">
-      <p class="text-on-surface-variant">Tidak mendapatkan email?</p>
-
-      <UButton
-        @click="handleResendConfirmation"
-        size="lg"
-        variant="outline"
-        label="kirimkan ulang email konfirmasi"
-      />
-    </div>
-  </header>
-
-  <UCard v-else class="border-outline shadow-md">
-    <template #header>
-      <div class="text-center space-y-1">
-        <h1 class="text-2xl font-bold text-on-surface">Buat Akun</h1>
-        <p class="text-on-surface-variant">Daftar untuk membuat akun baru</p>
-      </div>
-    </template>
-
-    <UAlert
-      v-if="errorMessage"
-      title="Ada kesalahan!"
-      :description="errorMessage"
-      color="error"
-      icon="i-lucide-triangle-alert"
-      variant="subtle"
-    />
-
-    <UForm
-      :schema="formStateSchema"
-      :state="formState"
-      class="space-y-4"
-      @submit="handleSignUp"
+  <div class="flex flex-col gap-6">
+    <header
+      v-if="currentAuthState === 'waiting_confirmation'"
+      class="text-center space-y-1 bg-surface-container px-16 py-12 rounded-md"
     >
-      <UFormField label="Nama lengkap" name="name">
-        <UInput
-          id="name"
-          v-model="formState.name"
-          placeholder="Andi Johan"
-          name="name"
-          type="text"
-          class="w-full"
-        />
-      </UFormField>
-      <UFormField label="Email" name="email">
-        <UInput
-          id="email"
-          v-model="formState.email"
-          placeholder="andi@johan.com"
-          name="email"
-          type="email"
-          class="w-full"
-          required
-        />
-      </UFormField>
+      <h1 class="text-3xl font-bold text-on-surface">Akun berhasil dibuat!</h1>
+      <p class="text-on-surface mt-2">
+        Silahkan cek email anda. Jika tidak ada di inbox, cek spam ya
+      </p>
 
-      <UFormField label="Kata Sandi" name="password">
-        <UInput
-          id="password"
-          v-model="formState.password"
-          placeholder="••••••••"
-          name="password"
-          type="password"
-          class="w-full"
-          required
-        />
-      </UFormField>
+      <div class="my-4 space-y-2">
+        <p class="text-on-surface-variant">Tidak mendapatkan email?</p>
 
-      <UButton
-        label="Daftar"
-        type="submit"
-        size="lg"
-        class="w-full justify-center"
-        :loading="isLoading"
+        <UButton
+          @click="handleResendConfirmation"
+          size="lg"
+          variant="outline"
+          label="kirimkan ulang email konfirmasi"
+        />
+      </div>
+    </header>
+
+    <UCard v-else class="border-outline shadow-md">
+      <template #header>
+        <div class="text-center space-y-1">
+          <h1 class="text-2xl font-bold text-on-surface">Buat Akun</h1>
+          <p class="text-on-surface-variant">Daftar untuk membuat akun baru</p>
+        </div>
+      </template>
+
+      <UAlert
+        v-if="errorMessage"
+        title="Ada kesalahan!"
+        :description="errorMessage"
+        color="error"
+        icon="i-lucide-triangle-alert"
+        variant="subtle"
       />
-    </UForm>
 
-    <template #footer>
-      <UButton
-        to="/login"
-        variant="ghost"
-        class="w-full justify-center"
-        label="Sudah punya akun? Masuk"
-      />
-    </template>
-  </UCard>
+      <UForm
+        :schema="formStateSchema"
+        :state="formState"
+        class="space-y-4"
+        @submit="handleSignUp"
+      >
+        <UFormField label="Nama lengkap" name="name">
+          <UInput
+            id="name"
+            v-model="formState.name"
+            placeholder="Andi Johan"
+            name="name"
+            type="text"
+            class="w-full"
+          />
+        </UFormField>
+        <UFormField label="Email" name="email">
+          <UInput
+            id="email"
+            v-model="formState.email"
+            placeholder="andi@johan.com"
+            name="email"
+            type="email"
+            class="w-full"
+            required
+          />
+        </UFormField>
 
-  <div class="text-center">
-    <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
-      Kembali ke beranda
-    </UButton>
+        <UFormField label="Kata Sandi" name="password">
+          <UInput
+            id="password"
+            v-model="formState.password"
+            placeholder="••••••••"
+            name="password"
+            type="password"
+            class="w-full"
+            required
+          />
+        </UFormField>
+
+        <UButton
+          label="Daftar"
+          type="submit"
+          size="lg"
+          class="w-full justify-center"
+          :loading="isLoading"
+        />
+      </UForm>
+
+      <template #footer>
+        <UButton
+          to="/login"
+          variant="ghost"
+          class="w-full justify-center"
+          label="Sudah punya akun? Masuk"
+        />
+      </template>
+    </UCard>
+
+    <div class="text-center">
+      <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
+        Kembali ke beranda
+      </UButton>
+    </div>
   </div>
 </template>
