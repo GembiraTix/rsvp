@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { id } from '@nuxt/ui/locale'
 import type { NavigationMenuItem } from '@nuxt/ui'
 
@@ -21,24 +22,39 @@ useSeoMeta({
 })
 
 const user = useSupabaseUser()
-const navItems: NavigationMenuItem[] = [
-  {
-    label: 'Beranda',
-    to: '/',
-  },
-  {
-    label: 'Dasbor',
-    to: '/users',
-  },
-]
 
-if (!user.value) {
-  navItems.push({
-    label: 'Masuk',
-    to: '/login',
-    type: 'link',
-  })
-}
+const navItems = computed<NavigationMenuItem[]>(() => {
+  const items: NavigationMenuItem[] = [
+    {
+      label: 'Beranda',
+      to: '/',
+    },
+  ]
+
+  if (user.value) {
+    if (['admin', 'super_admin'].includes(user.value.app_metadata?.role)) {
+      items.push({
+        label: 'Dasbor',
+        to: '/admin',
+      })
+    }
+
+    items.push({
+      label: user.value?.email,
+      to: '/users',
+    })
+  }
+
+  if (!user.value) {
+    items.push({
+      label: 'Masuk',
+      to: '/login',
+      type: 'link',
+    })
+  }
+
+  return items
+})
 </script>
 
 <template>
