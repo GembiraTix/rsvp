@@ -50,7 +50,11 @@ export function useRsvp() {
     eventId: number
     name: string
     email: string
-    organization?: string
+    customQuestionAnswer?: string
+    identityType?: string
+    identityNumber?: string
+    whatsapp?: string
+    gender?: string
   }) =>
     $fetch<{ success: boolean; token: string }>('/api/rsvp', {
       method: 'POST',

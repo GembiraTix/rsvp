@@ -41,6 +41,8 @@ const formStateSchema = z
     startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
     endsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
     description: z.string().optional(),
+    customQuestionLabel: z.string().optional(),
+    customQuestionRequired: z.boolean(),
     image: z
       .instanceof(File, { message: 'URL gambar tidak valid.' })
       .optional()
@@ -108,6 +110,8 @@ const formState = shallowReactive<EditFormState>({
   description: oldEvent.value.description || undefined,
   imageUrl: oldEvent.value.image_url || undefined,
   image: undefined,
+  customQuestionLabel: oldEvent.value.custom_question_label || '',
+  customQuestionRequired: oldEvent.value.custom_question_required || false,
 })
 
 watch(
@@ -146,6 +150,8 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
       endsAt: e.data.endsAt?.toDate().toISOString(),
       description: e.data.description,
       imageUrl: e.data.imageUrl,
+      customQuestionLabel: e.data.customQuestionLabel || null,
+      customQuestionRequired: e.data.customQuestionRequired,
     })
     editSuccessMessage.value = 'Acara berhasil diperbarui!'
     setTimeout(() => {
@@ -275,6 +281,34 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
             placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
             name="description"
             class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Pertanyaan tambahan"
+          name="customQuestionLabel"
+          help="Kosongkan bila tidak ada. Jawaban tersimpan pada data peserta."
+          class="col-span-full"
+        >
+          <UInput
+            id="edit-custom-question-label"
+            v-model="formState.customQuestionLabel"
+            placeholder="contoh: Angkatan"
+            name="customQuestionLabel"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Pertanyaan tambahan wajib?"
+          name="customQuestionRequired"
+          class="col-span-full"
+        >
+          <UCheckbox
+            id="edit-custom-question-required"
+            v-model="formState.customQuestionRequired"
+            name="customQuestionRequired"
+            :disabled="!formState.customQuestionLabel"
           />
         </UFormField>
 

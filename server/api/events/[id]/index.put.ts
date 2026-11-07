@@ -21,6 +21,8 @@ const updateEventSchema = z.object({
     .positive('Batas pendaftaran tidak boleh negatif.')
     .optional()
     .nullable(),
+  customQuestionLabel: z.string().optional().nullable(),
+  customQuestionRequired: z.boolean().optional(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -45,6 +47,8 @@ export default defineEventHandler(async (event) => {
       description: body.description,
       imageUrl: body.imageUrl,
       registrationLimit: body.registrationLimit,
+      customQuestionLabel: body.customQuestionLabel,
+      customQuestionRequired: body.customQuestionRequired,
     })
 
     return { success: true, data: updatedEvent }
