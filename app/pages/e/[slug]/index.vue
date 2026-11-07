@@ -239,24 +239,14 @@ const sidebarPanel = computed(() =>
             />
           </div>
 
-          <!-- authenticated RSVP -->
-          <template v-else-if="sidebarPanel === 'rsvp_form'">
-            <EventRsvpForm
-              mode="authenticated"
-              :event-id="event.id"
-              :event-title="event.title"
-              :profile="profile"
-              @registered="handleRegistered"
-            />
-          </template>
-
-          <!-- Guest Form State -->
           <template v-else>
             <EventRsvpForm
-              mode="guest"
+              :mode="sidebarPanel === 'rsvp_form' ? 'authenticated' : 'guest'"
               :event-id="event.id"
               :event-title="event.title"
               :profile="profile"
+              :custom-question-label="event.custom_question_label"
+              :custom-question-required="event.custom_question_required"
               @registered="handleRegistered"
             />
           </template>

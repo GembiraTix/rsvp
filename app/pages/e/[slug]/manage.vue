@@ -176,7 +176,10 @@ const filteredAttendees = computed(() => {
     (a) =>
       a.name.toLowerCase().includes(q) ||
       (a.email && a.email.toLowerCase().includes(q)) ||
-      (a.organization && a.organization.toLowerCase().includes(q)),
+      (a.custom_question_answer &&
+        a.custom_question_answer.toLowerCase().includes(q)) ||
+      (a.whatsapp && a.whatsapp.includes(q)) ||
+      (a.identity_number && a.identity_number.toLowerCase().includes(q)),
   )
 })
 
@@ -189,9 +192,25 @@ const attendeesColumns: TableColumn<Rsvp>[] = [
     accessorKey: 'email',
     header: 'Email',
   },
+  ...(event.value?.custom_question_label
+    ? [
+        {
+          accessorKey: 'custom_question_answer',
+          header: event.value.custom_question_label,
+        },
+      ]
+    : []),
   {
-    accessorKey: 'organization',
-    header: 'Organisasi',
+    accessorKey: 'whatsapp',
+    header: 'WhatsApp',
+  },
+  {
+    id: 'identity',
+    header: 'Identitas',
+  },
+  {
+    accessorKey: 'gender',
+    header: 'Jenis Kelamin',
   },
   { id: 'action', header: 'Aksi' },
 ]
@@ -206,12 +225,28 @@ function csvEscape(value: string | number | boolean): string {
 
 function exportCSV() {
   if (!attendees.value || !event.value) return
-  const headers = ['ID', 'Nama', 'Email', 'Organisasi', 'Tanggal RSVP', 'Hadir']
+  const customLabel = event.value.custom_question_label
+  const headers = [
+    'ID',
+    'Nama',
+    'Email',
+    ...(customLabel ? [customLabel] : []),
+    'WhatsApp',
+    'Tipe Identitas',
+    'Nomor Identitas',
+    'Jenis Kelamin',
+    'Tanggal RSVP',
+    'Hadir',
+  ]
   const rows = attendees.value.map((a) => [
     a.id,
     a.name,
     a.email || '',
-    a.organization || '',
+    ...(customLabel ? [a.custom_question_answer || ''] : []),
+    a.whatsapp || '',
+    a.identity_type || '',
+    a.identity_number || '',
+    a.gender || '',
     a.created_at,
     a.is_attending,
   ])
@@ -433,6 +468,13 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
               />
 
               <UTable :data="filteredAttendees" :columns="attendeesColumns">
+                <template #identity-cell="{ row }">
+                  {{
+                    [row.original.identity_type, row.original.identity_number]
+                      .filter(Boolean)
+                      .join(' · ') || '-'
+                  }}
+                </template>
                 <template #action-cell="{ row }">
                   <UButton
                     size="xs"
