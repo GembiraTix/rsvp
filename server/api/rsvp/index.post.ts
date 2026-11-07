@@ -17,12 +17,12 @@ export default defineEventHandler(async (event) => {
   const service = await useRsvpService(event)
 
   try {
-    const rsvp = await service.createRsvp({
+    const { rsvp, emailSent } = await service.createRsvp({
       ...body,
       origin: getRequestURL(event).origin,
     })
 
-    return { success: true, token: rsvp.token }
+    return { success: true, token: rsvp.token, emailSent }
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : 'Gagal membuat reservasi.'

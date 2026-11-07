@@ -21,6 +21,7 @@ const { submit } = useRsvp()
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const isConfirmOpen = ref(false)
+const submitResult = ref<{ token: string; emailSent: boolean } | null>(null)
 
 const identityTypes = ['ktp', 'sim', 'paspor', 'kartu_pelajar'] as const
 const genders = ['laki-laki', 'perempuan'] as const
@@ -81,6 +82,7 @@ const form = reactive<RsvpForm>({
 
 async function submitRsvp(values: RsvpForm) {
   errorMessage.value = ''
+  submitResult.value = null
   isSubmitting.value = true
 
   try {
@@ -94,6 +96,7 @@ async function submitRsvp(values: RsvpForm) {
       whatsapp: values.whatsapp || undefined,
       gender: values.gender || undefined,
     })
+    submitResult.value = { token: res.token, emailSent: res.emailSent }
     emit('registered', res.token)
   } catch (err: unknown) {
     errorMessage.value = getErrorMessage(
@@ -134,6 +137,40 @@ async function handleAuthenticatedRsvp(e: FormSubmitEvent<RsvpForm>) {
       variant="subtle"
     />
 
+    <UAlert
+      v-if="submitResult"
+      :icon="
+        submitResult.emailSent ? 'i-lucide-mail-check' : 'i-lucide-mail-warning'
+      "
+      :color="submitResult.emailSent ? 'success' : 'warning'"
+      variant="subtle"
+      :title="
+        submitResult.emailSent
+          ? 'Reservasi berhasil'
+          : 'Email konfirmasi gagal dikirim'
+      "
+    >
+      <template #description>
+        <p v-if="submitResult.emailSent">
+          Cek kotak masuk Anda untuk email konfirmasi.
+        </p>
+        <template v-else>
+          <p>Gagal mengirim email konfirmasi.</p>
+          <p>Jangan khawatir, reservasi anda tetap tercatat.</p>
+        </template>
+
+        <p>
+          Simpan tautan tiket Anda:
+          <NuxtLink
+            :to="`/rsvp/${submitResult.token}`"
+            class="text-primary font-medium underline"
+          >
+            buka tiket RSVP
+          </NuxtLink>
+        </p>
+      </template>
+    </UAlert>
+
     <UButton
       color="primary"
       size="xl"
@@ -170,12 +207,7 @@ async function handleAuthenticatedRsvp(e: FormSubmitEvent<RsvpForm>) {
             :gender-items="genderItems"
           />
 
-          <UButton
-            type="submit"
-            color="primary"
-            block
-            :loading="isSubmitting"
-          >
+          <UButton type="submit" color="primary" block :loading="isSubmitting">
             Konfirmasi RSVP
           </UButton>
         </UForm>
@@ -201,7 +233,42 @@ async function handleAuthenticatedRsvp(e: FormSubmitEvent<RsvpForm>) {
       variant="subtle"
     />
 
+    <UAlert
+      v-if="submitResult"
+      :icon="
+        submitResult.emailSent ? 'i-lucide-mail-check' : 'i-lucide-mail-warning'
+      "
+      :color="submitResult.emailSent ? 'success' : 'warning'"
+      variant="subtle"
+      :title="
+        submitResult.emailSent
+          ? 'Reservasi berhasil'
+          : 'Email konfirmasi gagal dikirim'
+      "
+    >
+      <template #description>
+        <p v-if="submitResult.emailSent">
+          Cek kotak masuk Anda untuk email konfirmasi.
+        </p>
+        <template v-else>
+          <p>Gagal mengirim email konfirmasi.</p>
+          <p>Jangan khawatir, reservasi anda tetap tercatat.</p>
+        </template>
+
+        <p>
+          Simpan tautan tiket Anda:
+          <NuxtLink
+            :to="`/rsvp/${submitResult.token}`"
+            class="text-primary font-medium underline"
+          >
+            buka tiket RSVP
+          </NuxtLink>
+        </p>
+      </template>
+    </UAlert>
+
     <UForm
+      v-else
       :schema="formSchema"
       :state="form"
       class="space-y-4"

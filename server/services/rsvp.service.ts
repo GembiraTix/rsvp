@@ -14,6 +14,11 @@ import { useResend } from '#server/utils/resend'
 import { isValidWhatsapp, normalizeWhatsapp } from '../../shared/utils/whatsapp'
 import { PostgrestError } from '@supabase/supabase-js'
 
+type RsvpCreateResult = {
+  rsvp: Rsvp
+  emailSent: boolean
+}
+
 export class RsvpService {
   constructor(
     private readonly rsvpRepo: IRsvpRepository,
@@ -32,7 +37,7 @@ export class RsvpService {
     whatsapp?: string
     gender?: AttendeeGender
     origin: string
-  }): Promise<Rsvp> {
+  }): Promise<RsvpCreateResult> {
     this.logger.info('Creating RSVP', {
       eventId: input.eventId,
       email: input.email,
@@ -121,7 +126,7 @@ export class RsvpService {
         status: 'failed',
         error: "Resend instance doesn't exist",
       })
-      return rsvp
+      return { rsvp, emailSent: false }
     }
 
     const emailHtml = buildEmailHtml({
@@ -132,6 +137,8 @@ export class RsvpService {
       ticketUrl,
     })
 
+    let emailSent = true
+
     try {
       const from = useRuntimeConfig().emailFrom
       const fromFallback = 'GembiraTix <noreply@info.gembiratix.my.id>'
@@ -141,6 +148,9 @@ export class RsvpService {
         )
       }
 
+      // error must be checked explicitly:
+      // the SDK resolves with { data: null, error }
+      // instead of throwing on API failure
       const result = await resend.emails.send({
         from: from || fromFallback,
         to: [input.email],
@@ -148,19 +158,36 @@ export class RsvpService {
         html: emailHtml,
       })
 
-      await this.emailLogRepo.log({
-        rsvpId: rsvp.id,
-        email: input.email,
-        subject,
-        status: 'sent',
-        messageId: result.data?.id ?? null,
-      })
+      if (result.error) {
+        emailSent = false
+        this.logger.error('Failed to send confirmation email', {
+          rsvpId: rsvp.id,
+          error: result.error.message,
+        })
 
-      this.logger.info('Confirmation email sent', {
-        rsvpId: rsvp.id,
-        messageId: result.data?.id,
-      })
+        await this.emailLogRepo.log({
+          rsvpId: rsvp.id,
+          email: input.email,
+          subject,
+          status: 'failed',
+          error: result.error.message,
+        })
+      } else {
+        await this.emailLogRepo.log({
+          rsvpId: rsvp.id,
+          email: input.email,
+          subject,
+          status: 'sent',
+          messageId: result.data?.id ?? null,
+        })
+
+        this.logger.info('Confirmation email sent', {
+          rsvpId: rsvp.id,
+          messageId: result.data?.id,
+        })
+      }
     } catch (err: unknown) {
+      emailSent = false
       const errorMsg = err instanceof Error ? err.message : String(err)
       this.logger.error('Failed to send confirmation email', {
         rsvpId: rsvp.id,
@@ -177,7 +204,7 @@ export class RsvpService {
     }
 
     this.logger.info('RSVP created successfully', { rsvpId: rsvp.id })
-    return rsvp
+    return { rsvp, emailSent }
   }
 
   async getRsvpByToken(token: string): Promise<Rsvp | null> {
