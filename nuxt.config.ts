@@ -19,6 +19,10 @@ export default defineNuxtConfig({
     redirect: false,
   },
 
+  routeRules: {
+    '/admin/**': { appLayout: 'admin' },
+  },
+
   runtimeConfig: {
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',

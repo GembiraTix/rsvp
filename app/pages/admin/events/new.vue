@@ -157,134 +157,125 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
 </script>
 
 <template>
-  <div class="py-8 max-w-3xl mx-auto px-4 space-y-6">
-    <PageHeader back-to="/users" back-label="Kembali ke Dasbor" />
+  <UCard>
+    <template #header>
+      <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
+    </template>
 
-    <UCard>
-      <template #header>
-        <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
-      </template>
+    <UAlert
+      v-if="errorMessage"
+      title="Ada kesalahan!"
+      :description="errorMessage"
+      color="error"
+      icon="i-lucide-triangle-alert"
+      variant="subtle"
+    />
 
-      <UAlert
-        v-if="errorMessage"
-        title="Ada kesalahan!"
-        :description="errorMessage"
-        color="error"
-        icon="i-lucide-triangle-alert"
-        variant="subtle"
+    <UForm
+      :schema="formStateSchema"
+      :state="formState"
+      class="grid grid-cols-2 gap-4"
+      @submit="handleSubmit"
+    >
+      <UFormField
+        label="Judul Acara"
+        name="title"
+        class="col-span-full"
+        required
+      >
+        <UInput
+          id="title"
+          v-model="formState.title"
+          placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
+          name="title"
+          class="w-full"
+          size="xl"
+          required
+        />
+      </UFormField>
+
+      <UFormField
+        label="Satu hari?"
+        name="is_one_day"
+        help="Nyalakan bila acara hanya berlangsung dalam satu hari"
+        class="col-span-full"
+      >
+        <UCheckbox
+          id="is_one_day"
+          v-model="formState.is_one_day"
+          name="is_one_day"
+        />
+      </UFormField>
+
+      <EventDateTimeField
+        v-model="formState.startsAt"
+        name="startsAt"
+        label="Tanggal/waktu awal"
+        required
       />
 
-      <UForm
-        :schema="formStateSchema"
-        :state="formState"
-        class="grid grid-cols-2 gap-4"
-        @submit="handleSubmit"
-      >
-        <UFormField
-          label="Judul Acara"
-          name="title"
-          class="col-span-full"
-          required
-        >
-          <UInput
-            id="title"
-            v-model="formState.title"
-            placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
-            name="title"
-            class="w-full"
-            size="xl"
-            required
-          />
-        </UFormField>
+      <EventDateTimeField
+        v-show="!formState.is_one_day"
+        v-model="formState.endsAt"
+        name="endsAt"
+        label="Tanggal/waktu akhir"
+        :min="formState.startsAt"
+      />
 
-        <UFormField
-          label="Satu hari?"
-          name="is_one_day"
-          help="Nyalakan bila acara hanya berlangsung dalam satu hari"
-          class="col-span-full"
-        >
-          <UCheckbox
-            id="is_one_day"
-            v-model="formState.is_one_day"
-            name="is_one_day"
-          />
-        </UFormField>
-
-        <EventDateTimeField
-          v-model="formState.startsAt"
-          name="startsAt"
-          label="Tanggal/waktu awal"
-          required
-        />
-
-        <EventDateTimeField
-          v-show="!formState.is_one_day"
-          v-model="formState.endsAt"
-          name="endsAt"
-          label="Tanggal/waktu akhir"
-          :min="formState.startsAt"
-        />
-
-        <UFormField
-          label="Lokasi"
+      <UFormField label="Lokasi" name="location" class="col-span-full" required>
+        <UInput
+          id="location"
+          v-model="formState.location"
+          placeholder="contoh: Auditorium Utama / Ruang 204"
           name="location"
-          class="col-span-full"
+          class="w-full"
           required
-        >
-          <UInput
-            id="location"
-            v-model="formState.location"
-            placeholder="contoh: Auditorium Utama / Ruang 204"
-            name="location"
+        />
+      </UFormField>
+
+      <UFormField
+        label="Gambar Banner Acara"
+        name="image"
+        description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+        class="order-first col-span-full"
+      >
+        <div class="space-y-3">
+          <UFileUpload
+            v-model="formState.image"
+            accept="image/*"
+            :loading="isUploadingImage"
+            icon="i-lucide-image"
+            label="Pilih atau seret gambar banner ke sini"
+            description="PNG, JPG, WEBP hingga 5MB"
+            size="lg"
             class="w-full"
-            required
-          />
-        </UFormField>
-
-        <UFormField
-          label="Gambar Banner Acara"
-          name="image"
-          description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
-          class="order-first col-span-full"
-        >
-          <div class="space-y-3">
-            <UFileUpload
-              v-model="formState.image"
-              accept="image/*"
-              :loading="isUploadingImage"
-              icon="i-lucide-image"
-              label="Pilih atau seret gambar banner ke sini"
-              description="PNG, JPG, WEBP hingga 5MB"
-              size="lg"
-              class="w-full"
-            />
-          </div>
-        </UFormField>
-
-        <UFormField label="Deskripsi" name="description" class="col-span-full">
-          <UTextarea
-            id="description"
-            v-model="formState.description"
-            :rows="4"
-            placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
-            name="description"
-            class="w-full"
-          />
-        </UFormField>
-
-        <USeparator class="col-span-full" />
-
-        <div class="-col-end-1 flex justify-end gap-3">
-          <UButton to="/users" variant="ghost" color="neutral"> Batal </UButton>
-          <UButton
-            class="active:translate-y-1"
-            type="submit"
-            color="primary"
-            :loading="isLoading"
-            label="Publikasikan Acara"
           />
         </div>
-      </UForm>
-    </UCard>
-  </div>
+      </UFormField>
+
+      <UFormField label="Deskripsi" name="description" class="col-span-full">
+        <UTextarea
+          id="description"
+          v-model="formState.description"
+          :rows="4"
+          placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
+          name="description"
+          class="w-full"
+        />
+      </UFormField>
+
+      <USeparator class="col-span-full" />
+
+      <div class="-col-end-1 flex justify-end gap-3">
+        <UButton to="/users" variant="ghost" color="neutral"> Batal </UButton>
+        <UButton
+          class="active:translate-y-1"
+          type="submit"
+          color="primary"
+          :loading="isLoading"
+          label="Publikasikan Acara"
+        />
+      </div>
+    </UForm>
+  </UCard>
 </template>
