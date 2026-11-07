@@ -7,6 +7,7 @@ import type { UserProfile, UserRole } from '~~/server/domain/types'
 
 definePageMeta({
   middleware: 'auth',
+  layout: 'admin',
 })
 
 useSeoMeta({
@@ -162,247 +163,234 @@ function getRoleBadgeColor(role: UserRole) {
 </script>
 
 <template>
-  <div class="py-8 max-w-6xl mx-auto px-4 space-y-6">
-    <div class="flex items-center justify-between">
-      <UButton
-        to="/users"
-        variant="ghost"
-        color="neutral"
-        icon="i-lucide-arrow-left"
+  <div class="flex items-center justify-between">
+    <UButton
+      color="primary"
+      icon="i-lucide-user-plus"
+      @click="isCreateModalOpen = true"
+    >
+      Tambah Pengguna Baru
+    </UButton>
+  </div>
+
+  <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+    <template #header>
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
-        Kembali ke Dasbor
-      </UButton>
-
-      <UButton
-        color="primary"
-        icon="i-lucide-user-plus"
-        @click="isCreateModalOpen = true"
-      >
-        Tambah Pengguna Baru
-      </UButton>
-    </div>
-
-    <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-      <template #header>
-        <div
-          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        >
-          <div>
-            <h1
-              class="text-xl font-bold text-on-surface flex items-center gap-2"
-            >
-              <UIcon name="i-lucide-users" class="w-6 h-6 text-primary" />
-              Manajemen Pengguna
-            </h1>
-          </div>
-
-          <div class="w-full sm:w-72">
-            <UInput
-              v-model="searchQuery"
-              placeholder="Cari nama, email, role..."
-              icon="i-lucide-search"
-              class="w-full"
-            />
-          </div>
+        <div>
+          <h1 class="text-xl font-bold text-on-surface flex items-center gap-2">
+            <UIcon name="i-lucide-users" class="w-6 h-6 text-primary" />
+            Manajemen Pengguna
+          </h1>
         </div>
-      </template>
 
-      <div class="overflow-x-auto">
-        <table class="w-full text-left">
-          <thead
-            class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-          >
-            <tr>
-              <th class="px-6 py-3">Pengguna</th>
-              <th class="px-6 py-3">Email</th>
-              <th class="px-6 py-3">Role</th>
-              <th class="px-6 py-3">Terdaftar</th>
-              <th class="px-6 py-3 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-outline">
-            <tr
-              v-for="u in filteredUsers"
-              :key="u.id"
-              class="hover:bg-surface-container/50"
-            >
-              <td class="px-6 py-4 font-medium text-on-surface">
-                {{ u.name || '-' }}
-              </td>
-              <td class="px-6 py-4 text-on-surface-variant font-mono text-xs">
-                {{ u.email }}
-              </td>
-              <td class="px-6 py-4">
-                <UBadge :color="getRoleBadgeColor(u.role)" variant="outline">
-                  {{ u.role }}
-                </UBadge>
-              </td>
-              <td class="px-6 py-4 text-on-surface-variant text-sm">
-                {{
-                  formatDate(u.created_at, {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })
-                }}
-              </td>
-              <td class="px-6 py-4 text-right">
-                <UButton size="sm" variant="outline" @click="openRoleModal(u)">
-                  Ubah Role
-                </UButton>
-              </td>
-            </tr>
-            <tr v-if="filteredUsers.length === 0">
-              <td
-                colspan="5"
-                class="px-6 py-8 text-center text-on-surface-variant"
-              >
-                Tidak ada pengguna yang ditemukan.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="w-full sm:w-72">
+          <UInput
+            v-model="searchQuery"
+            placeholder="Cari nama, email, role..."
+            icon="i-lucide-search"
+            class="w-full"
+          />
+        </div>
       </div>
-    </UCard>
+    </template>
 
-    <UModal
-      v-model:open="isCreateModalOpen"
-      title="Tambah Pengguna Baru"
-      description="Buat akun pengguna baru dan tetapkan rolenya."
-    >
-      <template #body>
-        <UAlert
-          v-if="createErrorMessage"
-          :title="createErrorMessage"
-          icon="i-lucide-alert-circle"
-          color="error"
-          variant="subtle"
-          class="mb-4"
-        />
-
-        <UAlert
-          v-if="createSuccessMessage"
-          :title="createSuccessMessage"
-          icon="i-lucide-check-circle"
-          color="success"
-          variant="subtle"
-          class="mb-4"
-        />
-
-        <UForm
-          :schema="createUserSchema"
-          :state="createFormState"
-          class="space-y-4"
-          @submit="handleCreateUser"
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead
+          class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
         >
-          <UFormField label="Nama Lengkap" name="name" required>
-            <UInput
-              v-model="createFormState.name"
-              placeholder="contoh: Budi Pratama"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField label="Alamat Email" name="email" required>
-            <UInput
-              v-model="createFormState.email"
-              type="email"
-              placeholder="budi@example.com"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField label="Kata Sandi Awal" name="password" required>
-            <UInput
-              v-model="createFormState.password"
-              type="password"
-              placeholder="Minimal 6 karakter"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField label="Role Pengguna" name="role" required>
-            <select
-              v-model="createFormState.role"
-              class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
+          <tr>
+            <th class="px-6 py-3">Pengguna</th>
+            <th class="px-6 py-3">Email</th>
+            <th class="px-6 py-3">Role</th>
+            <th class="px-6 py-3">Terdaftar</th>
+            <th class="px-6 py-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline">
+          <tr
+            v-for="u in filteredUsers"
+            :key="u.id"
+            class="hover:bg-surface-container/50"
+          >
+            <td class="px-6 py-4 font-medium text-on-surface">
+              {{ u.name || '-' }}
+            </td>
+            <td class="px-6 py-4 text-on-surface-variant font-mono text-xs">
+              {{ u.email }}
+            </td>
+            <td class="px-6 py-4">
+              <UBadge :color="getRoleBadgeColor(u.role)" variant="outline">
+                {{ u.role }}
+              </UBadge>
+            </td>
+            <td class="px-6 py-4 text-on-surface-variant text-sm">
+              {{
+                formatDate(u.created_at, {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              }}
+            </td>
+            <td class="px-6 py-4 text-right">
+              <UButton size="sm" variant="outline" @click="openRoleModal(u)">
+                Ubah Role
+              </UButton>
+            </td>
+          </tr>
+          <tr v-if="filteredUsers.length === 0">
+            <td
+              colspan="5"
+              class="px-6 py-8 text-center text-on-surface-variant"
             >
-              <option
-                v-for="opt in roleOptions"
-                :key="opt.value"
-                :value="opt.value"
-              >
-                {{ opt.label }}
-              </option>
-            </select>
-          </UFormField>
+              Tidak ada pengguna yang ditemukan.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </UCard>
 
-          <div class="flex justify-end gap-2 pt-4 border-t border-outline">
-            <UButton
-              color="neutral"
-              variant="ghost"
-              @click="isCreateModalOpen = false"
+  <UModal
+    v-model:open="isCreateModalOpen"
+    title="Tambah Pengguna Baru"
+    description="Buat akun pengguna baru dan tetapkan rolenya."
+  >
+    <template #body>
+      <UAlert
+        v-if="createErrorMessage"
+        :title="createErrorMessage"
+        icon="i-lucide-alert-circle"
+        color="error"
+        variant="subtle"
+        class="mb-4"
+      />
+
+      <UAlert
+        v-if="createSuccessMessage"
+        :title="createSuccessMessage"
+        icon="i-lucide-check-circle"
+        color="success"
+        variant="subtle"
+        class="mb-4"
+      />
+
+      <UForm
+        :schema="createUserSchema"
+        :state="createFormState"
+        class="space-y-4"
+        @submit="handleCreateUser"
+      >
+        <UFormField label="Nama Lengkap" name="name" required>
+          <UInput
+            v-model="createFormState.name"
+            placeholder="contoh: Budi Pratama"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField label="Alamat Email" name="email" required>
+          <UInput
+            v-model="createFormState.email"
+            type="email"
+            placeholder="budi@example.com"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField label="Kata Sandi Awal" name="password" required>
+          <UInput
+            v-model="createFormState.password"
+            type="password"
+            placeholder="Minimal 6 karakter"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField label="Role Pengguna" name="role" required>
+          <select
+            v-model="createFormState.role"
+            class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
+          >
+            <option
+              v-for="opt in roleOptions"
+              :key="opt.value"
+              :value="opt.value"
             >
-              Batal
-            </UButton>
-            <UButton color="primary" type="submit" :loading="isCreating">
-              Simpan Pengguna
-            </UButton>
-          </div>
-        </UForm>
-      </template>
-    </UModal>
+              {{ opt.label }}
+            </option>
+          </select>
+        </UFormField>
 
-    <UModal
-      v-model:open="isRoleModalOpen"
-      title="Ubah Role Pengguna"
-      :description="`Atur hak akses untuk ${selectedUserForRole?.name || selectedUserForRole?.email}`"
-    >
-      <template #body>
-        <UAlert
-          v-if="roleErrorMessage"
-          :title="roleErrorMessage"
-          icon="i-lucide-alert-circle"
-          color="error"
-          variant="subtle"
-          class="mb-4"
-        />
-
-        <div class="space-y-4 py-2">
-          <UFormField label="Pilih Role Baru">
-            <select
-              v-model="selectedNewRole"
-              class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
-            >
-              <option
-                v-for="opt in roleOptions"
-                :key="opt.value"
-                :value="opt.value"
-              >
-                {{ opt.label }}
-              </option>
-            </select>
-          </UFormField>
-        </div>
-      </template>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
+        <div class="flex justify-end gap-2 pt-4 border-t border-outline">
           <UButton
             color="neutral"
             variant="ghost"
-            @click="isRoleModalOpen = false"
+            @click="isCreateModalOpen = false"
           >
             Batal
           </UButton>
-          <UButton
-            color="primary"
-            :loading="isUpdatingRole"
-            @click="handleSaveRole"
-          >
-            Simpan Perubahan
+          <UButton color="primary" type="submit" :loading="isCreating">
+            Simpan Pengguna
           </UButton>
         </div>
-      </template>
-    </UModal>
-  </div>
+      </UForm>
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="isRoleModalOpen"
+    title="Ubah Role Pengguna"
+    :description="`Atur hak akses untuk ${selectedUserForRole?.name || selectedUserForRole?.email}`"
+  >
+    <template #body>
+      <UAlert
+        v-if="roleErrorMessage"
+        :title="roleErrorMessage"
+        icon="i-lucide-alert-circle"
+        color="error"
+        variant="subtle"
+        class="mb-4"
+      />
+
+      <div class="space-y-4 py-2">
+        <UFormField label="Pilih Role Baru">
+          <select
+            v-model="selectedNewRole"
+            class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
+          >
+            <option
+              v-for="opt in roleOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </option>
+          </select>
+        </UFormField>
+      </div>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          @click="isRoleModalOpen = false"
+        >
+          Batal
+        </UButton>
+        <UButton
+          color="primary"
+          :loading="isUpdatingRole"
+          @click="handleSaveRole"
+        >
+          Simpan Perubahan
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>

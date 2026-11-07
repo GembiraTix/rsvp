@@ -15,10 +15,6 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    public: {
-      siteName: process.env.NUXT_PUBLIC_SITE_NAME || 'GembiraTix',
-    },
-
     resendApiKey: process.env.NUXT_RESEND_API_KEY,
     emailFrom: process.env.NUXT_EMAIL_FROM,
   },
