@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { useRsvp } from '@/composables/useRsvp'
 
-import { useSiteName } from '@/composables/useSiteName'
-
 const route = useRoute()
 const token = computed(() => route.params.token as string)
 
 const { fetchByToken } = useRsvp()
 const { data: rsvp, error } = await fetchByToken(token)
-const siteName = useSiteName()
 
 useSeoMeta({
-  title: `Kelola RSVP - ${siteName}`,
+  title: `Kelola RSVP - GembiraTix`,
 })
 </script>
 

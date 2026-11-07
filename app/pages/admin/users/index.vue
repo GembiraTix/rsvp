@@ -4,7 +4,8 @@ import type { UserProfile } from '~~/server/domain/types'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
-  middleware: ['auth', 'super-admin'],
+  middleware: 'auth',
+  layout: 'admin',
 })
 
 useSeoMeta({
@@ -71,99 +72,74 @@ function openRoleModal(user: UserProfile) {
 </script>
 
 <template>
-  <div class="py-8 max-w-6xl mx-auto px-4 space-y-6">
-    <div class="flex items-center justify-between">
-      <UButton
-        to="/users"
-        variant="ghost"
-        color="neutral"
-        icon="i-lucide-arrow-left"
+  <div class="flex items-center justify-between">
+    <UButton
+      color="primary"
+      icon="i-lucide-user-plus"
+      @click="isCreateModalOpen = true"
+    >
+      Tambah Pengguna Baru
+    </UButton>
+  </div>
+
+  <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+    <template #header>
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
-        Kembali ke Dasbor
-      </UButton>
+        <div>
+          <h1 class="text-xl font-bold text-on-surface flex items-center gap-2">
+            <UIcon name="i-lucide-users" class="w-6 h-6 text-primary" />
+            Manajemen Pengguna
+          </h1>
+        </div>
+      </div>
+    </template>
 
-      <UButton
-        color="primary"
-        icon="i-lucide-user-plus"
-        @click="isCreateModalOpen = true"
-      >
-        Tambah Pengguna Baru
-      </UButton>
-    </div>
+    <UTable :data="filteredUsers" :columns="usersColumns">
+      <template #name-cell="{ row }">
+        <span class="font-medium text-on-surface">
+          {{ row.original.name || '-' }}
+        </span>
+      </template>
 
-    <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-      <template #header>
-        <div
-          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        >
-          <div>
-            <h1
-              class="text-xl font-bold text-on-surface flex items-center gap-2"
-            >
-              <UIcon name="i-lucide-users" class="w-6 h-6 text-primary" />
-              Manajemen Pengguna
-            </h1>
-          </div>
+      <template #email-cell="{ row }">
+        <span class="text-on-surface-variant font-mono text-xs">
+          {{ row.original.email }}
+        </span>
+      </template>
 
-          <div class="w-full sm:w-72">
-            <UInput
-              v-model="searchQuery"
-              placeholder="Cari nama, email, role..."
-              icon="i-lucide-search"
-              class="w-full"
-            />
-          </div>
+      <template #role-cell="{ row }">
+        <UBadge :color="getRoleBadgeColor(row.original.role)" variant="outline">
+          {{ row.original.role }}
+        </UBadge>
+      </template>
+
+      <template #action-cell="{ row }">
+        <div class="text-right">
+          <UButton
+            size="sm"
+            variant="outline"
+            @click="openRoleModal(row.original)"
+          >
+            Ubah Role
+          </UButton>
         </div>
       </template>
 
-      <UTable :data="filteredUsers" :columns="usersColumns">
-        <template #name-cell="{ row }">
-          <span class="font-medium text-on-surface">
-            {{ row.original.name || '-' }}
-          </span>
-        </template>
+      <template #empty>
+        <p class="px-6 py-8 text-center text-on-surface-variant">
+          Tidak ada pengguna yang ditemukan.
+        </p>
+      </template>
+    </UTable>
+  </UCard>
 
-        <template #email-cell="{ row }">
-          <span class="text-on-surface-variant font-mono text-xs">
-            {{ row.original.email }}
-          </span>
-        </template>
+  <CreateUserModal v-model:open="isCreateModalOpen" @saved="refreshUsers" />
 
-        <template #role-cell="{ row }">
-          <UBadge
-            :color="getRoleBadgeColor(row.original.role)"
-            variant="outline"
-          >
-            {{ row.original.role }}
-          </UBadge>
-        </template>
-
-        <template #action-cell="{ row }">
-          <div class="text-right">
-            <UButton
-              size="sm"
-              variant="outline"
-              @click="openRoleModal(row.original)"
-            >
-              Ubah Role
-            </UButton>
-          </div>
-        </template>
-
-        <template #empty>
-          <p class="px-6 py-8 text-center text-on-surface-variant">
-            Tidak ada pengguna yang ditemukan.
-          </p>
-        </template>
-      </UTable>
-    </UCard>
-
-    <CreateUserModal v-model:open="isCreateModalOpen" @saved="refreshUsers" />
-
-    <RoleModal
-      v-model:open="isRoleModalOpen"
-      :user="selectedUserForRole"
-      @saved="refreshUsers"
-    />
-  </div>
+  <RoleModal
+    v-model:open="isRoleModalOpen"
+    :user="selectedUserForRole"
+    @saved="refreshUsers"
+  />
 </template>

@@ -4,7 +4,7 @@ Context for AI coding agents working in this repo.
 
 ## Project
 
-GembiraTix (`fpce-rsvp`) — event RSVP + paid ticketing app. All UI copy, error messages, dates (`id-ID`, Asia/Jakarta) and currency (IDR via `formatRupiah`) are in Bahasa Indonesia.
+GembiraTix — event RSVP + paid ticketing app. All UI copy, error messages, dates (`id-ID`, Asia/Jakarta) and currency (IDR via `formatRupiah`) are in Bahasa Indonesia.
 
 Stack: Nuxt 4 (SSR), Nuxt UI v4 + Tailwind CSS v4, Supabase (Postgres, Auth, Storage), Midtrans Snap (payments), Resend (email), zod (validation). Deployed at `gembiratix.my.id`.
 
