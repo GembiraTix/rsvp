@@ -71,12 +71,12 @@ useSeoMeta({
             <span class="font-medium text-on-surface">{{ rsvp.email }}</span>
           </div>
 
-          <div v-if="rsvp.organization">
+          <div v-if="rsvp.custom_question_answer">
             <span class="text-on-surface-variant block">
               Organisasi / Latar Belakang
             </span>
             <p class="text-medium mt-0.5 whitespace-pre-line">
-              {{ rsvp.organization }}
+              {{ rsvp.custom_question_answer }}
             </p>
           </div>
         </div>
