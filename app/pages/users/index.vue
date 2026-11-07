@@ -13,21 +13,16 @@ useSeoMeta({
   title: 'Dasbor Saya - GembiraTix',
 })
 
-const supabase = useSupabaseClient()
 const user = useSupabaseUser()
 
-const { data: joinedRsvps } = await useAsyncData(
+const { data: joinedRsvps } = await useAsyncData<RsvpWithEvent[]>(
   `joined-rsvps-${user.value?.email}`,
   async () => {
-    if (!user.value?.email) return []
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('id, token, is_attending, created_at, events (*)')
-      .eq('email', user.value.email)
-      .eq('is_attending', true)
-      .order('created_at', { ascending: false })
+    const { fetchJoined } = useRsvp()
+    const { data: response } = await fetchJoined()
+    // TODO: handle error
 
-    if (error) throw error
+    const data = response.value?.data
     return data || []
   },
 )
@@ -107,6 +102,8 @@ const tabItems = [
   },
 ]
 
+const supabase = useSupabaseClient()
+
 async function handleLogout() {
   await supabase.auth.signOut()
   await navigateTo('/login')
@@ -157,8 +154,8 @@ async function handleLogout() {
                     Lihat Tiket
                   </UButton>
                   <UButton
-                    v-if="row.original.events?.slug"
-                    :to="`/e/${row.original.events.slug}`"
+                    v-if="row.original.event?.slug"
+                    :to="`/e/${row.original.event.slug}`"
                     size="xs"
                     color="neutral"
                     variant="ghost"
