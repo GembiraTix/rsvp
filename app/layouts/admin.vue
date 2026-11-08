@@ -11,6 +11,10 @@ const navItems: NavigationMenuItem[] = [
     label: 'User management',
     to: '/admin/users',
   },
+  {
+    label: 'Pengaturan pembayaran',
+    to: '/admin/settings/payment',
+  },
 ]
 </script>
 
