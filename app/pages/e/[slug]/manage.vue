@@ -146,24 +146,41 @@ const { data: attendeesRes, refresh: refreshAttendees } =
   await fetchByEvent(eventSlug)
 const attendees = computed(() => attendeesRes.value?.data ?? [])
 
+const attendeeToDelete = ref<Rsvp | null>(null)
+const isDeleteAttendeeModalOpen = ref(false)
+const isDeletingAttendee = ref(false)
 const attendeeErrorMessage = ref('')
 
-async function removeAttendee(id: number) {
-  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
+function askDeleteAttendee(attendee: Rsvp) {
+  attendeeToDelete.value = attendee
   attendeeErrorMessage.value = ''
+  isDeleteAttendeeModalOpen.value = true
+}
+
+async function handleRemoveAttendee() {
+  const attendee = attendeeToDelete.value
+  if (!attendee) return
+
+  isDeletingAttendee.value = true
+  attendeeErrorMessage.value = ''
+
   try {
-    await apiRemoveAttendee(eventSlug.value, id)
+    await apiRemoveAttendee(eventSlug.value, attendee.id)
     await refreshAttendees()
     toast.add({
       title: 'Peserta berhasil dihapus.',
       color: 'success',
       icon: 'i-lucide-circle-check',
     })
+    isDeleteAttendeeModalOpen.value = false
+    attendeeToDelete.value = null
   } catch (err: unknown) {
     attendeeErrorMessage.value = getErrorMessage(
       err,
       'Gagal menghapus peserta.',
     )
+  } finally {
+    isDeletingAttendee.value = false
   }
 }
 
@@ -501,7 +518,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                     variant="ghost"
                     icon="i-lucide-trash-2"
                     title="Hapus peserta"
-                    @click="removeAttendee(row.original.id)"
+                    @click="askDeleteAttendee(row.original)"
                   />
                 </template>
               </UTable>
@@ -711,6 +728,42 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                       icon="i-lucide-trash-2"
                       :loading="isDeletingTicketType"
                       @click="handleDeleteTicketType"
+                    >
+                      Ya, Hapus
+                    </UButton>
+                  </div>
+                </template>
+              </UModal>
+
+              <UModal
+                v-model:open="isDeleteAttendeeModalOpen"
+                title="Hapus peserta"
+                :description="`Apakah Anda yakin ingin menghapus peserta '${attendeeToDelete?.name}' dari daftar RSVP?`"
+              >
+                <template v-if="attendeeErrorMessage" #body>
+                  <UAlert
+                    title="Ada kesalahan!"
+                    :description="attendeeErrorMessage"
+                    color="error"
+                    icon="i-lucide-triangle-alert"
+                    variant="subtle"
+                  />
+                </template>
+
+                <template #footer>
+                  <div class="flex w-full justify-end gap-2">
+                    <UButton
+                      color="neutral"
+                      variant="ghost"
+                      @click="isDeleteAttendeeModalOpen = false"
+                    >
+                      Batal
+                    </UButton>
+                    <UButton
+                      color="error"
+                      icon="i-lucide-trash-2"
+                      :loading="isDeletingAttendee"
+                      @click="handleRemoveAttendee"
                     >
                       Ya, Hapus
                     </UButton>
