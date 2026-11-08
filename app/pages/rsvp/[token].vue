@@ -16,16 +16,12 @@ useSeoMeta({
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
     <PageHeader back-to="/" back-label="Kembali ke Beranda" />
 
-    <div
+    <UEmpty
       v-if="error || !rsvp"
-      class="p-6 text-center rounded-xl bg-error-50 dark:bg-error-950/30 text-error-700 dark:text-error-300"
-    >
-      <UIcon name="i-lucide-alert-circle" class="w-8 h-8 mx-auto mb-2" />
-      <h2 class="text-lg font-bold">Reservasi Tidak Ditemukan</h2>
-      <p class="text-xs text-on-surface-variant mt-1">
-        Silakan periksa tautan reservasi Anda dan coba lagi.
-      </p>
-    </div>
+      icon="i-lucide-alert-circle"
+      title="Reservasi Tidak Ditemukan"
+      description="Silakan periksa tautan reservasi Anda dan coba lagi."
+    />
 
     <UCard
       v-else
