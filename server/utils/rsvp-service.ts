@@ -5,6 +5,7 @@ import { SupabaseEventRepository } from '#server/repositories/supabase-event.rep
 import { SupabaseEmailLogRepository } from '#server/repositories/supabase-emaillog.repository'
 import { RsvpService } from '#server/services/rsvp.service'
 import { buildLogger } from '#server/services/logger.factory'
+import { useEmailService } from './email-service'
 
 export async function useRsvpService(event: H3Event): Promise<RsvpService> {
   const client = await serverSupabaseClient(event)
@@ -12,5 +13,11 @@ export async function useRsvpService(event: H3Event): Promise<RsvpService> {
   const eventRepo = new SupabaseEventRepository(client)
   const emailLogRepo = new SupabaseEmailLogRepository(client)
   const logger = buildLogger()
-  return new RsvpService(rsvpRepo, eventRepo, emailLogRepo, logger)
+  return new RsvpService(
+    rsvpRepo,
+    eventRepo,
+    emailLogRepo,
+    useEmailService(),
+    logger,
+  )
 }
