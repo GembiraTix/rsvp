@@ -1,4 +1,8 @@
-import type { EmailSendResult, IEmailProvider, SendEmailInput } from './email-provider'
+import type {
+  EmailSendResult,
+  IEmailProvider,
+  SendEmailInput,
+} from './email-provider'
 
 export class SmtpEmailProvider implements IEmailProvider {
   constructor(
@@ -7,7 +11,7 @@ export class SmtpEmailProvider implements IEmailProvider {
   ) {}
 
   async send(input: SendEmailInput): Promise<EmailSendResult> {
-    // dynamic import: nodemailer is a devDependency only used for local dev
+    // nodemailer is a devDependency only used for local dev
     const nodemailer = await import('nodemailer')
     const transporter = nodemailer.createTransport({
       host: this.host,
