@@ -32,7 +32,6 @@ const oldEvent = computed(() => oldEventRes.value!.data)
 const isUpdatingEvent = ref(false)
 const isUploadingImage = ref(false)
 const editErrorMessage = ref('')
-const editSuccessMessage = ref('')
 
 const formStateSchema = z
   .object({
@@ -140,7 +139,6 @@ watch(
 async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
   isUpdatingEvent.value = true
   editErrorMessage.value = ''
-  editSuccessMessage.value = ''
 
   try {
     await updateEvent(oldEvent.value.id, {
@@ -153,10 +151,11 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
       customQuestionLabel: e.data.customQuestionLabel || null,
       customQuestionRequired: e.data.customQuestionRequired,
     })
-    editSuccessMessage.value = 'Acara berhasil diperbarui!'
-    setTimeout(() => {
-      editSuccessMessage.value = ''
-    }, 10000)
+    toast.add({
+      title: 'Acara berhasil diperbarui.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
   } catch (err: unknown) {
     if (err instanceof Error) {
       editErrorMessage.value = err.message
@@ -192,14 +191,6 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
         :title="editErrorMessage"
         icon="i-lucide-alert-circle"
         color="error"
-        variant="subtle"
-      />
-
-      <UAlert
-        v-if="editSuccessMessage"
-        :title="editSuccessMessage"
-        icon="i-lucide-check-circle"
-        color="success"
         variant="subtle"
       />
 
