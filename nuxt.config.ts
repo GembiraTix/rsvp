@@ -21,6 +21,8 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/admin/**': { appLayout: 'admin' },
+    '/login': { prerender: true },
+    '/signup': { prerender: true },
   },
 
   runtimeConfig: {
