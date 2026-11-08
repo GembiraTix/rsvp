@@ -73,31 +73,22 @@ function openRoleModal(user: UserProfile) {
 <template>
   <div class="space-y-4">
     <div class="flex items-center justify-between">
-      <UButton
-        color="primary"
-        icon="i-lucide-user-plus"
-        @click="isCreateModalOpen = true"
-      >
-        Tambah Pengguna Baru
-      </UButton>
+      <h2 class="text-xl font-bold text-on-surface flex items-center gap-2">
+        Manajemen Pengguna
+      </h2>
+
+      <div class="flex items-center gap-3">
+        <UButton
+          color="primary"
+          icon="i-lucide-user-plus"
+          @click="isCreateModalOpen = true"
+        >
+          Tambah Pengguna Baru
+        </UButton>
+      </div>
     </div>
 
     <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-      <template #header>
-        <div
-          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-        >
-          <div>
-            <h1
-              class="text-xl font-bold text-on-surface flex items-center gap-2"
-            >
-              <UIcon name="i-lucide-users" class="w-6 h-6 text-primary" />
-              Manajemen Pengguna
-            </h1>
-          </div>
-        </div>
-      </template>
-
       <UTable :data="filteredUsers" :columns="usersColumns">
         <template #name-cell="{ row }">
           <span class="font-medium text-on-surface">
@@ -133,9 +124,20 @@ function openRoleModal(user: UserProfile) {
         </template>
 
         <template #empty>
-          <p class="px-6 py-8 text-center text-on-surface-variant">
-            Tidak ada pengguna yang ditemukan.
-          </p>
+          <UEmpty
+            icon="i-lucide-user"
+            title="Tidak ada pengguna yang ditemukan."
+          >
+            <template #actions>
+              <UButton
+                color="primary"
+                icon="i-lucide-user-plus"
+                @click="isCreateModalOpen = true"
+              >
+                Tambah Pengguna Baru
+              </UButton>
+            </template>
+          </UEmpty>
         </template>
       </UTable>
     </UCard>
