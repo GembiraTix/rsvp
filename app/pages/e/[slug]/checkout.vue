@@ -124,10 +124,10 @@ async function handleBayar() {
 
     navigateTo(checkoutResult.value.data.redirectUrl, { external: true })
   } catch (err: unknown) {
-    checkoutError.value =
-      err instanceof Error
-        ? err.message
-        : 'Gagal membuat pesanan. Silakan coba lagi.'
+    checkoutError.value = getErrorMessage(
+      err,
+      'Gagal membuat pesanan. Silakan coba lagi.',
+    )
   } finally {
     isLoading.value = false
   }

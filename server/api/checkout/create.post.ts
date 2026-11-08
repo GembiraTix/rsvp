@@ -28,6 +28,14 @@ const checkoutSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
+  if (!useRuntimeConfig(event).public.paymentsEnabled) {
+    throw createError({
+      statusCode: 403,
+      statusMessage:
+        'Pemesanan tiket belum dibuka. Fitur ini masih dalam pengembangan.',
+    })
+  }
+
   const { auth } = event.context
   if (!auth.user) {
     throw createError({
