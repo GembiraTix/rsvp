@@ -70,6 +70,9 @@ export default defineNuxtConfig({
     resendApiKey: process.env.NUXT_RESEND_API_KEY,
     resendWebhookSecret: process.env.NUXT_RESEND_WEBHOOK_SECRET,
     emailFrom: process.env.NUXT_EMAIL_FROM,
+    emailProvider: process.env.NUXT_EMAIL_PROVIDER || 'resend',
+    smtpHost: process.env.NUXT_SMTP_HOST || 'localhost',
+    smtpPort: Number(process.env.NUXT_SMTP_PORT || 54325),
 
     midtransServerKey: process.env.MIDTRANS_SERVER_KEY,
     midtransClientKey: process.env.MIDTRANS_CLIENT_KEY,
