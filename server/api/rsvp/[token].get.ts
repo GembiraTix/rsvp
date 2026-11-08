@@ -36,6 +36,7 @@ export default defineEventHandler(async (event) => {
             location: eventData.location,
             starts_at: eventData.starts_at,
             ends_at: eventData.ends_at,
+            custom_question_label: eventData.custom_question_label,
           }
         : null,
     },
