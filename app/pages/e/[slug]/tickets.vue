@@ -31,7 +31,15 @@ useSeoMeta({
   description: () => event.value?.description || '',
 })
 
+const paymentsEnabled = useRuntimeConfig().public.paymentsEnabled
+const showWipNotice = ref(false)
+
 function goToRegister() {
+  if (!paymentsEnabled) {
+    showWipNotice.value = true
+    return
+  }
+
   const cartParam = encode(selectedLines.value)
   router.push(`/e/${eventSlug.value}/register?cart=${cartParam}`)
 }
@@ -126,5 +134,17 @@ function goToRegister() {
         </UCard>
       </section>
     </div>
+
+    <UModal
+      v-model:open="showWipNotice"
+      title="Pemesanan Belum Dibuka"
+      description="Pembelian tiket masih dalam tahap pengembangan. Pemesanan tiket dapat dilakukan nanti."
+    >
+      <template #footer>
+        <UButton size="lg" block @click="showWipNotice = false">
+          Mengerti
+        </UButton>
+      </template>
+    </UModal>
   </div>
 </template>

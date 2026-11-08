@@ -27,6 +27,7 @@ export default defineNuxtConfig({
     public: {
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       ticketQrEnabled: process.env.NUXT_PUBLIC_TICKET_QR_ENABLED === 'true',
+      paymentsEnabled: process.env.NUXT_PUBLIC_PAYMENTS_ENABLED === 'true',
     },
     resendApiKey: process.env.NUXT_RESEND_API_KEY,
     resendWebhookSecret: process.env.NUXT_RESEND_WEBHOOK_SECRET,
