@@ -70,77 +70,79 @@ async function handleLogin(e: FormSubmitEvent<FormState>) {
 </script>
 
 <template>
-  <UCard class="border-outline shadow-md">
-    <template #header>
-      <div class="text-center space-y-1">
-        <h1 class="text-2xl font-bold text-on-surface">
-          Selamat Datang Kembali
-        </h1>
-        <p class="text-on-surface-variant">Masuk kembali ke akun Anda</p>
-      </div>
-    </template>
+  <div class="flex flex-col gap-6">
+    <UCard class="border-outline shadow-md">
+      <template #header>
+        <div class="text-center space-y-1">
+          <h1 class="text-2xl font-bold text-on-surface">
+            Selamat Datang Kembali
+          </h1>
+          <p class="text-on-surface-variant">Masuk kembali ke akun Anda</p>
+        </div>
+      </template>
 
-    <UAlert
-      v-if="errorMessage"
-      title="Ada kesalahan!"
-      :description="errorMessage"
-      color="error"
-      icon="i-lucide-triangle-alert"
-      variant="subtle"
-    />
-
-    <UForm
-      :schema="formStateSchema"
-      :state="formState"
-      class="space-y-4"
-      @submit="handleLogin"
-    >
-      <UFormField label="Email" name="email">
-        <UInput
-          id="email"
-          v-model="formState.email"
-          placeholder="andi@johan.com"
-          name="email"
-          type="email"
-          class="w-full"
-          required
-        />
-      </UFormField>
-
-      <UFormField label="Kata Sandi" name="password">
-        <UInput
-          id="password"
-          v-model="formState.password"
-          placeholder="••••••••"
-          name="password"
-          type="password"
-          class="w-full"
-          required
-        />
-      </UFormField>
-
-      <UButton
-        label="Masuk"
-        type="submit"
-        size="lg"
-        class="w-full justify-center"
-        :loading="isLoading"
+      <UAlert
+        v-if="errorMessage"
+        title="Ada kesalahan!"
+        :description="errorMessage"
+        color="error"
+        icon="i-lucide-triangle-alert"
+        variant="subtle"
       />
-    </UForm>
 
-    <template #footer>
-      <UButton
-        to="/signup"
-        variant="ghost"
-        class="w-full justify-center"
-        label="Belum punya akun? Daftar"
-      />
-    </template>
-  </UCard>
+      <UForm
+        :schema="formStateSchema"
+        :state="formState"
+        class="space-y-4"
+        @submit="handleLogin"
+      >
+        <UFormField label="Email" name="email">
+          <UInput
+            id="email"
+            v-model="formState.email"
+            placeholder="andi@johan.com"
+            name="email"
+            type="email"
+            class="w-full"
+            required
+          />
+        </UFormField>
 
-  <div class="text-center">
-    <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
-      Kembali ke beranda
-    </UButton>
+        <UFormField label="Kata Sandi" name="password">
+          <UInput
+            id="password"
+            v-model="formState.password"
+            placeholder="••••••••"
+            name="password"
+            type="password"
+            class="w-full"
+            required
+          />
+        </UFormField>
+
+        <UButton
+          label="Masuk"
+          type="submit"
+          size="lg"
+          class="w-full justify-center"
+          :loading="isLoading"
+        />
+      </UForm>
+
+      <template #footer>
+        <UButton
+          to="/signup"
+          variant="ghost"
+          class="w-full justify-center"
+          label="Belum punya akun? Daftar"
+        />
+      </template>
+    </UCard>
+
+    <div class="text-center">
+      <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
+        Kembali ke beranda
+      </UButton>
+    </div>
   </div>
 </template>

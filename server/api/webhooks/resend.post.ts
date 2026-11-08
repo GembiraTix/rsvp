@@ -4,10 +4,7 @@ import { SupabaseEmailLogRepository } from '#server/repositories/supabase-emaill
 import type { Database } from '~/types/database.types'
 
 type ResendEventType =
-  | 'email.sent'
-  | 'email.delivered'
-  | 'email.bounced'
-  | 'email.complained'
+  'email.sent' | 'email.delivered' | 'email.bounced' | 'email.complained'
 
 type DeliverabilityStatus = 'sent' | 'delivered' | 'bounced' | 'failed'
 
@@ -26,11 +23,14 @@ const STATUS_MAP: Record<ResendEventType, DeliverabilityStatus> = {
  * Requires RESEND_WEBHOOK_SECRET (whsec_…) from the Resend dashboard.
  */
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig()
+  const config = useRuntimeConfig(event)
   const webhookSecret = config.resendWebhookSecret
 
   if (!webhookSecret) {
-    throw createError({ statusCode: 500, statusMessage: 'Webhook secret not configured.' })
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Webhook secret not configured.',
+    })
   }
 
   // Raw body is required — parsed JSON breaks Svix HMAC verification
@@ -44,7 +44,10 @@ export default defineEventHandler(async (event) => {
   const svixSignature = getHeader(event, 'svix-signature') ?? ''
 
   if (!svixId || !svixTimestamp || !svixSignature) {
-    throw createError({ statusCode: 400, statusMessage: 'Missing svix headers.' })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Missing svix headers.',
+    })
   }
 
   const resend = new Resend(config.resendApiKey ?? '')
@@ -53,11 +56,18 @@ export default defineEventHandler(async (event) => {
   try {
     webhookEvent = resend.webhooks.verify({
       payload: rawBody,
-      headers: { id: svixId, timestamp: svixTimestamp, signature: svixSignature },
+      headers: {
+        id: svixId,
+        timestamp: svixTimestamp,
+        signature: svixSignature,
+      },
       webhookSecret,
     }) as unknown as typeof webhookEvent
   } catch {
-    throw createError({ statusCode: 401, statusMessage: 'Invalid webhook signature.' })
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Invalid webhook signature.',
+    })
   }
 
   const { type, data } = webhookEvent
@@ -78,10 +88,14 @@ export default defineEventHandler(async (event) => {
 
   let errorMessage: string | null = null
   let deliveredAt: string | null = null
-  let metadata: Record<string, unknown> = { resend_event_type: type, resend_payload: data }
+  let metadata: Record<string, unknown> = {
+    resend_event_type: type,
+    resend_payload: data,
+  }
 
   if (eventType === 'email.delivered') {
-    deliveredAt = (data.created_at as string | undefined) ?? new Date().toISOString()
+    deliveredAt =
+      (data.created_at as string | undefined) ?? new Date().toISOString()
   }
 
   if (eventType === 'email.bounced') {

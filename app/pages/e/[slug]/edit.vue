@@ -8,6 +8,8 @@ import {
   ZonedDateTime,
 } from '@internationalized/date'
 
+import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
+
 definePageMeta({
   middleware: 'auth',
 })
@@ -16,16 +18,21 @@ const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
 const { fetchBySlug, updateEvent, uploadEventImage } = useEvents()
-const {
-  data: { value: oldEvent },
-} = await fetchBySlug(eventSlug)
+const { data: oldEventRes, error: oldEventError } = await fetchBySlug(eventSlug)
+
+if (oldEventError.value || !oldEventRes.value?.data) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Acara tidak ditemukan',
+  })
+}
+
+const oldEvent = computed(() => oldEventRes.value!.data)
 
 const isUpdatingEvent = ref(false)
 const isUploadingImage = ref(false)
 const editErrorMessage = ref('')
 const editSuccessMessage = ref('')
-
-import { isValidImageBuffer } from '~~/shared/utils/imageValidation'
 
 const formStateSchema = z
   .object({
@@ -34,6 +41,8 @@ const formStateSchema = z
     startsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
     endsAt: z.instanceof(ZonedDateTime).or(z.undefined()),
     description: z.string().optional(),
+    customQuestionLabel: z.string().optional(),
+    customQuestionRequired: z.boolean(),
     image: z
       .instanceof(File, { message: 'URL gambar tidak valid.' })
       .optional()
@@ -90,17 +99,19 @@ const formStateSchema = z
 type EditFormState = z.output<typeof formStateSchema>
 
 const formState = shallowReactive<EditFormState>({
-  title: oldEvent?.data.title || '',
-  location: oldEvent?.data.location || '',
-  startsAt: oldEvent?.data.starts_at
-    ? parseAbsolute(oldEvent?.data.starts_at, getLocalTimeZone())
+  title: oldEvent.value.title || '',
+  location: oldEvent.value.location || '',
+  startsAt: oldEvent.value.starts_at
+    ? parseAbsolute(oldEvent.value.starts_at, getLocalTimeZone())
     : undefined,
-  endsAt: oldEvent?.data.ends_at
-    ? parseAbsolute(oldEvent?.data.ends_at, getLocalTimeZone())
+  endsAt: oldEvent.value.ends_at
+    ? parseAbsolute(oldEvent.value.ends_at, getLocalTimeZone())
     : undefined,
-  description: oldEvent?.data.description || undefined,
-  imageUrl: oldEvent?.data.image_url || undefined,
+  description: oldEvent.value.description || undefined,
+  imageUrl: oldEvent.value.image_url || undefined,
   image: undefined,
+  customQuestionLabel: oldEvent.value.custom_question_label || '',
+  customQuestionRequired: oldEvent.value.custom_question_required || false,
 })
 
 watch(
@@ -110,6 +121,7 @@ watch(
       return
     }
 
+    isUploadingImage.value = true
     try {
       const res = await uploadEventImage(newImage)
       if (!res.success) {
@@ -126,20 +138,20 @@ watch(
 )
 
 async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
-  if (!oldEvent) return
-
   isUpdatingEvent.value = true
   editErrorMessage.value = ''
   editSuccessMessage.value = ''
 
   try {
-    await updateEvent(oldEvent.data.id, {
+    await updateEvent(oldEvent.value.id, {
       title: e.data.title,
       location: e.data.location,
       startsAt: e.data.startsAt?.toDate().toISOString(),
       endsAt: e.data.endsAt?.toDate().toISOString(),
       description: e.data.description,
       imageUrl: e.data.imageUrl,
+      customQuestionLabel: e.data.customQuestionLabel || null,
+      customQuestionRequired: e.data.customQuestionRequired,
     })
     editSuccessMessage.value = 'Acara berhasil diperbarui!'
     setTimeout(() => {
@@ -171,7 +183,7 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
     <UCard>
       <template #header>
         <h1 class="text-2xl font-bold text-on-surface">
-          Menyunting {{ oldEvent?.data.title }}
+          Menyunting {{ oldEvent?.title }}
         </h1>
       </template>
 
@@ -269,6 +281,34 @@ async function handleUpdateEvent(e: FormSubmitEvent<EditFormState>) {
             placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
             name="description"
             class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Pertanyaan tambahan"
+          name="customQuestionLabel"
+          help="Kosongkan bila tidak ada. Jawaban tersimpan pada data peserta."
+          class="col-span-full"
+        >
+          <UInput
+            id="edit-custom-question-label"
+            v-model="formState.customQuestionLabel"
+            placeholder="contoh: Angkatan"
+            name="customQuestionLabel"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Pertanyaan tambahan wajib?"
+          name="customQuestionRequired"
+          class="col-span-full"
+        >
+          <UCheckbox
+            id="edit-custom-question-required"
+            v-model="formState.customQuestionRequired"
+            name="customQuestionRequired"
+            :disabled="!formState.customQuestionLabel"
           />
         </UFormField>
 

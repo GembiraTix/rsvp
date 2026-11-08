@@ -39,6 +39,8 @@ export class EventService {
     endsAt?: string | null
     description?: string | null
     imageUrl?: string | null
+    customQuestionLabel?: string | null
+    customQuestionRequired?: boolean
     createdBy: string
   }): Promise<Event> {
     const slug = nanoid()
@@ -51,6 +53,8 @@ export class EventService {
       ends_at: input.endsAt || null,
       description: input.description || null,
       image_url: input.imageUrl || null,
+      custom_question_label: input.customQuestionLabel?.trim() || null,
+      custom_question_required: input.customQuestionRequired ?? false,
       created_by: input.createdBy,
       is_draft: true,
     }
@@ -95,6 +99,8 @@ export class EventService {
       imageUrl?: string | null
       registrationLimit?: number | null
       isDraft?: boolean
+      customQuestionLabel?: string | null
+      customQuestionRequired?: boolean
     },
   ): Promise<Event> {
     const existing = await this.eventRepo.findById(id)
@@ -109,6 +115,8 @@ export class EventService {
       ends_at: input.endsAt || null,
       description: input.description || null,
       image_url: input.imageUrl || null,
+      custom_question_label: input.customQuestionLabel?.trim() || null,
+      custom_question_required: input.customQuestionRequired ?? false,
     }
 
     if (input.registrationLimit !== undefined) {

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { IRsvpRepository } from './interfaces'
-import type { Rsvp, CreateRsvpInput } from '../domain/types'
+import type { Rsvp, RsvpWithEvent, CreateRsvpInput } from '../domain/types'
 
 export class SupabaseRsvpRepository implements IRsvpRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -11,6 +11,17 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
       .from('rsvps')
       .select('*')
       .eq('token', token)
+      .maybeSingle()
+
+    if (error) throw error
+    return data
+  }
+
+  async findById(id: number): Promise<Rsvp | null> {
+    const { data, error } = await this.client
+      .from('rsvps')
+      .select('*')
+      .eq('id', id)
       .maybeSingle()
 
     if (error) throw error
@@ -39,6 +50,29 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
     return data ?? []
   }
 
+  async findAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {
+    const { data, error } = await this.client
+      .from('rsvps')
+      .select('*, event:events(id, slug, title, location, starts_at, ends_at)')
+      .eq('email', email)
+      .eq('is_attending', true)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  }
+
+  async countAttendingByEventId(eventId: number): Promise<number> {
+    const { count, error } = await this.client
+      .from('rsvps')
+      .select('*', { head: true, count: 'exact' })
+      .eq('event_id', eventId)
+      .eq('is_attending', true)
+
+    if (error) throw error
+    return count ?? 0
+  }
+
   async findByEventAndEmail(
     eventId: number,
     email: string,
@@ -54,6 +88,24 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
     return data
   }
 
+  async findRegisteredEmails(
+    eventId: number,
+    emails: string[],
+  ): Promise<string[]> {
+    if (emails.length === 0) return []
+
+    const wanted = new Set(emails.map((e) => e.trim().toLowerCase()))
+    const { data, error } = await this.client
+      .from('rsvps')
+      .select('email')
+      .eq('event_id', eventId)
+
+    if (error) throw error
+    return (data ?? [])
+      .map((row) => (row.email ?? '').trim().toLowerCase())
+      .filter((email) => email !== '' && wanted.has(email))
+  }
+
   async create(payload: CreateRsvpInput): Promise<Rsvp> {
     const { data, error } = await this.client
       .from('rsvps')
@@ -63,6 +115,16 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
 
     if (error) throw error
     return data
+  }
+
+  async createBatch(input: { items: CreateRsvpInput[] }): Promise<Rsvp[]> {
+    const { data, error } = await this.client
+      .from('rsvps')
+      .insert(input.items)
+      .select('*')
+
+    if (error) throw error
+    return (data ?? []) as unknown as Rsvp[]
   }
 
   async delete(id: number): Promise<void> {

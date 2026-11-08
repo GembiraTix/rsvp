@@ -1,3 +1,5 @@
+import type { Database } from '~/types/database.types'
+
 export interface Event {
   id: number
   slug: string
@@ -12,11 +14,15 @@ export interface Event {
   deleted_at?: string | null
   registration_limit?: number | null
   is_draft: boolean
+  custom_question_label?: string | null
+  custom_question_required?: boolean
 }
 
 export interface UpdateableEvent {
   created_at?: string | undefined
   created_by?: string | undefined
+  custom_question_label?: string | null | undefined
+  custom_question_required?: boolean | undefined
   deleted_at?: string | null | undefined
   description?: string | null | undefined
   ends_at?: string | null | undefined
@@ -44,14 +50,14 @@ export interface InsertableEvent {
   slug: string
   starts_at?: string | null | undefined
   title?: string | null | undefined
+  custom_question_label?: string | null | undefined
+  custom_question_required?: boolean | undefined
 }
 
 export type CreateEventInput = Omit<InsertableEvent, 'id' | 'created_at'>
 export type UpdateEventInput = Partial<
   Omit<UpdateableEvent, 'id' | 'created_at' | 'created_by'>
 >
-
-import type { Database } from '~/types/database.types'
 
 export type UserRole = Database['public']['Enums']['user_role']
 
@@ -74,11 +80,169 @@ export interface Rsvp {
   event_id: number | null
   name: string
   email: string | null
-  organization: string | null
+  custom_question_answer: string | null
+  identity_type: IdentityType | null
+  identity_number: string | null
+  whatsapp: string | null
+  gender: AttendeeGender | null
   token: string
   is_attending: boolean
   created_at: string
 }
 
+export interface RsvpEventSummary {
+  id: number
+  slug: string
+  title: string | null
+  location: string | null
+  starts_at: string | null
+  ends_at: string | null
+}
+
+export interface RsvpWithEvent extends Rsvp {
+  event: RsvpEventSummary | null
+}
+
 export type CreateRsvpInput = Omit<Rsvp, 'id' | 'created_at'>
 export type UpdateRsvpInput = Partial<Omit<Rsvp, 'id' | 'created_at' | 'token'>>
+
+export interface TicketCategory {
+  id: number
+  name: string
+  created_at: string
+}
+
+export type TicketType = {
+  capacity: number | null
+  created_at: string
+  description: string | null
+  event_id: number
+  id: number
+  is_active: boolean
+  category_id: number
+  max_qty: number
+  min_qty: number
+  multiple_of: number
+  name: string
+  price: number
+  sort_order: number
+  updated_at: string
+}
+
+export type CreateTicketTypeInput = Omit<
+  TicketType,
+  'id' | 'created_at' | 'updated_at'
+>
+
+export type UpdateTicketTypeInput = Partial<
+  Omit<CreateTicketTypeInput, 'event_id' | 'sort_order'>
+>
+
+export type AttendeeGender = 'laki-laki' | 'perempuan'
+
+export type IdentityType = 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
+
+export type OrderAttendeeInput = {
+  name: string
+  identityType: IdentityType
+  identityNumber: string
+  email: string
+  whatsapp: string
+  gender: AttendeeGender
+}
+
+export type OrderStatus =
+  | 'draft'
+  | 'pending'
+  | 'paid'
+  | 'cancelled'
+  | 'expired'
+  | 'refunded'
+  | 'partial_refund'
+  | 'failed'
+
+export type PaymentStatus =
+  | 'pending'
+  | 'awaiting_payment'
+  | 'settled'
+  | 'paid'
+  | 'cancelled'
+  | 'expired'
+  | 'failed'
+  | 'refunded'
+  | 'partial_refund'
+
+export interface Order {
+  id: string
+  order_number: string
+  event_id: number
+  user_id: string
+  subtotal: number
+  admin_fee: number
+  total: number | null
+  status: OrderStatus
+  payment_status: PaymentStatus
+  midtrans_order_id: string | null
+  midtrans_transaction_id: string | null
+  token: string
+  checkout_url: string | null
+  paid_at: string | null
+  expires_at: string
+  created_at: string
+  updated_at: string
+}
+
+export interface OrderEventSummary {
+  id: number
+  slug: string
+  title: string | null
+  starts_at: string | null
+  location: string | null
+}
+
+export interface OrderWithEvent extends Order {
+  event: OrderEventSummary | null
+}
+
+export interface OrderItem {
+  id: number
+  order_id: string
+  qty: number
+  ticket_type_id: number
+  total: number
+  unit_price: number
+  created_at: string
+}
+
+export interface Ticket {
+  id: number
+  order_id: string
+  ticket_type_id: number
+  attendee_name: string
+  attendee_email: string
+  attendee_phone: string | null
+  identity_type: IdentityType | null
+  identity_number: string | null
+  whatsapp: string | null
+  gender: AttendeeGender | null
+  token: string
+  fields: Record<string, unknown> | null
+  checkin_at: string | null
+  created_at: string
+}
+
+export interface TicketWithTypeName extends Ticket {
+  ticket_type_name: string | null
+}
+
+export interface CreateOrderInput {
+  eventId: number
+  userId: string
+  lines: {
+    ticketTypeId: number
+    name: string
+    unitPrice: number
+    qty: number
+    attendees: OrderAttendeeInput[]
+  }[]
+}

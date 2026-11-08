@@ -14,9 +14,7 @@ useSeoMeta({
 
 <template>
   <div class="py-12 max-w-xl mx-auto px-4 space-y-6">
-    <UButton to="/" variant="ghost" color="neutral" icon="i-lucide-arrow-left">
-      Kembali ke Beranda
-    </UButton>
+    <PageHeader back-to="/" back-label="Kembali ke Beranda" />
 
     <div
       v-if="error || !rsvp"
@@ -54,8 +52,8 @@ useSeoMeta({
           </h2>
           <div class="text-on-surface-variant space-y-1">
             <time
-              :datetime="rsvp.events.starts_at"
               v-if="rsvp.events.starts_at"
+              :datetime="rsvp.events.starts_at"
             >
               {{ formatDate(rsvp.events.starts_at) }}
             </time>
@@ -73,12 +71,12 @@ useSeoMeta({
             <span class="font-medium text-on-surface">{{ rsvp.email }}</span>
           </div>
 
-          <div v-if="rsvp.organization">
+          <div v-if="rsvp.custom_question_answer">
             <span class="text-on-surface-variant block">
               Organisasi / Latar Belakang
             </span>
             <p class="text-medium mt-0.5 whitespace-pre-line">
-              {{ rsvp.organization }}
+              {{ rsvp.custom_question_answer }}
             </p>
           </div>
         </div>

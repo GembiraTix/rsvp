@@ -61,6 +61,8 @@ const formStateSchema = z
         { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
       ),
     description: z.string().optional(),
+    customQuestionLabel: z.string().optional(),
+    customQuestionRequired: z.boolean(),
   })
   .superRefine((data, ctx) => {
     if (!data.is_one_day && data.endsAt.compare(data.startsAt) < 0) {
@@ -86,7 +88,15 @@ const formState = shallowReactive<FormState>({
   image: undefined,
   imageUrl: '',
   description: '',
+  customQuestionLabel: '',
+  customQuestionRequired: false,
 })
+
+const isUploadingImage = ref(false)
+const isLoading = ref(false)
+const errorMessage = ref('')
+
+const { createEvent, uploadEventImage } = useEvents()
 
 watch(
   () => formState.image,
@@ -95,6 +105,7 @@ watch(
       return
     }
 
+    isUploadingImage.value = true
     try {
       const res = await uploadEventImage(newImage)
       formState.imageUrl = res.data.url
@@ -106,12 +117,6 @@ watch(
     }
   },
 )
-
-const isLoading = ref(false)
-const isUploadingImage = ref(false)
-const errorMessage = ref('')
-
-const { createEvent, uploadEventImage } = useEvents()
 
 async function handleSubmit(e: FormSubmitEvent<FormState>) {
   const userId = user.value?.sub
@@ -136,6 +141,8 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
       endsAt,
       description: e.data.description || null,
       imageUrl: e.data.imageUrl || null,
+      customQuestionLabel: e.data.customQuestionLabel || null,
+      customQuestionRequired: e.data.customQuestionRequired,
     })
 
     if (res.data?.slug) {
@@ -156,141 +163,150 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
 </script>
 
 <template>
-  <div class="py-8 max-w-3xl mx-auto px-4 space-y-6">
-    <UButton
-      to="/users"
-      variant="ghost"
-      color="neutral"
-      icon="i-lucide-arrow-left"
+  <UCard>
+    <template #header>
+      <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
+    </template>
+
+    <UAlert
+      v-if="errorMessage"
+      title="Ada kesalahan!"
+      :description="errorMessage"
+      color="error"
+      icon="i-lucide-triangle-alert"
+      variant="subtle"
+    />
+
+    <UForm
+      :schema="formStateSchema"
+      :state="formState"
+      class="grid grid-cols-2 gap-4"
+      @submit="handleSubmit"
     >
-      Kembali ke Dasbor
-    </UButton>
+      <UFormField
+        label="Judul Acara"
+        name="title"
+        class="col-span-full"
+        required
+      >
+        <UInput
+          id="title"
+          v-model="formState.title"
+          placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
+          name="title"
+          class="w-full"
+          size="xl"
+          required
+        />
+      </UFormField>
 
-    <UCard>
-      <template #header>
-        <h1 class="text-2xl font-bold text-on-surface">Buat Acara</h1>
-      </template>
+      <UFormField
+        label="Satu hari?"
+        name="is_one_day"
+        help="Nyalakan bila acara hanya berlangsung dalam satu hari"
+        class="col-span-full"
+      >
+        <UCheckbox
+          id="is_one_day"
+          v-model="formState.is_one_day"
+          name="is_one_day"
+        />
+      </UFormField>
 
-      <UAlert
-        v-if="errorMessage"
-        title="Ada kesalahan!"
-        :description="errorMessage"
-        color="error"
-        icon="i-lucide-triangle-alert"
-        variant="subtle"
+      <EventDateTimeField
+        v-model="formState.startsAt"
+        name="startsAt"
+        label="Tanggal/waktu awal"
+        required
       />
 
-      <UForm
-        :schema="formStateSchema"
-        :state="formState"
-        class="grid grid-cols-2 gap-4"
-        @submit="handleSubmit"
-      >
-        <UFormField
-          label="Judul Acara"
-          name="title"
-          class="col-span-full"
-          required
-        >
-          <UInput
-            id="title"
-            v-model="formState.title"
-            placeholder="contoh: Presentasi Karir Teknik Sipil oleh PT Wijaya Karya"
-            name="title"
-            class="w-full"
-            size="xl"
-            required
-          />
-        </UFormField>
+      <EventDateTimeField
+        v-show="!formState.is_one_day"
+        v-model="formState.endsAt"
+        name="endsAt"
+        label="Tanggal/waktu akhir"
+        :min="formState.startsAt"
+      />
 
-        <UFormField
-          label="Satu hari?"
-          name="is_one_day"
-          help="Nyalakan bila acara hanya berlangsung dalam satu hari"
-          class="col-span-full"
-        >
-          <UCheckbox
-            id="is_one_day"
-            v-model="formState.is_one_day"
-            name="is_one_day"
-          />
-        </UFormField>
-
-        <EventDateTimeField
-          v-model="formState.startsAt"
-          name="startsAt"
-          label="Tanggal/waktu awal"
-          required
-        />
-
-        <EventDateTimeField
-          v-show="!formState.is_one_day"
-          v-model="formState.endsAt"
-          name="endsAt"
-          label="Tanggal/waktu akhir"
-          :min="formState.startsAt"
-        />
-
-        <UFormField
-          label="Lokasi"
+      <UFormField label="Lokasi" name="location" class="col-span-full" required>
+        <UInput
+          id="location"
+          v-model="formState.location"
+          placeholder="contoh: Auditorium Utama / Ruang 204"
           name="location"
-          class="col-span-full"
+          class="w-full"
           required
-        >
-          <UInput
-            id="location"
-            v-model="formState.location"
-            placeholder="contoh: Auditorium Utama / Ruang 204"
-            name="location"
-            class="w-full"
-            required
-          />
-        </UFormField>
+        />
+      </UFormField>
 
-        <UFormField
-          label="Gambar Banner Acara"
-          name="image"
-          description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
-          class="order-first col-span-full"
-        >
-          <div class="space-y-3">
-            <UFileUpload
-              v-model="formState.image"
-              accept="image/*"
-              :loading="isUploadingImage"
-              icon="i-lucide-image"
-              label="Pilih atau seret gambar banner ke sini"
-              description="PNG, JPG, WEBP hingga 5MB"
-              size="lg"
-              class="w-full"
-            />
-          </div>
-        </UFormField>
+      <UFormField
+        label="Gambar Banner Acara"
+        name="image"
+        description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
+        class="order-first col-span-full"
+      >
+        <UFileUpload
+          v-model="formState.image"
+          accept="image/*"
+          :loading="isUploadingImage"
+          icon="i-lucide-image"
+          label="Pilih atau seret gambar banner ke sini"
+          description="PNG, JPG, WEBP hingga 5MB"
+          size="lg"
+          class="w-full"
+        />
+      </UFormField>
 
-        <UFormField label="Deskripsi" name="description" class="col-span-full">
-          <UTextarea
-            id="description"
-            v-model="formState.description"
-            :rows="4"
-            placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
-            name="description"
-            class="w-full"
-          />
-        </UFormField>
+      <UFormField label="Deskripsi" name="description" class="col-span-full">
+        <UTextarea
+          id="description"
+          v-model="formState.description"
+          :rows="4"
+          placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
+          name="description"
+          class="w-full"
+        />
+      </UFormField>
 
-        <USeparator class="col-span-full" />
+      <UFormField
+        label="Pertanyaan tambahan"
+        name="customQuestionLabel"
+        help="Kosongkan bila tidak ada. Jawaban tersimpan pada data peserta."
+        class="col-span-full"
+      >
+        <UInput
+          id="custom_question_label"
+          v-model="formState.customQuestionLabel"
+          name="customQuestionLabel"
+          class="w-full"
+        />
+      </UFormField>
 
-        <div class="-col-end-1 flex justify-end gap-3">
-          <UButton to="/users" variant="ghost" color="neutral"> Batal </UButton>
-          <UButton
-            class="active:translate-y-1"
-            type="submit"
-            color="primary"
-            :loading="isLoading"
-            label="Publikasikan Acara"
-          />
-        </div>
-      </UForm>
-    </UCard>
-  </div>
+      <UFormField
+        label="Pertanyaan tambahan wajib?"
+        name="customQuestionRequired"
+        class="col-span-full"
+      >
+        <UCheckbox
+          id="custom_question_required"
+          v-model="formState.customQuestionRequired"
+          name="customQuestionRequired"
+          :disabled="!formState.customQuestionLabel"
+        />
+      </UFormField>
+
+      <USeparator class="col-span-full" />
+
+      <div class="-col-end-1 flex justify-end gap-3">
+        <UButton to="/users" variant="ghost" color="neutral"> Batal </UButton>
+        <UButton
+          class="active:translate-y-1"
+          type="submit"
+          color="primary"
+          :loading="isLoading"
+          label="Publikasikan Acara"
+        />
+      </div>
+    </UForm>
+  </UCard>
 </template>

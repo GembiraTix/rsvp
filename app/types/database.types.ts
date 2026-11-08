@@ -48,7 +48,6 @@ export type Database = {
           subject: string
           updated_at: string
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           error_message?: string | null
@@ -85,10 +84,56 @@ export type Database = {
           },
         ]
       }
+      event_payment_settings: {
+        Row: {
+          admin_fee_fixed_cents: number
+          admin_fee_mode: string
+          admin_fee_percent: number
+          created_at: string
+          enabled: boolean
+          event_id: number
+          id: string
+          refund_default_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          admin_fee_fixed_cents?: number
+          admin_fee_mode?: string
+          admin_fee_percent?: number
+          created_at?: string
+          enabled?: boolean
+          event_id: number
+          id?: string
+          refund_default_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          admin_fee_fixed_cents?: number
+          admin_fee_mode?: string
+          admin_fee_percent?: number
+          created_at?: string
+          enabled?: boolean
+          event_id?: number
+          id?: string
+          refund_default_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'event_payment_settings_event_id_fkey'
+            columns: ['event_id']
+            isOneToOne: true
+            referencedRelation: 'events'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string
           created_by: string
+          custom_question_label: string | null
+          custom_question_required: boolean
           deleted_at: string | null
           description: string | null
           ends_at: string | null
@@ -101,16 +146,17 @@ export type Database = {
           starts_at: string | null
           title: string | null
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           created_by: string
+          custom_question_label?: string | null
+          custom_question_required?: boolean
           deleted_at?: string | null
           description?: string | null
           ends_at?: string | null
           id?: number
           image_url?: string | null
-          is_draft: boolean
+          is_draft?: boolean
           location?: string | null
           registration_limit?: number | null
           slug: string
@@ -120,6 +166,8 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          custom_question_label?: string | null
+          custom_question_required?: boolean
           deleted_at?: string | null
           description?: string | null
           ends_at?: string | null
@@ -142,37 +190,230 @@ export type Database = {
           },
         ]
       }
-      rsvps: {
+      order_items: {
         Row: {
           created_at: string
-          email: string | null
-          event_id: number | null
           id: number
-          is_attending: boolean
-          name: string
-          organization: string | null
-          token: string
+          order_id: string
+          qty: number
+          ticket_type_id: number
+          total: number
+          unit_price: number
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
-          email?: string | null
-          event_id?: number | null
           id?: number
-          is_attending?: boolean
-          name: string
-          organization?: string | null
-          token: string
+          order_id: string
+          qty?: number
+          ticket_type_id: number
+          total: number
+          unit_price?: number
         }
         Update: {
           created_at?: string
+          id?: number
+          order_id?: string
+          qty?: number
+          ticket_type_id?: number
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'order_items_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'order_items_ticket_type_id_fkey'
+            columns: ['ticket_type_id']
+            isOneToOne: false
+            referencedRelation: 'ticket_types'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          admin_fee: number
+          checkout_url: string
+          created_at: string
+          event_id: number
+          expires_at: string
+          id: string
+          metadata: Json | null
+          midtrans_order_id: string | null
+          midtrans_transaction_id: string | null
+          order_number: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_status: Database['public']['Enums']['payment_status']
+          refund_amount: number | null
+          refunded_at: string | null
+          status: Database['public']['Enums']['order_status']
+          subtotal: number
+          token: string
+          total: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_fee?: number
+          checkout_url: string
+          created_at?: string
+          event_id: number
+          expires_at: string
+          id?: string
+          metadata?: Json | null
+          midtrans_order_id?: string | null
+          midtrans_transaction_id?: string | null
+          order_number: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: Database['public']['Enums']['payment_status']
+          refund_amount?: number | null
+          refunded_at?: string | null
+          status?: Database['public']['Enums']['order_status']
+          subtotal?: number
+          token: string
+          total?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_fee?: number
+          checkout_url?: string
+          created_at?: string
+          event_id?: number
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          midtrans_order_id?: string | null
+          midtrans_transaction_id?: string | null
+          order_number?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_status?: Database['public']['Enums']['payment_status']
+          refund_amount?: number | null
+          refunded_at?: string | null
+          status?: Database['public']['Enums']['order_status']
+          subtotal?: number
+          token?: string
+          total?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'orders_event_id_fkey'
+            columns: ['event_id']
+            isOneToOne: false
+            referencedRelation: 'events'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'orders_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      payment_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_type: string
+          id: string
+          midtrans_order_id: string | null
+          midtrans_transaction_id: string | null
+          order_id: string | null
+          payload: Json
+          processed: boolean
+          processed_at: string | null
+          signature_valid: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_type: string
+          id?: string
+          midtrans_order_id?: string | null
+          midtrans_transaction_id?: string | null
+          order_id?: string | null
+          payload: Json
+          processed?: boolean
+          processed_at?: string | null
+          signature_valid?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_type?: string
+          id?: string
+          midtrans_order_id?: string | null
+          midtrans_transaction_id?: string | null
+          order_id?: string | null
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+          signature_valid?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'payment_events_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      rsvps: {
+        Row: {
+          created_at: string
+          custom_question_answer: string | null
+          email: string | null
+          event_id: number | null
+          gender: Database['public']['Enums']['attendee_gender'] | null
+          id: number
+          identity_number: string | null
+          identity_type: Database['public']['Enums']['identity_type'] | null
+          is_attending: boolean
+          name: string
+          token: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          custom_question_answer?: string | null
           email?: string | null
           event_id?: number | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
           id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
+          is_attending?: boolean
+          name: string
+          token: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          custom_question_answer?: string | null
+          email?: string | null
+          event_id?: number | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
+          id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
           is_attending?: boolean
           name?: string
-          organization?: string | null
           token?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -180,6 +421,166 @@ export type Database = {
             columns: ['event_id']
             isOneToOne: false
             referencedRelation: 'events'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ticket_categories: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      ticket_types: {
+        Row: {
+          capacity: number | null
+          category_id: number
+          created_at: string
+          description: string | null
+          event_id: number
+          id: number
+          is_active: boolean
+          max_qty: number
+          min_qty: number
+          multiple_of: number
+          name: string
+          price: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          category_id?: number
+          created_at?: string
+          description?: string | null
+          event_id: number
+          id?: number
+          is_active?: boolean
+          max_qty: number
+          min_qty?: number
+          multiple_of?: number
+          name: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          category_id?: number
+          created_at?: string
+          description?: string | null
+          event_id?: number
+          id?: number
+          is_active?: boolean
+          max_qty?: number
+          min_qty?: number
+          multiple_of?: number
+          name?: string
+          price?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ticket_types_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'ticket_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ticket_types_event_id_fkey'
+            columns: ['event_id']
+            isOneToOne: false
+            referencedRelation: 'events'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          attendee_email: string
+          attendee_name: string
+          attendee_phone: string | null
+          checkin_at: string | null
+          checkin_by: string
+          created_at: string
+          fields: Json | null
+          gender: Database['public']['Enums']['attendee_gender'] | null
+          id: number
+          identity_number: string | null
+          identity_type: Database['public']['Enums']['identity_type'] | null
+          order_id: string
+          ticket_type_id: number
+          token: string
+          whatsapp: string | null
+        }
+        Insert: {
+          attendee_email: string
+          attendee_name: string
+          attendee_phone?: string | null
+          checkin_at?: string | null
+          checkin_by: string
+          created_at?: string
+          fields?: Json | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
+          id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
+          order_id: string
+          ticket_type_id: number
+          token?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          attendee_email?: string
+          attendee_name?: string
+          attendee_phone?: string | null
+          checkin_at?: string | null
+          checkin_by?: string
+          created_at?: string
+          fields?: Json | null
+          gender?: Database['public']['Enums']['attendee_gender'] | null
+          id?: number
+          identity_number?: string | null
+          identity_type?: Database['public']['Enums']['identity_type'] | null
+          order_id?: string
+          ticket_type_id?: number
+          token?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'tickets_checkin_by_fkey'
+            columns: ['checkin_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tickets_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tickets_ticket_type_id_fkey'
+            columns: ['ticket_type_id']
+            isOneToOne: false
+            referencedRelation: 'ticket_types'
             referencedColumns: ['id']
           },
         ]
@@ -192,7 +593,6 @@ export type Database = {
           name: string | null
           role: Database['public']['Enums']['user_role']
         }
-        ComputedFields: never
         Insert: {
           created_at?: string
           email: string
@@ -215,8 +615,30 @@ export type Database = {
     }
     Functions: {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      attendee_gender: 'laki-laki' | 'perempuan'
+      identity_type: 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
+      order_status:
+        | 'draft'
+        | 'pending'
+        | 'paid'
+        | 'cancelled'
+        | 'expired'
+        | 'refunded'
+        | 'partial_refund'
+        | 'failed'
+      payment_status:
+        | 'pending'
+        | 'awaiting_payment'
+        | 'settled'
+        | 'paid'
+        | 'cancelled'
+        | 'expired'
+        | 'failed'
+        | 'refunded'
+        | 'partial_refund'
       user_role: 'user' | 'admin' | 'super_admin'
     }
     CompositeTypes: {
@@ -345,6 +767,29 @@ export const Constants = {
   },
   public: {
     Enums: {
+      attendee_gender: ['laki-laki', 'perempuan'],
+      identity_type: ['ktp', 'sim', 'paspor', 'kartu_pelajar'],
+      order_status: [
+        'draft',
+        'pending',
+        'paid',
+        'cancelled',
+        'expired',
+        'refunded',
+        'partial_refund',
+        'failed',
+      ],
+      payment_status: [
+        'pending',
+        'awaiting_payment',
+        'settled',
+        'paid',
+        'cancelled',
+        'expired',
+        'failed',
+        'refunded',
+        'partial_refund',
+      ],
       user_role: ['user', 'admin', 'super_admin'],
     },
   },

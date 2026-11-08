@@ -1,5 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  vite: {
+    server: {
+      allowedHosts: ['gembiratix.munthe.dev'],
+    },
+  },
   app: {
     head: {
       title: 'RSVP',
@@ -14,9 +19,23 @@ export default defineNuxtConfig({
     redirect: false,
   },
 
+  routeRules: {
+    '/admin/**': { appLayout: 'admin' },
+  },
+
   runtimeConfig: {
+    public: {
+      appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      ticketQrEnabled: process.env.NUXT_PUBLIC_TICKET_QR_ENABLED === 'true',
+      paymentsEnabled: process.env.NUXT_PUBLIC_PAYMENTS_ENABLED === 'true',
+    },
     resendApiKey: process.env.NUXT_RESEND_API_KEY,
+    resendWebhookSecret: process.env.NUXT_RESEND_WEBHOOK_SECRET,
     emailFrom: process.env.NUXT_EMAIL_FROM,
+
+    midtransServerKey: process.env.MIDTRANS_SERVER_KEY,
+    midtransClientKey: process.env.MIDTRANS_CLIENT_KEY,
+    midtransIsProduction: process.env.MIDTRANS_IS_PRODUCTION,
   },
 
   devtools: {
@@ -29,10 +48,7 @@ export default defineNuxtConfig({
 
   eslint: {
     config: {
-      stylistic: {
-        commaDangle: 'never',
-        braceStyle: '1tbs',
-      },
+      stylistic: false,
     },
   },
 })

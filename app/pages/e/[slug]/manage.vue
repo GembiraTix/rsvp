@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { useEvents } from '@/composables/useEvents'
-import type { Event } from '~~/server/domain/types'
 import { useUserProfile } from '@/composables/useUserProfile'
-import z from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
+import { useTicketTypes } from '@/composables/useTicketTypes'
+import { useTicketCategories } from '@/composables/useTicketCategories'
+import { useAttendees } from '@/composables/useAttendees'
+import { useTabQuery } from '@/composables/useTabQuery'
+import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
+import type { Event, Rsvp, TicketType } from '~~/server/domain/types'
+import { z } from 'zod'
 
 definePageMeta({
   middleware: 'auth',
 })
 
 const route = useRoute()
-const router = useRouter()
 const eventSlug = computed(() => route.params.slug as string)
 
 const tabItems = computed(() => {
@@ -35,20 +38,7 @@ const tabItems = computed(() => {
   return items
 })
 
-const selectedTab = computed({
-  get() {
-    const tab = route.query.tab as string
-    return tab || 'overview'
-  },
-  set(val: string) {
-    router.push({
-      query: { ...route.query, tab: val },
-    })
-  },
-})
-
-const supabase = useSupabaseClient()
-const user = useSupabaseUser()
+const selectedTab = useTabQuery('overview')
 
 const {
   fetchBySlug,
@@ -64,35 +54,23 @@ if (eventError.value || !eventRes.value?.data) {
 
 const event = computed(() => eventRes.value!.data)
 
+const isSavingRegistration = ref(false)
+
 const { fetchProfile } = useUserProfile()
 const { data: profileRes } = await fetchProfile()
-const profile = computed(() => profileRes.value?.data || null)
-const isSuperAdmin = computed(() => profile.value?.role === 'super_admin')
-
-// Check authorization (Must be event creator or super_admin)
-const isCreator = computed(
-  () =>
-    (user.value &&
-      event.value &&
-      event.value.created_by === (user.value.sub || user.value.id)) ||
-    isSuperAdmin.value,
+const isSuperAdmin = computed(
+  () => profileRes.value?.data.role === 'super_admin',
 )
-
-if (!isCreator) {
-  navigateTo('/')
-}
-
-const isSavingRegistration = ref(false)
 
 const eventLimitFormSchema = z.object({
   enabled: z.boolean().default(false),
   value: z.number().positive('batas registrasi harus positif.'),
 })
 
-type EventLimitFormShema = z.output<typeof eventLimitFormSchema>
-const eventLimitFormState = ref<EventLimitFormShema>({
-  enabled: false,
-  value: 1,
+type EventLimitFormSchema = z.output<typeof eventLimitFormSchema>
+const eventLimitFormState = ref<EventLimitFormSchema>({
+  enabled: event.value?.registration_limit != null,
+  value: event.value?.registration_limit ?? 1,
 })
 
 const registrationAlert = ref<{
@@ -103,7 +81,7 @@ const registrationAlert = ref<{
 
 async function saveRegistrationLimit(
   eventId: number,
-  { data }: FormSubmitEvent<EventLimitFormShema>,
+  { data }: FormSubmitEvent<EventLimitFormSchema>,
 ) {
   isSavingRegistration.value = true
   registrationAlert.value = null
@@ -161,20 +139,26 @@ async function handleDeleteEvent(event: Event) {
 }
 
 // Fetch attendees roster
-const { data: attendees, refresh: refreshAttendees } = await useAsyncData(
-  `event-attendees-${event.value?.id}`,
-  async () => {
-    if (!event.value?.id) return []
-    const { data, error } = await supabase
-      .from('rsvps')
-      .select('*')
-      .eq('event_id', event.value.id)
-      .order('created_at', { ascending: false })
+const { fetchByEvent, removeAttendee: apiRemoveAttendee } = useAttendees()
+const { data: attendeesRes, refresh: refreshAttendees } =
+  await fetchByEvent(eventSlug)
+const attendees = computed(() => attendeesRes.value?.data ?? [])
 
-    if (error) throw error
-    return data || []
-  },
-)
+const attendeeErrorMessage = ref('')
+
+async function removeAttendee(id: number) {
+  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
+  attendeeErrorMessage.value = ''
+  try {
+    await apiRemoveAttendee(eventSlug.value, id)
+    await refreshAttendees()
+  } catch (err: unknown) {
+    attendeeErrorMessage.value = getErrorMessage(
+      err,
+      'Gagal menghapus peserta.',
+    )
+  }
+}
 
 useSeoMeta({
   title: () => (event.value ? `Kelola ${event.value.title}` : 'Kelola Acara'),
@@ -192,40 +176,202 @@ const filteredAttendees = computed(() => {
     (a) =>
       a.name.toLowerCase().includes(q) ||
       (a.email && a.email.toLowerCase().includes(q)) ||
-      (a.organization && a.organization.toLowerCase().includes(q)),
+      (a.custom_question_answer &&
+        a.custom_question_answer.toLowerCase().includes(q)) ||
+      (a.whatsapp && a.whatsapp.includes(q)) ||
+      (a.identity_number && a.identity_number.toLowerCase().includes(q)),
   )
 })
 
+const attendeesColumns: TableColumn<Rsvp>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Nama',
+  },
+  {
+    accessorKey: 'email',
+    header: 'Email',
+  },
+  ...(event.value?.custom_question_label
+    ? [
+        {
+          accessorKey: 'custom_question_answer',
+          header: event.value.custom_question_label,
+        },
+      ]
+    : []),
+  {
+    accessorKey: 'whatsapp',
+    header: 'WhatsApp',
+  },
+  {
+    id: 'identity',
+    header: 'Identitas',
+  },
+  {
+    accessorKey: 'gender',
+    header: 'Jenis Kelamin',
+  },
+  { id: 'action', header: 'Aksi' },
+]
+
+function csvEscape(value: string | number | boolean): string {
+  let str = String(value)
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`
+  }
+  return /[",\n\r]/.test(str) ? `"${str.replaceAll('"', '""')}"` : str
+}
+
 function exportCSV() {
   if (!attendees.value || !event.value) return
-  const headers = ['ID', 'Nama', 'Email', 'Organisasi', 'Tanggal RSVP', 'Hadir']
+  const customLabel = event.value.custom_question_label
+  const headers = [
+    'ID',
+    'Nama',
+    'Email',
+    ...(customLabel ? [customLabel] : []),
+    'WhatsApp',
+    'Tipe Identitas',
+    'Nomor Identitas',
+    'Jenis Kelamin',
+    'Tanggal RSVP',
+    'Hadir',
+  ]
   const rows = attendees.value.map((a) => [
     a.id,
-    `"${a.name}"`,
-    `"${a.email || ''}"`,
-    `"${a.organization || ''}"`,
-    `"${a.created_at}"`,
-    `"${a.is_attending}"`,
+    a.name,
+    a.email || '',
+    ...(customLabel ? [a.custom_question_answer || ''] : []),
+    a.whatsapp || '',
+    a.identity_type || '',
+    a.identity_number || '',
+    a.gender || '',
+    a.created_at,
+    a.is_attending,
   ])
-  const csvContent =
-    'data:text/csv;charset=utf-8,' +
-    [headers.join(','), ...rows.map((e) => e.join(','))].join('\n')
-  const encodedUri = encodeURI(csvContent)
+  const lines = [headers, ...rows]
+    .map((row) => row.map(csvEscape).join(','))
+    .join('\n')
+  const blob = new Blob([lines], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
+  link.setAttribute('href', url)
   link.setAttribute('download', `peserta-${event.value.slug}.csv`)
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
-async function removeAttendee(id: number) {
-  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
-  const { error } = await supabase.from('rsvps').delete().eq('id', id)
-  if (!error) {
-    await refreshAttendees()
+const { fetchByEvent: fetchTicketTypes, deleteTicketType } = useTicketTypes()
+const { data: ticketTypesRes, refresh: refreshTicketTypes } =
+  await fetchTicketTypes(eventSlug)
+
+const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
+
+const isTicketTypeModalOpen = ref(false)
+const editingTicketType = ref<TicketType | null>(null)
+const ticketTypeToDelete = ref<TicketType | null>(null)
+const isDeleteTicketTypeModalOpen = ref(false)
+const isDeletingTicketType = ref(false)
+const ticketTypeNotice = ref('')
+const ticketTypeError = ref('')
+
+function openCreateTicketTypeModal() {
+  editingTicketType.value = null
+  isTicketTypeModalOpen.value = true
+}
+
+function openEditTicketTypeModal(ticket: TicketType) {
+  editingTicketType.value = ticket
+  isTicketTypeModalOpen.value = true
+}
+
+function askDeleteTicketType(ticket: TicketType) {
+  ticketTypeToDelete.value = ticket
+  ticketTypeError.value = ''
+  isDeleteTicketTypeModalOpen.value = true
+}
+
+function handleTicketTypeSaved(notice: string) {
+  ticketTypeNotice.value = notice
+  refreshTicketTypes()
+}
+
+async function handleDeleteTicketType() {
+  const ticket = ticketTypeToDelete.value
+  if (!ticket) return
+
+  isDeletingTicketType.value = true
+  ticketTypeError.value = ''
+
+  try {
+    const res = await deleteTicketType(event.value.id, ticket.id)
+
+    await refreshTicketTypes()
+    isDeleteTicketTypeModalOpen.value = false
+    ticketTypeToDelete.value = null
+    ticketTypeNotice.value = res.data.deactivated
+      ? `Tipe tiket '${ticket.name}' sudah pernah terjual, tipe tiket akan dinonaktifkan.`
+      : `Tipe tiket '${ticket.name}' berhasil dihapus.`
+  } catch (err: unknown) {
+    ticketTypeError.value = getErrorMessage(
+      err,
+      'Gagal menghapus tipe tiket. Silakan coba lagi.',
+    )
+  } finally {
+    isDeletingTicketType.value = false
   }
 }
+
+const { fetchAll: fetchTicketCategories } = useTicketCategories()
+const { data: ticketCategoriesRes } = await fetchTicketCategories()
+
+const categoryNameById = computed(() => {
+  const map = new Map<number, string>()
+  for (const category of ticketCategoriesRes.value?.data ?? []) {
+    map.set(category.id, category.name)
+  }
+  return map
+})
+
+const ticketTypeColumns: TableColumn<TicketType>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Nama Tiket',
+  },
+  {
+    id: 'category',
+    header: 'Kategori',
+    cell: ({ row }) =>
+      categoryNameById.value.get(row.original.category_id) ?? 'Reguler',
+  },
+  {
+    accessorKey: 'price',
+    header: 'Harga',
+    cell: ({ row }) => formatRupiah(row.original.price),
+  },
+  {
+    accessorKey: 'capacity',
+    header: 'Kapasitas',
+    cell: ({ row }) => row.original.capacity ?? '∞',
+  },
+  {
+    id: 'qty',
+    header: 'Jumlah',
+    cell: ({ row }) =>
+      `${row.original.min_qty}–${row.original.max_qty} (×${row.original.multiple_of})`,
+  },
+  {
+    accessorKey: 'is_active',
+    header: 'Status',
+  },
+  {
+    id: 'action',
+    header: 'Aksi',
+  },
+]
 </script>
 
 <template>
@@ -255,27 +401,10 @@ async function removeAttendee(id: number) {
                 <h1 class="text-2xl font-bold text-on-surface mb-2">
                   {{ event.title }}
                 </h1>
-                <time
-                  class="text-on-surface-variant"
-                  :datetime="event.starts_at"
-                  v-if="event.starts_at"
-                >
-                  {{ formatDate(event.starts_at) }}
-                </time>
-                <p class="text-on-surface-variant">
-                  {{ event.location || 'Lokasi belum diatur' }}
-                </p>
+                <EventInfoPanel :event="event" />
               </div>
 
               <div class="flex items-center gap-3">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  icon="i-lucide-download"
-                  @click="exportCSV"
-                >
-                  Ekspor CSV
-                </UButton>
                 <UButton
                   :to="`/e/${event.slug}`"
                   color="primary"
@@ -295,195 +424,68 @@ async function removeAttendee(id: number) {
               </div>
             </div>
 
-            <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
+            <UCard
+              class="border-outline"
+              :ui="{
+                body: 'p-0 sm:p-0',
+                header:
+                  'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3',
+              }"
+            >
               <template #header>
-                <div
-                  class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                >
-                  <div>
-                    <h2 class="text-lg font-bold text-on-surface">
-                      Peserta Terdaftar ({{ attendees?.length || 0 }})
-                    </h2>
-                  </div>
-                  <div class="w-full sm:w-72">
-                    <UInput
-                      v-model="attendeeSearch"
-                      placeholder="Cari berdasarkan nama, email, organisasi..."
-                      icon="i-lucide-search"
-                      size="sm"
-                      class="w-full"
-                    />
-                  </div>
-                </div>
-              </template>
+                <h2 class="flex-1 text-lg font-bold text-on-surface">
+                  Peserta Terdaftar ({{ attendees.length }})
+                </h2>
+                <div class="flex flex-1 gap-4 sm:w-72">
+                  <UInput
+                    v-model="attendeeSearch"
+                    placeholder="Cari berdasarkan nama, email, organisasi..."
+                    icon="i-lucide-search"
+                    class="w-full"
+                  />
 
-              <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead
-                    class="bg-surface-container border-b border-outline text-xs font-semibold text-on-surface-variant uppercase"
-                  >
-                    <tr>
-                      <th class="px-6 py-3">Nama Peserta</th>
-                      <th class="px-6 py-3">Email</th>
-                      <th class="px-6 py-3">Organisasi / Catatan</th>
-                      <th class="px-6 py-3">Status</th>
-                      <th class="px-6 py-3 text-right">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline">
-                    <tr
-                      v-for="att in filteredAttendees"
-                      :key="att.id"
-                      class="hover:bg-surface-container/50"
-                    >
-                      <td class="px-6 py-4 font-medium text-on-surface">
-                        {{ att.name }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant font-mono text-xs"
-                      >
-                        {{ att.email || '-' }}
-                      </td>
-                      <td
-                        class="px-6 py-4 text-on-surface-variant max-w-xs truncate"
-                      >
-                        {{ att.organization || '-' }}
-                      </td>
-                      <td class="px-6 py-4">
-                        <UBadge
-                          :color="att.is_attending ? 'primary' : 'neutral'"
-                          variant="subtle"
-                        >
-                          {{
-                            att.is_attending ? 'Terkonfirmasi' : 'Dibatalkan'
-                          }}
-                        </UBadge>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <UButton
-                          size="xs"
-                          color="error"
-                          variant="ghost"
-                          icon="i-lucide-trash-2"
-                          title="Hapus peserta"
-                          @click="removeAttendee(att.id)"
-                        />
-                      </td>
-                    </tr>
-                    <tr v-if="filteredAttendees.length === 0">
-                      <td
-                        colspan="5"
-                        class="px-6 py-8 text-center text-on-surface-variant"
-                      >
-                        Tidak ada peserta yang cocok dengan kriteria pencarian.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </UCard>
-          </section>
-
-          <section v-else-if="item.value === 'more'" class="space-y-6">
-            <UCard>
-              <template #header>
-                <h2 class="text-lg font-bold">Pengaturan</h2>
-              </template>
-
-              <article
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-              >
-                <div>
-                  <h3 class="font-semibold text-on-surface">
-                    Sembunyikan acara
-                  </h3>
-                  <p class="text-on-surface-variant">
-                    Acara yang disembunyikan tidak akan ditampilkan ke pengguna.
-                  </p>
-                </div>
-
-                <UModal
-                  title="Ubah status draf"
-                  description="Acara disembunyikan tidak akan ditampilkan ke pengguna."
-                >
-                  <UButton label="Ubah status draf" />
-
-                  <template #body>
-                    <UForm
-                      @submit="() => handleSetEventDraft(draftFormState)"
-                      class="space-y-4"
-                    >
-                      <UFormField
-                        size="lg"
-                        label="sembunyikan acara"
-                        :description="
-                          !draftFormState.isDraft
-                            ? 'anda akan menampilkan acara ini untuk pengguna.'
-                            : undefined
-                        "
-                        orientation="horizontal"
-                      >
-                        <USwitch v-model="draftFormState.isDraft" />
-                      </UFormField>
-
-                      <UButton
-                        type="submit"
-                        label="Simpan"
-                        :loading="isUpdatingDraftStatus"
-                      />
-                    </UForm>
-                  </template>
-                </UModal>
-              </article>
-            </UCard>
-
-            <UCard v-if="isSuperAdmin">
-              <template #header>
-                <div class="flex items-center gap-2 text-error">
-                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
-                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
-                </div>
-              </template>
-
-              <article
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-              >
-                <div>
-                  <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
-                  <p class="text-on-surface-variant">
-                    Acara ini akan dihapus dari daftar publik dan dasbor Anda.
-                    Tindakan ini dapat dibatalkan hanya oleh administrator
-                    sistem.
-                  </p>
-                </div>
-
-                <UModal
-                  title="Hapus Acara"
-                  :description="`Apakah Anda yakin ingin menghapus acara '${event.title}'? Acara ini tidak akan lagi ditampilkan kepada publik.`"
-                >
                   <UButton
+                    color="neutral"
                     variant="outline"
-                    color="error"
-                    icon="i-lucide-trash-2"
+                    icon="i-lucide-download"
+                    class="min-w-fit"
+                    @click="exportCSV"
                   >
-                    Hapus Acara
+                    Ekspor CSV
                   </UButton>
+                </div>
+              </template>
 
-                  <template #footer>
-                    <div class="flex w-full justify-end gap-2">
-                      <UButton color="neutral" variant="ghost">Batal</UButton>
-                      <UButton
-                        color="error"
-                        icon="i-lucide-trash-2"
-                        :loading="isDeletingEvent"
-                        @click="() => handleDeleteEvent(event)"
-                      >
-                        Ya, Hapus Acara
-                      </UButton>
-                    </div>
-                  </template>
-                </UModal>
-              </article>
+              <UAlert
+                v-if="attendeeErrorMessage"
+                :title="attendeeErrorMessage"
+                icon="i-lucide-alert-circle"
+                color="error"
+                variant="subtle"
+                class="m-4"
+                close
+                @update:open="attendeeErrorMessage = ''"
+              />
+
+              <UTable :data="filteredAttendees" :columns="attendeesColumns">
+                <template #identity-cell="{ row }">
+                  {{
+                    [row.original.identity_type, row.original.identity_number]
+                      .filter(Boolean)
+                      .join(' · ') || '-'
+                  }}
+                </template>
+                <template #action-cell="{ row }">
+                  <UButton
+                    size="xs"
+                    color="error"
+                    variant="ghost"
+                    icon="i-lucide-trash-2"
+                    title="Hapus peserta"
+                    @click="removeAttendee(row.original.id)"
+                  />
+                </template>
+              </UTable>
             </UCard>
           </section>
 
@@ -491,7 +493,6 @@ async function removeAttendee(id: number) {
             <UCard>
               <template #header>
                 <div class="flex items-center gap-2">
-                  <UIcon name="i-lucide-ticket" class="w-5 h-5" />
                   <h2 class="text-lg font-bold text-on-surface">
                     Batas Pendaftaran
                   </h2>
@@ -584,6 +585,232 @@ async function removeAttendee(id: number) {
                     </template>
                   </UModal>
                 </div>
+              </article>
+            </UCard>
+
+            <UCard>
+              <template #header>
+                <header class="flex items-center justify-between">
+                  <h2 class="text-lg font-bold">Tiket</h2>
+                  <UButton
+                    variant="outline"
+                    label="Buat tipe tiket baru"
+                    icon="i-lucide-plus"
+                    @click="openCreateTicketTypeModal"
+                  />
+                </header>
+              </template>
+
+              <UAlert
+                v-if="ticketTypeNotice"
+                :title="ticketTypeNotice"
+                color="success"
+                icon="i-lucide-circle-check"
+                variant="subtle"
+                class="mb-4"
+                close
+                @update:open="ticketTypeNotice = ''"
+              />
+
+              <UTable
+                v-if="ticketTypes.length > 0"
+                :data="ticketTypes"
+                :columns="ticketTypeColumns"
+              >
+                <template #name-cell="{ row }">
+                  <span class="font-medium text-on-surface">
+                    {{ row.original.name }}
+                    <span
+                      v-if="row.original.description"
+                      class="block text-xs font-normal text-on-surface-variant"
+                    >
+                      {{ row.original.description }}
+                    </span>
+                  </span>
+                </template>
+
+                <template #is_active-cell="{ row }">
+                  <UBadge
+                    :color="row.original.is_active ? 'primary' : 'neutral'"
+                    variant="subtle"
+                  >
+                    {{ row.original.is_active ? 'Aktif' : 'Disembunyikan' }}
+                  </UBadge>
+                </template>
+
+                <template #action-cell="{ row }">
+                  <div class="text-right">
+                    <UButton
+                      size="xs"
+                      color="neutral"
+                      variant="ghost"
+                      icon="i-lucide-pencil"
+                      title="Ubah tipe tiket"
+                      @click="openEditTicketTypeModal(row.original)"
+                    />
+                    <UButton
+                      size="xs"
+                      color="error"
+                      variant="ghost"
+                      icon="i-lucide-trash-2"
+                      title="Hapus tipe tiket"
+                      @click="askDeleteTicketType(row.original)"
+                    />
+                  </div>
+                </template>
+              </UTable>
+
+              <UEmpty
+                v-else
+                icon="i-lucide-ticket"
+                title="Belum ada tiket."
+                class="py-4"
+              />
+
+              <TicketTypeModal
+                v-model:open="isTicketTypeModalOpen"
+                :event-id="event.id"
+                :ticket-type="editingTicketType"
+                @saved="handleTicketTypeSaved"
+              />
+
+              <UModal
+                v-model:open="isDeleteTicketTypeModalOpen"
+                title="Hapus tipe tiket"
+                :description="`Apakah Anda yakin ingin menghapus tipe tiket '${ticketTypeToDelete?.name}'? Tipe tiket yang sudah pernah terjual akan dinonaktifkan, bukan dihapus.`"
+              >
+                <template v-if="ticketTypeError" #body>
+                  <UAlert
+                    title="Ada kesalahan!"
+                    :description="ticketTypeError"
+                    color="error"
+                    icon="i-lucide-triangle-alert"
+                    variant="subtle"
+                  />
+                </template>
+
+                <template #footer>
+                  <div class="flex w-full justify-end gap-2">
+                    <UButton
+                      color="neutral"
+                      variant="ghost"
+                      @click="isDeleteTicketTypeModalOpen = false"
+                    >
+                      Batal
+                    </UButton>
+                    <UButton
+                      color="error"
+                      icon="i-lucide-trash-2"
+                      :loading="isDeletingTicketType"
+                      @click="handleDeleteTicketType"
+                    >
+                      Ya, Hapus
+                    </UButton>
+                  </div>
+                </template>
+              </UModal>
+            </UCard>
+          </section>
+
+          <section v-else-if="item.value === 'more'" class="space-y-6">
+            <UCard>
+              <template #header>
+                <h2 class="text-lg font-bold">Pengaturan</h2>
+              </template>
+
+              <article
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+              >
+                <div>
+                  <h3 class="font-semibold text-on-surface">
+                    Sembunyikan acara
+                  </h3>
+                  <p class="text-on-surface-variant">
+                    Acara yang disembunyikan tidak akan ditampilkan ke pengguna.
+                  </p>
+                </div>
+
+                <UModal
+                  title="Ubah status draf"
+                  description="Acara disembunyikan tidak akan ditampilkan ke pengguna."
+                >
+                  <UButton label="Ubah status draf" />
+
+                  <template #body>
+                    <UForm
+                      class="space-y-4"
+                      @submit="() => handleSetEventDraft(draftFormState)"
+                    >
+                      <UFormField
+                        size="lg"
+                        label="sembunyikan acara"
+                        :description="
+                          !draftFormState.isDraft
+                            ? 'anda akan menampilkan acara ini untuk pengguna.'
+                            : undefined
+                        "
+                        orientation="horizontal"
+                      >
+                        <USwitch v-model="draftFormState.isDraft" />
+                      </UFormField>
+
+                      <UButton
+                        type="submit"
+                        label="Simpan"
+                        :loading="isUpdatingDraftStatus"
+                      />
+                    </UForm>
+                  </template>
+                </UModal>
+              </article>
+            </UCard>
+
+            <UCard v-if="isSuperAdmin">
+              <template #header>
+                <div class="flex items-center gap-2 text-error">
+                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
+                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
+                </div>
+              </template>
+
+              <article
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+              >
+                <div>
+                  <h3 class="font-semibold text-on-surface">Hapus Acara Ini</h3>
+                  <p class="text-on-surface-variant">
+                    Acara ini akan dihapus dari daftar publik dan dasbor Anda.
+                    Tindakan ini dapat dibatalkan hanya oleh administrator
+                    sistem.
+                  </p>
+                </div>
+
+                <UModal
+                  title="Hapus Acara"
+                  :description="`Apakah Anda yakin ingin menghapus acara '${event.title}'? Acara ini tidak akan lagi ditampilkan kepada publik.`"
+                >
+                  <UButton
+                    variant="outline"
+                    color="error"
+                    icon="i-lucide-trash-2"
+                  >
+                    Hapus Acara
+                  </UButton>
+
+                  <template #footer>
+                    <div class="flex w-full justify-end gap-2">
+                      <UButton color="neutral" variant="ghost">Batal</UButton>
+                      <UButton
+                        color="error"
+                        icon="i-lucide-trash-2"
+                        :loading="isDeletingEvent"
+                        @click="() => handleDeleteEvent(event)"
+                      >
+                        Ya, Hapus Acara
+                      </UButton>
+                    </div>
+                  </template>
+                </UModal>
               </article>
             </UCard>
           </section>

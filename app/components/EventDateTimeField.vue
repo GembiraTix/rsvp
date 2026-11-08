@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import type { ZonedDateTime } from '@internationalized/date'
 import {
   getLocalTimeZone,
   now,
   toCalendarDate,
   toTime,
-  ZonedDateTime,
 } from '@internationalized/date'
 
 const props = defineProps<{

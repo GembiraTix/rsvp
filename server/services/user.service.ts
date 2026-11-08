@@ -1,5 +1,9 @@
 import type { IUserRepository } from '#server/repositories/interfaces'
-import type { UserProfile, UpdateUserProfileInput, UserRole } from '#server/domain/types'
+import type {
+  UserProfile,
+  UpdateUserProfileInput,
+  UserRole,
+} from '#server/domain/types'
 import type { ILogger } from './logger.service'
 
 export class UserService {
@@ -10,7 +14,7 @@ export class UserService {
 
   async getProfile(userId: string): Promise<UserProfile | null> {
     this.logger.info('Fetching user profile', { userId })
-    let profile = await this.userRepo.findById(userId)
+    const profile = await this.userRepo.findById(userId)
 
     return profile
   }

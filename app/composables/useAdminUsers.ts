@@ -15,13 +15,10 @@ export function useAdminUsers() {
   }
 
   async function createUser(body: CreateAdminUserBody) {
-    return $fetch<{ success: boolean; data: UserProfile }>(
-      '/api/admin/users',
-      {
-        method: 'POST',
-        body,
-      },
-    )
+    return $fetch<{ success: boolean; data: UserProfile }>('/api/admin/users', {
+      method: 'POST',
+      body,
+    })
   }
 
   async function updateUserRole(userId: string, role: UserRole) {
