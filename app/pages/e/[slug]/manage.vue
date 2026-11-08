@@ -355,6 +355,11 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
   {
     id: 'action',
     header: 'Aksi',
+    meta: {
+      class: {
+        th: 'text-center',
+      },
+    },
   },
 ]
 </script>

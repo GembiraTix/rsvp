@@ -43,6 +43,11 @@ const usersColumns: TableColumn<UserProfile>[] = [
   {
     id: 'action',
     header: 'Aksi',
+    meta: {
+      class: {
+        th: 'text-center',
+      },
+    },
   },
 ]
 
@@ -82,31 +87,24 @@ function openRoleModal(user: UserProfile) {
         :columns="usersColumns"
       >
         <template #name-cell="{ row }">
-          <span class="font-medium text-on-surface">
-            {{ row.original.name || '-' }}
-          </span>
+          {{ row.original.name || '-' }}
         </template>
 
         <template #email-cell="{ row }">
-          <span class="text-on-surface-variant font-mono text-xs">
+          <span class="font-mono">
             {{ row.original.email }}
           </span>
         </template>
 
         <template #role-cell="{ row }">
-          <UBadge
-            :color="getRoleBadgeColor(row.original.role)"
-            variant="outline"
-          >
-            {{ row.original.role }}
-          </UBadge>
+          {{ row.original.role }}
         </template>
 
         <template #action-cell="{ row }">
           <div class="text-right">
             <UButton
-              size="sm"
-              variant="outline"
+              icon="i-lucide-settings"
+              variant="subtle"
               @click="openRoleModal(row.original)"
             >
               Ubah Role
