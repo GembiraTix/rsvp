@@ -16,19 +16,6 @@ const { data: usersRes, refresh: refreshUsers } = await fetchUsers()
 const usersList = computed(() => usersRes.value?.data || [])
 
 const searchQuery = ref('')
-const filteredUsers = computed(() => {
-  const q = searchQuery.value.toLowerCase().trim()
-  if (!q) {
-    return usersList.value
-  }
-
-  return usersList.value.filter(
-    (u) =>
-      u.email.toLowerCase().includes(q) ||
-      (u.name && u.name.toLowerCase().includes(q)) ||
-      (u.role && u.role.toLowerCase().includes(q)),
-  )
-})
 
 const usersColumns: TableColumn<UserProfile>[] = [
   {
@@ -89,7 +76,11 @@ function openRoleModal(user: UserProfile) {
     </div>
 
     <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
-      <UTable :data="filteredUsers" :columns="usersColumns">
+      <UTable
+        v-model:global-filter="searchQuery"
+        :data="usersList"
+        :columns="usersColumns"
+      >
         <template #name-cell="{ row }">
           <span class="font-medium text-on-surface">
             {{ row.original.name || '-' }}
