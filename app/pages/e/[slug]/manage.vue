@@ -16,6 +16,8 @@ definePageMeta({
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
+const toast = useToast()
+
 const tabItems = computed(() => {
   const items = [
     {
@@ -152,6 +154,11 @@ async function removeAttendee(id: number) {
   try {
     await apiRemoveAttendee(eventSlug.value, id)
     await refreshAttendees()
+    toast.add({
+      title: 'Peserta berhasil dihapus.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
   } catch (err: unknown) {
     attendeeErrorMessage.value = getErrorMessage(
       err,
@@ -262,6 +269,11 @@ function exportCSV() {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+  toast.add({
+    title: 'CSV peserta berhasil diekspor.',
+    color: 'success',
+    icon: 'i-lucide-circle-check',
+  })
 }
 
 const { fetchByEvent: fetchTicketTypes, deleteTicketType } = useTicketTypes()
@@ -275,7 +287,6 @@ const editingTicketType = ref<TicketType | null>(null)
 const ticketTypeToDelete = ref<TicketType | null>(null)
 const isDeleteTicketTypeModalOpen = ref(false)
 const isDeletingTicketType = ref(false)
-const ticketTypeNotice = ref('')
 const ticketTypeError = ref('')
 
 function openCreateTicketTypeModal() {
@@ -295,7 +306,11 @@ function askDeleteTicketType(ticket: TicketType) {
 }
 
 function handleTicketTypeSaved(notice: string) {
-  ticketTypeNotice.value = notice
+  toast.add({
+    title: notice,
+    color: 'success',
+    icon: 'i-lucide-circle-check',
+  })
   refreshTicketTypes()
 }
 
@@ -312,9 +327,13 @@ async function handleDeleteTicketType() {
     await refreshTicketTypes()
     isDeleteTicketTypeModalOpen.value = false
     ticketTypeToDelete.value = null
-    ticketTypeNotice.value = res.data.deactivated
-      ? `Tipe tiket '${ticket.name}' sudah pernah terjual, tipe tiket akan dinonaktifkan.`
-      : `Tipe tiket '${ticket.name}' berhasil dihapus.`
+    toast.add({
+      title: res.data.deactivated
+        ? `Tipe tiket '${ticket.name}' sudah pernah terjual, tipe tiket akan dinonaktifkan.`
+        : `Tipe tiket '${ticket.name}' berhasil dihapus.`,
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
   } catch (err: unknown) {
     ticketTypeError.value = getErrorMessage(
       err,
@@ -600,17 +619,6 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   />
                 </header>
               </template>
-
-              <UAlert
-                v-if="ticketTypeNotice"
-                :title="ticketTypeNotice"
-                color="success"
-                icon="i-lucide-circle-check"
-                variant="subtle"
-                class="mb-4"
-                close
-                @update:open="ticketTypeNotice = ''"
-              />
 
               <UTable
                 v-if="ticketTypes.length > 0"
