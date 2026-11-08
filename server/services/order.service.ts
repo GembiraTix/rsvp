@@ -17,6 +17,7 @@ import midtrans from 'midtrans-client'
 import { z } from 'zod'
 import { PostgrestError } from '@supabase/supabase-js'
 import { CheckoutValidationError } from './checkout-validation'
+import type { PaymentSettingsService } from './payment-settings.service'
 import { isValidWhatsapp } from '../../shared/utils/whatsapp'
 
 const ORDER_EXPIRY_MINUTES = 30
@@ -59,6 +60,7 @@ export class OrderService {
     private readonly ticketRepo: ITicketRepository,
     private readonly rsvpRepo: IRsvpRepository,
     private readonly eventRepo: IEventRepository,
+    private readonly paymentSettingsService: PaymentSettingsService,
     private readonly midtransConfig: MidtransConfig,
     private readonly logger: ILogger,
   ) {}
@@ -145,7 +147,10 @@ export class OrderService {
       (acc, line) => acc + line.unitPrice * line.qty,
       0,
     )
-    const adminFee = 0
+    const adminFee = await this.paymentSettingsService.resolveAdminFee(
+      eventId,
+      subtotal,
+    )
     const total = subtotal + adminFee
 
     const orderNumber = `INV-${nanoid(8)}`
@@ -158,13 +163,25 @@ export class OrderService {
 
     const { snapToken, redirectUrl } = await this.createMidtransTransaction({
       midtransOrderId: `ORDER-${orderId}`,
-      grossAmount: subtotal,
-      itemDetails: normalizedLines.map((line) => ({
-        id: String(line.ticketTypeId),
-        name: line.name,
-        price: line.unitPrice,
-        quantity: line.qty,
-      })),
+      grossAmount: total,
+      itemDetails: [
+        ...normalizedLines.map((line) => ({
+          id: String(line.ticketTypeId),
+          name: line.name,
+          price: line.unitPrice,
+          quantity: line.qty,
+        })),
+        ...(adminFee > 0
+          ? [
+              {
+                id: 'admin-fee',
+                name: 'Biaya layanan',
+                price: adminFee,
+                quantity: 1,
+              },
+            ]
+          : []),
+      ],
     })
 
     const order = await this.orderRepo.create({

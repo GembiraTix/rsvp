@@ -28,6 +28,7 @@ export async function useOrderService(event: H3Event): Promise<OrderService> {
   const ticketRepo = new SupabaseTicketRepository(client)
   const rsvpRepo = new SupabaseRsvpRepository(client)
   const eventRepo = new SupabaseEventRepository(client)
+  const paymentSettingsService = await usePaymentSettingsService(event)
   const midtransConfig = getMidtransConfig()
   const logger = buildLogger()
   return new OrderService(
@@ -35,6 +36,7 @@ export async function useOrderService(event: H3Event): Promise<OrderService> {
     ticketRepo,
     rsvpRepo,
     eventRepo,
+    paymentSettingsService,
     midtransConfig,
     logger,
   )
