@@ -166,22 +166,7 @@ useSeoMeta({
     `Pengelolaan acara dan daftar peserta untuk ${event.value?.title || 'acara'}`,
 })
 
-const attendeeSearch = ref('')
-
-const filteredAttendees = computed(() => {
-  if (!attendees.value) return []
-  if (!attendeeSearch.value.trim()) return attendees.value
-  const q = attendeeSearch.value.toLowerCase()
-  return attendees.value.filter(
-    (a) =>
-      a.name.toLowerCase().includes(q) ||
-      (a.email && a.email.toLowerCase().includes(q)) ||
-      (a.custom_question_answer &&
-        a.custom_question_answer.toLowerCase().includes(q)) ||
-      (a.whatsapp && a.whatsapp.includes(q)) ||
-      (a.identity_number && a.identity_number.toLowerCase().includes(q)),
-  )
-})
+const attendeeFilter = ref('')
 
 const attendeesColumns: TableColumn<Rsvp>[] = [
   {
@@ -438,7 +423,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                 </h2>
                 <div class="flex flex-1 gap-4 sm:w-72">
                   <UInput
-                    v-model="attendeeSearch"
+                    v-model="attendeeFilter"
                     placeholder="Cari berdasarkan nama, email, organisasi..."
                     icon="i-lucide-search"
                     class="w-full"
@@ -467,7 +452,11 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                 @update:open="attendeeErrorMessage = ''"
               />
 
-              <UTable :data="filteredAttendees" :columns="attendeesColumns">
+              <UTable
+                v-model:global-filter="attendeeFilter"
+                :data="attendees"
+                :columns="attendeesColumns"
+              >
                 <template #identity-cell="{ row }">
                   {{
                     [row.original.identity_type, row.original.identity_number]
