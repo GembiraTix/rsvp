@@ -13,17 +13,17 @@
   --color-outline: var(--color-slate-200);
   --color-outline-variant: var(--color-slate-100);
 
-  --color-brand-50: #004aad;
-  --color-brand-100: #004aad;
-  --color-brand-200: #004aad;
-  --color-brand-300: #004aad;
-  --color-brand-400: #004aad;
-  --color-brand-500: #004aad;
-  --color-brand-600: #004aad;
-  --color-brand-700: #004aad;
-  --color-brand-800: #004aad;
-  --color-brand-900: #004aad;
-  --color-brand-950: #004aad;
+  --color-brand-50: hsl(216 100% 96.1%);
+  --color-brand-100: hsl(213.7 100% 92%);
+  --color-brand-200: hsl(214.5 100% 82.9%);
+  --color-brand-300: hsl(214.5 100% 75.1%);
+  --color-brand-400: hsl(214.3 100% 67.1%);
+  --color-brand-500: hsl(214.3 100% 33.9%);
+  --color-brand-600: hsl(214.3 100% 27.1%);
+  --color-brand-700: hsl(214.1 100% 20%);
+  --color-brand-800: hsl(213.8 100% 13.9%);
+  --color-brand-900: hsl(215 100% 7.1%);
+  --color-brand-950: hsl(212 100% 2.9%);
 }
 
 .dark {
