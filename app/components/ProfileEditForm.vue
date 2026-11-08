@@ -5,6 +5,8 @@ import { useUserProfile } from '@/composables/useUserProfile'
 
 const user = useSupabaseUser()
 
+const toast = useToast()
+
 const { fetchProfile, updateProfile: apiUpdateProfile } = useUserProfile()
 const { data: profileRes, refresh: refreshProfile } = await fetchProfile()
 const profile = computed(() => profileRes.value?.data || null)

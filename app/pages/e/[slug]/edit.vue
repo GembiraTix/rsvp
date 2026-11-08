@@ -33,6 +33,8 @@ const isUpdatingEvent = ref(false)
 const isUploadingImage = ref(false)
 const editErrorMessage = ref('')
 
+const toast = useToast()
+
 const formStateSchema = z
   .object({
     title: z.string().min(1, 'Judul acara wajib diisi.'),

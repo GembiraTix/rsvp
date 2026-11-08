@@ -9,6 +9,8 @@ const isCreateModalOpen = defineModel<boolean>('open', { required: true })
 
 const { createUser: apiCreateUser } = useAdminUsers()
 
+const toast = useToast()
+
 const isCreating = ref(false)
 const createErrorMessage = ref('')
 

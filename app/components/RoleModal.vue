@@ -9,6 +9,8 @@ const isRoleModalOpen = defineModel<boolean>('open', { required: true })
 
 const { updateUserRole: apiUpdateUserRole } = useAdminUsers()
 
+const toast = useToast()
+
 const selectedNewRole = ref<UserRole>('user')
 const isUpdatingRole = ref(false)
 const roleErrorMessage = ref('')
