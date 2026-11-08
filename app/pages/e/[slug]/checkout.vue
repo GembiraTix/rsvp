@@ -40,23 +40,6 @@ const { load: loadDraft, clear: clearDraft } = useAttendeeDraft(eventSlug)
 
 const attendeeDraft = ref<AttendeeDraft[]>([])
 
-onMounted(() => {
-  // TODO: handle nonexistent cart param
-  try {
-    cart.value = decode(route.query.cart as string)
-  } catch {
-    cart.value = []
-    checkoutError.value =
-      'Keranjang tidak valid. Silakan pilih tiket kembali dari halaman acara.'
-    return
-  }
-
-  attendeeDraft.value = loadDraft()
-  if (attendeeDraft.value.length === 0) {
-    navigateTo(`/e/${eventSlug.value}/tickets`)
-  }
-})
-
 // Checkout state
 type CheckoutResult = {
   success: true
@@ -70,6 +53,23 @@ type CheckoutResult = {
 const isLoading = ref(false)
 const checkoutResult = ref<CheckoutResult | null>(null)
 const checkoutError = ref('')
+
+// Decoded in setup so SSR renders the real cart instead of an empty state.
+// A missing param decodes to [] and shows the empty-cart state.
+try {
+  cart.value = decode(route.query.cart as string)
+} catch {
+  cart.value = []
+  checkoutError.value =
+    'Keranjang tidak valid. Silakan pilih tiket kembali dari halaman acara.'
+}
+
+onMounted(() => {
+  attendeeDraft.value = loadDraft()
+  if (attendeeDraft.value.length === 0) {
+    navigateTo(`/e/${eventSlug.value}/tickets`)
+  }
+})
 
 const ORDER_TIME_LIMIT_S = 10 * 60 // 10 minutes
 
