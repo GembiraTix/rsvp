@@ -27,58 +27,57 @@ useSeoMeta({
       </p>
     </div>
 
-    <UCard v-else class="border-outline shadow-md">
+    <UCard
+      v-else
+      class="border-outline shadow-md"
+      as="article"
+      :ui="{ body: 'space-y-6' }"
+    >
       <template #header>
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-xl font-bold text-on-surface">Detail Reservasi</h1>
-            <p class="text-xs text-on-surface-variant font-mono">
-              Ref: {{ token }}
-            </p>
-          </div>
-        </div>
+        <header class="flex items-center justify-between">
+          <h1 class="text-xl font-bold text-on-surface">Detail Reservasi</h1>
+          <p class="text-xs text-on-surface-variant font-mono">
+            Ref: {{ token }}
+          </p>
+        </header>
       </template>
 
-      <div class="space-y-6">
-        <div
-          v-if="rsvp.events"
-          class="p-4 rounded-xl bg-surface-container border border-outline space-y-2"
-        >
-          <p class="font-semibold text-primary uppercase tracking-wide">
-            Informasi Acara
-          </p>
-          <h2 class="font-bold text-on-surface">
-            {{ rsvp.events.title }}
-          </h2>
-          <div class="text-on-surface-variant space-y-1">
-            <time
-              v-if="rsvp.events.starts_at"
-              :datetime="rsvp.events.starts_at"
-            >
-              {{ formatDate(rsvp.events.starts_at) }}
-            </time>
-            <p v-if="rsvp.events.location">{{ rsvp.events.location }}</p>
-          </div>
+      <div
+        v-if="rsvp.events"
+        class="p-4 rounded-xl bg-surface-container border border-outline space-y-2"
+      >
+        <p class="font-semibold text-primary uppercase tracking-wide">
+          Informasi Acara
+        </p>
+        <h2 class="font-bold text-on-surface">
+          {{ rsvp.events.title }}
+        </h2>
+
+        <div class="text-on-surface-variant space-y-1">
+          <time v-if="rsvp.events.starts_at" :datetime="rsvp.events.starts_at">
+            {{ formatDate(rsvp.events.starts_at) }}
+          </time>
+          <p v-if="rsvp.events.location">{{ rsvp.events.location }}</p>
+        </div>
+      </div>
+
+      <div class="space-y-3 text-sm">
+        <div>
+          <span class="text-on-surface-variant block">Nama Peserta</span>
+          <span class="font-medium text-on-surface">{{ rsvp.name }}</span>
+        </div>
+        <div>
+          <span class="text-on-surface-variant block">Email</span>
+          <span class="font-medium text-on-surface">{{ rsvp.email }}</span>
         </div>
 
-        <div class="space-y-3 text-sm">
-          <div>
-            <span class="text-on-surface-variant block">Nama Peserta</span>
-            <span class="font-medium text-on-surface">{{ rsvp.name }}</span>
-          </div>
-          <div>
-            <span class="text-on-surface-variant block">Email</span>
-            <span class="font-medium text-on-surface">{{ rsvp.email }}</span>
-          </div>
-
-          <div v-if="rsvp.custom_question_answer">
-            <span class="text-on-surface-variant block">
-              Organisasi / Latar Belakang
-            </span>
-            <p class="text-medium mt-0.5 whitespace-pre-line">
-              {{ rsvp.custom_question_answer }}
-            </p>
-          </div>
+        <div v-if="rsvp.custom_question_answer">
+          <span class="text-on-surface-variant block">
+            {{ rsvp.events.custom_question_label }}
+          </span>
+          <p class="text-medium mt-0.5 whitespace-pre-line">
+            {{ rsvp.custom_question_answer }}
+          </p>
         </div>
       </div>
     </UCard>

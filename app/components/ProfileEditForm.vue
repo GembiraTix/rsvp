@@ -5,13 +5,14 @@ import { useUserProfile } from '@/composables/useUserProfile'
 
 const user = useSupabaseUser()
 
+const toast = useToast()
+
 const { fetchProfile, updateProfile: apiUpdateProfile } = useUserProfile()
 const { data: profileRes, refresh: refreshProfile } = await fetchProfile()
 const profile = computed(() => profileRes.value?.data || null)
 
 const isUpdatingProfile = ref(false)
 const profileErrorMessage = ref('')
-const profileSuccessMessage = ref('')
 
 const profileFormSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi.'),
@@ -29,14 +30,20 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
   if (!user.value) return
   isUpdatingProfile.value = true
   profileErrorMessage.value = ''
-  profileSuccessMessage.value = ''
 
   try {
     await apiUpdateProfile(e.data.name)
     await refreshProfile()
-    profileSuccessMessage.value = 'Profil berhasil diperbarui!'
+    toast.add({
+      title: 'Profil berhasil diperbarui.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
   } catch (err: unknown) {
-    profileErrorMessage.value = getErrorMessage(err, 'Gagal memperbarui profil.')
+    profileErrorMessage.value = getErrorMessage(
+      err,
+      'Gagal memperbarui profil.',
+    )
   } finally {
     isUpdatingProfile.value = false
   }
@@ -58,17 +65,6 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
       class="my-4"
       close
       @update:open="profileErrorMessage = ''"
-    />
-
-    <UAlert
-      v-if="profileSuccessMessage"
-      :title="profileSuccessMessage"
-      icon="i-lucide-check-circle"
-      color="success"
-      class="my-4"
-      variant="subtle"
-      close
-      @update:open="profileSuccessMessage = ''"
     />
 
     <div class="grid gap-4 md:grid-cols-3">
@@ -121,11 +117,7 @@ async function handleUpdateProfile(e: FormSubmitEvent<ProfileFormState>) {
         </UFormField>
 
         <div class="pt-4 flex justify-end gap-2">
-          <UButton
-            color="primary"
-            type="submit"
-            :loading="isUpdatingProfile"
-          >
+          <UButton color="primary" type="submit" :loading="isUpdatingProfile">
             Simpan Perubahan
           </UButton>
         </div>

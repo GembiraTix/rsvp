@@ -78,7 +78,8 @@ Strict layering; every new backend feature follows it:
 - Nuxt UI v4 components only (`UForm`, `UCard`, `UButton`, `UTabs`, ...). Icons as string names: `i-lucide-*`.
 - Tailwind v4 CSS-first — no `tailwind.config.*`. Theme tokens and the `brand` palette live in `app/assets/css/main.css`; use the semantic classes (`text-on-surface`, `bg-surface-container`, `border-outline`).
 - Forms: `UForm` + zod schema + `type FormState = z.output<typeof schema>` + `reactive<FormState>`; dates via `@internationalized/date`, converted to UTC strings before sending.
-- Errors/feedback: inline `UAlert color="error" variant="subtle" icon="i-lucide-triangle-alert"` bound to an `errorMessage` ref, next to `isLoading`/`isSubmitting` refs. No `useToast`.
+- Errors/feedback: inline `UAlert color="error" variant="subtle" icon="i-lucide-triangle-alert"` bound to an `errorMessage` ref, next to `isLoading`/`isSubmitting` refs. All error feedback stays inline.
+- Success feedback: `useToast` with `color: 'success'` and `icon: 'i-lucide-circle-check'` after a mutation succeeds, called where the success lands (not inside composables). Don't use toasts for errors.
 - Composables are imported explicitly; Vue/Nuxt primitives and `app/utils` helpers are auto-imported.
 - SFCs: `<script setup lang="ts">` first, template second; Vue 3.5 prop destructure (`const { event } = defineProps<Props>()`).
 
