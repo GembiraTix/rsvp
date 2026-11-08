@@ -3,9 +3,21 @@ import type {
   IEventRepository,
   IEmailLogRepository,
 } from '#server/repositories/interfaces'
-import type { Rsvp, RsvpWithEvent } from '#server/domain/types'
+import type {
+  AttendeeGender,
+  IdentityType,
+  Rsvp,
+  RsvpWithEvent,
+} from '#server/domain/types'
 import type { ILogger } from './logger.service'
 import { useResend } from '#server/utils/resend'
+import { isValidWhatsapp, normalizeWhatsapp } from '../../shared/utils/whatsapp'
+import { PostgrestError } from '@supabase/supabase-js'
+
+type RsvpCreateResult = {
+  rsvp: Rsvp
+  emailSent: boolean
+}
 
 export class RsvpService {
   constructor(
@@ -19,9 +31,13 @@ export class RsvpService {
     eventId: number
     name: string
     email: string
-    organization?: string
+    customQuestionAnswer?: string
+    identityType?: IdentityType
+    identityNumber?: string
+    whatsapp?: string
+    gender?: AttendeeGender
     origin: string
-  }): Promise<Rsvp> {
+  }): Promise<RsvpCreateResult> {
     this.logger.info('Creating RSVP', {
       eventId: input.eventId,
       email: input.email,
@@ -30,6 +46,32 @@ export class RsvpService {
     const event = await this.eventRepo.findById(input.eventId)
     if (!event) {
       throw new Error('Acara tidak ditemukan')
+    }
+
+    const isCustomQExists = Boolean(event.custom_question_label)
+    const isCustomQAnswerEmpty = !input.customQuestionAnswer?.trim()
+    if (
+      isCustomQExists &&
+      event.custom_question_required &&
+      isCustomQAnswerEmpty
+    ) {
+      throw new Error(`${event.custom_question_label} wajib diisi.`)
+    }
+
+    let whatsapp: string | null = null
+    if (input.whatsapp?.trim()) {
+      whatsapp = normalizeWhatsapp(input.whatsapp)
+      if (!isValidWhatsapp(whatsapp)) {
+        throw new Error('Nomor WhatsApp tidak valid.')
+      }
+    }
+
+    const existing = await this.rsvpRepo.findByEventAndEmail(
+      input.eventId,
+      input.email,
+    )
+    if (existing) {
+      throw new Error('Email sudah terdaftar untuk acara ini.')
     }
 
     if (
@@ -44,14 +86,30 @@ export class RsvpService {
     }
 
     const token = crypto.randomUUID()
-    const rsvp = await this.rsvpRepo.create({
-      event_id: input.eventId,
-      name: input.name,
-      email: input.email,
-      organization: input.organization ?? null,
-      token,
-      is_attending: true,
-    })
+    let rsvp: Rsvp
+    try {
+      rsvp = await this.rsvpRepo.create({
+        event_id: input.eventId,
+        name: input.name,
+        email: input.email,
+        custom_question_answer: input.customQuestionAnswer?.trim() || null,
+        identity_type: input.identityType ?? null,
+        identity_number: input.identityNumber?.trim() || null,
+        whatsapp,
+        gender: input.gender ?? null,
+        token,
+        is_attending: true,
+      })
+    } catch (err: unknown) {
+      // Case-variant duplicates slip past findByEventAndEmail and hit the
+      // unique index on (event_id, lower(email)) instead
+      if (err instanceof PostgrestError && err.code === '23505') {
+        throw new Error('Email sudah terdaftar untuk acara ini.', {
+          cause: err,
+        })
+      }
+      throw new Error('Gagal membuat reservasi.', { cause: err })
+    }
 
     const ticketUrl = `${input.origin}/rsvp/${rsvp.token}`
     const subject = `Konfirmasi RSVP: ${event.title}`
@@ -68,7 +126,7 @@ export class RsvpService {
         status: 'failed',
         error: "Resend instance doesn't exist",
       })
-      return rsvp
+      return { rsvp, emailSent: false }
     }
 
     const emailHtml = buildEmailHtml({
@@ -79,6 +137,8 @@ export class RsvpService {
       ticketUrl,
     })
 
+    let emailSent = true
+
     try {
       const from = useRuntimeConfig().emailFrom
       const fromFallback = 'GembiraTix <noreply@info.gembiratix.my.id>'
@@ -88,6 +148,9 @@ export class RsvpService {
         )
       }
 
+      // error must be checked explicitly:
+      // the SDK resolves with { data: null, error }
+      // instead of throwing on API failure
       const result = await resend.emails.send({
         from: from || fromFallback,
         to: [input.email],
@@ -95,19 +158,36 @@ export class RsvpService {
         html: emailHtml,
       })
 
-      await this.emailLogRepo.log({
-        rsvpId: rsvp.id,
-        email: input.email,
-        subject,
-        status: 'sent',
-        messageId: result.data?.id ?? null,
-      })
+      if (result.error) {
+        emailSent = false
+        this.logger.error('Failed to send confirmation email', {
+          rsvpId: rsvp.id,
+          error: result.error.message,
+        })
 
-      this.logger.info('Confirmation email sent', {
-        rsvpId: rsvp.id,
-        messageId: result.data?.id,
-      })
+        await this.emailLogRepo.log({
+          rsvpId: rsvp.id,
+          email: input.email,
+          subject,
+          status: 'failed',
+          error: result.error.message,
+        })
+      } else {
+        await this.emailLogRepo.log({
+          rsvpId: rsvp.id,
+          email: input.email,
+          subject,
+          status: 'sent',
+          messageId: result.data?.id ?? null,
+        })
+
+        this.logger.info('Confirmation email sent', {
+          rsvpId: rsvp.id,
+          messageId: result.data?.id,
+        })
+      }
     } catch (err: unknown) {
+      emailSent = false
       const errorMsg = err instanceof Error ? err.message : String(err)
       this.logger.error('Failed to send confirmation email', {
         rsvpId: rsvp.id,
@@ -124,7 +204,7 @@ export class RsvpService {
     }
 
     this.logger.info('RSVP created successfully', { rsvpId: rsvp.id })
-    return rsvp
+    return { rsvp, emailSent }
   }
 
   async getRsvpByToken(token: string): Promise<Rsvp | null> {
@@ -143,6 +223,13 @@ export class RsvpService {
   ): Promise<Rsvp | null> {
     this.logger.info('Checking existing RSVP', { eventId, email })
     return this.rsvpRepo.findByEventAndEmail(eventId, email)
+  }
+
+  async findRegisteredEmails(
+    eventId: number,
+    emails: string[],
+  ): Promise<string[]> {
+    return this.rsvpRepo.findRegisteredEmails(eventId, emails)
   }
 
   async listAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {

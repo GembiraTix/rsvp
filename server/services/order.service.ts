@@ -1,14 +1,14 @@
 import type {
   IOrderRepository,
   ITicketRepository,
-  IUserRepository,
+  IRsvpRepository,
+  IEventRepository,
 } from '#server/repositories/interfaces'
 import type {
   Order,
   OrderItem,
   OrderWithEvent,
   CreateOrderInput,
-  UserProfile,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 import { nanoid } from 'nanoid'
@@ -16,6 +16,8 @@ import { nanoid } from 'nanoid'
 import midtrans from 'midtrans-client'
 import { z } from 'zod'
 import { PostgrestError } from '@supabase/supabase-js'
+import { CheckoutValidationError } from './checkout-validation'
+import { isValidWhatsapp } from '../../shared/utils/whatsapp'
 
 const ORDER_EXPIRY_MINUTES = 30
 
@@ -55,17 +57,14 @@ export class OrderService {
   constructor(
     private readonly orderRepo: IOrderRepository,
     private readonly ticketRepo: ITicketRepository,
-    private readonly userRepo: IUserRepository,
+    private readonly rsvpRepo: IRsvpRepository,
+    private readonly eventRepo: IEventRepository,
     private readonly midtransConfig: MidtransConfig,
     private readonly logger: ILogger,
   ) {}
 
   async findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]> {
     return this.orderRepo.findOrderItemsByOrderId(orderId)
-  }
-
-  async getUserProfile(userId: string): Promise<UserProfile | null> {
-    return this.userRepo.findById(userId)
   }
 
   async createOrder(input: CreateOrderInput): Promise<{
@@ -76,7 +75,73 @@ export class OrderService {
   }> {
     const { eventId, userId, lines } = input
 
-    const subtotal = lines.reduce(
+    for (const line of lines) {
+      if (line.attendees.length !== line.qty) {
+        throw new CheckoutValidationError(
+          'Jumlah data peserta tidak sesuai dengan jumlah tiket.',
+        )
+      }
+    }
+
+    const attendees = lines.flatMap((line) => line.attendees)
+    const seenEmails = new Set<string>()
+    for (const attendee of attendees) {
+      const email = attendee.email.trim().toLowerCase()
+      if (seenEmails.has(email)) {
+        throw new CheckoutValidationError(
+          'Email peserta tidak boleh duplikat dalam satu pesanan.',
+        )
+      }
+      seenEmails.add(email)
+    }
+
+    const registeredEmails = await this.rsvpRepo.findRegisteredEmails(
+      eventId,
+      attendees.map((a) => a.email),
+    )
+    if (registeredEmails.length > 0) {
+      throw new CheckoutValidationError(
+        'Beberapa peserta sudah terdaftar untuk acara ini. Periksa kembali email peserta.',
+        409,
+      )
+    }
+
+    const event = await this.eventRepo.findById(eventId)
+    if (!event) {
+      throw new CheckoutValidationError('Acara tidak ditemukan.', 404)
+    }
+
+    if (event.registration_limit) {
+      const [attendingCount, pendingTicketCount] = await Promise.all([
+        this.rsvpRepo.countAttendingByEventId(eventId),
+        this.ticketRepo.countPendingOrderTicketsByEventId(eventId),
+      ])
+      if (
+        attendingCount + pendingTicketCount + attendees.length >
+        event.registration_limit
+      ) {
+        throw new CheckoutValidationError('Kuota penuh.', 409)
+      }
+    }
+
+    const normalizedLines = lines.map((line) => ({
+      ...line,
+      attendees: line.attendees.map((attendee) => ({
+        ...attendee,
+        name: attendee.name.trim(),
+        identityNumber: attendee.identityNumber.trim(),
+        email: attendee.email.trim().toLowerCase(),
+        whatsapp: attendee.whatsapp.trim(),
+      })),
+    }))
+
+    for (const attendee of normalizedLines.flatMap((l) => l.attendees)) {
+      if (!isValidWhatsapp(attendee.whatsapp)) {
+        throw new CheckoutValidationError('Nomor WhatsApp tidak valid.')
+      }
+    }
+
+    const subtotal = normalizedLines.reduce(
       (acc, line) => acc + line.unitPrice * line.qty,
       0,
     )
@@ -94,7 +159,7 @@ export class OrderService {
     const { snapToken, redirectUrl } = await this.createMidtransTransaction({
       midtransOrderId: `ORDER-${orderId}`,
       grossAmount: subtotal,
-      itemDetails: lines.map((line) => ({
+      itemDetails: normalizedLines.map((line) => ({
         id: String(line.ticketTypeId),
         name: line.name,
         price: line.unitPrice,
@@ -128,12 +193,28 @@ export class OrderService {
 
     const orderItems = await this.ticketRepo.createOrderItems({
       order_id: order.id,
-      items: lines.map((line) => ({
+      items: normalizedLines.map((line) => ({
         ticket_type_id: line.ticketTypeId,
         qty: line.qty,
         unit_price: line.unitPrice,
         total: line.unitPrice * line.qty,
-        attendee_data: {},
+      })),
+    })
+
+    await this.ticketRepo.createTickets({
+      order_id: order.id,
+      user_id: userId,
+      items: normalizedLines.map((line) => ({
+        ticket_type_id: line.ticketTypeId,
+        attendees: line.attendees.map((attendee) => ({
+          name: attendee.name,
+          email: attendee.email,
+          phone: null,
+          identity_type: attendee.identityType,
+          identity_number: attendee.identityNumber,
+          whatsapp: attendee.whatsapp,
+          gender: attendee.gender,
+        })),
       })),
     })
 
@@ -228,6 +309,7 @@ export class OrderService {
         { status: 'expired', payment_status: 'expired' },
         { onlyIfPaymentStatusIn: ['pending', 'awaiting_payment'] },
       )
+      await this.ticketRepo.deleteByOrderId(order.id)
       throw new OrderNotPayableError('Pesanan telah kedaluwarsa.', 410)
     }
 

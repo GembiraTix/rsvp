@@ -1,7 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '~/types/database.types'
 import type { ITicketRepository } from './interfaces'
-import type { OrderItem, Ticket, TicketWithTypeName } from '../domain/types'
+import type {
+  AttendeeGender,
+  IdentityType,
+  OrderItem,
+  Ticket,
+  TicketWithTypeName,
+} from '../domain/types'
 
 type OrderItemInsert = Database['public']['Tables']['order_items']['Insert']
 type TicketInsert = Database['public']['Tables']['tickets']['Insert']
@@ -16,7 +22,6 @@ export class SupabaseTicketRepository implements ITicketRepository {
       qty: number
       unit_price: number
       total: number
-      attendee_data: Record<string, unknown>
     }[]
   }): Promise<OrderItem[]> {
     const payload: OrderItemInsert[] = input.items.map((item) => ({
@@ -25,9 +30,6 @@ export class SupabaseTicketRepository implements ITicketRepository {
       qty: item.qty,
       unit_price: item.unit_price,
       total: item.total,
-      attendee_data: item.attendee_data as NonNullable<
-        Database['public']['Tables']['order_items']['Insert']['attendee_data']
-      >,
     }))
 
     const { data, error } = await this.client
@@ -35,7 +37,6 @@ export class SupabaseTicketRepository implements ITicketRepository {
       .insert(payload)
       .select('*')
 
-    console.log(error)
     if (error) throw error
     return (data ?? []) as unknown as OrderItem[]
   }
@@ -45,22 +46,31 @@ export class SupabaseTicketRepository implements ITicketRepository {
     user_id: string
     items: {
       ticket_type_id: number
-      qty: number
-      attendee_name: string
-      attendee_email: string
-      attendee_phone: string | null
+      attendees: {
+        name: string
+        email: string
+        phone: string | null
+        identity_type: IdentityType
+        identity_number: string
+        whatsapp: string
+        gender: AttendeeGender
+      }[]
     }[]
   }): Promise<Ticket[]> {
     const rows: TicketInsert[] = []
 
     for (const item of input.items) {
-      for (let i = 0; i < item.qty; i += 1) {
+      for (const attendee of item.attendees) {
         rows.push({
           order_id: input.order_id,
           ticket_type_id: item.ticket_type_id,
-          attendee_name: item.attendee_name,
-          attendee_email: item.attendee_email,
-          attendee_phone: item.attendee_phone,
+          attendee_name: attendee.name,
+          attendee_email: attendee.email,
+          attendee_phone: attendee.phone,
+          identity_type: attendee.identity_type,
+          identity_number: attendee.identity_number,
+          whatsapp: attendee.whatsapp,
+          gender: attendee.gender,
           checkin_by: input.user_id,
           fields:
             {} as Database['public']['Tables']['tickets']['Insert']['fields'],
@@ -86,5 +96,29 @@ export class SupabaseTicketRepository implements ITicketRepository {
 
     if (error) throw error
     return (data ?? []) as unknown as TicketWithTypeName[]
+  }
+
+  async countPendingOrderTicketsByEventId(eventId: number): Promise<number> {
+    const { count, error } = await this.client
+      .from('tickets')
+      .select('id, orders!inner(event_id, payment_status, expires_at)', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('orders.event_id', eventId)
+      .in('orders.payment_status', ['pending', 'awaiting_payment'])
+      .gt('orders.expires_at', new Date().toISOString())
+
+    if (error) throw error
+    return count ?? 0
+  }
+
+  async deleteByOrderId(orderId: string): Promise<void> {
+    const { error } = await this.client
+      .from('tickets')
+      .delete()
+      .eq('order_id', orderId)
+
+    if (error) throw error
   }
 }

@@ -1,78 +1,85 @@
 import type {
   ITicketRepository,
   IRsvpRepository,
-  IEventRepository,
 } from '#server/repositories/interfaces'
-import type { Ticket } from '#server/domain/types'
+import type { CreateRsvpInput, Ticket } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 
 export class TicketService {
   constructor(
     private readonly ticketRepo: ITicketRepository,
     private readonly rsvpRepo: IRsvpRepository,
-    private readonly eventRepo: IEventRepository,
     private readonly logger: ILogger,
   ) {}
 
-  async issueTickets(input: {
+  // Tickets are created at order creation; settlement only registers each
+  // ticket's attendee. Emails already registered for the event are skipped
+  // so a paid order can never wedge.
+  async createRsvpsForOrderTickets(input: {
     orderId: string
-    userId: string
     eventId: number
-    attendeeName: string
-    attendeeEmail: string
-    attendeeEmailPhone: string | null
-    items: {
-      ticket_type_id: number
-      qty: number
-    }[]
-  }): Promise<Ticket[]> {
-    const event = await this.eventRepo.findById(input.eventId)
-
-    if (event && event.registration_limit) {
-      // TODO: add dedicated rsvpRepo (registrationRepo) method to
-      // count # of registrations directly from the db
-      const attendingRsvps = await this.rsvpRepo.findByEventId(input.eventId)
-      const attendingCount = attendingRsvps.filter((r) => r.is_attending).length
-      const totalQty = input.items.reduce((sum, item) => sum + item.qty, 0)
-      if (attendingCount + totalQty > event.registration_limit) {
-        throw new Error('Kuota penuh')
-      }
+  }): Promise<{ created: number; skipped: number }> {
+    const tickets = await this.ticketRepo.findTicketsByOrderId(input.orderId)
+    if (tickets.length === 0) {
+      return { created: 0, skipped: 0 }
     }
 
-    const tickets = await this.ticketRepo.createTickets({
-      order_id: input.orderId,
-      user_id: input.userId,
-      items: input.items.map((item) => ({
-        ticket_type_id: item.ticket_type_id,
-        qty: item.qty,
-        attendee_name: input.attendeeName,
-        attendee_email: input.attendeeEmail,
-        attendee_phone: input.attendeeEmailPhone,
-      })),
-    })
+    const registered = new Set(
+      (
+        await this.rsvpRepo.findRegisteredEmails(
+          input.eventId,
+          tickets.map((t) => t.attendee_email),
+        )
+      ).map((email) => email.toLowerCase()),
+    )
 
-    const rsvpItems = tickets.map((ticket) => ({
-      event_id: input.eventId,
-      name: ticket.attendee_name,
-      email: ticket.attendee_email,
-      organization: null,
-      token: crypto.randomUUID(),
-      is_attending: true,
-    }))
+    const items: CreateRsvpInput[] = []
+    let skipped = 0
 
-    await this.rsvpRepo.createBatch({ items: rsvpItems })
+    for (const ticket of tickets) {
+      if (registered.has(ticket.attendee_email.trim().toLowerCase())) {
+        skipped += 1
+        this.logger.warn('Skipping registration for already-registered email', {
+          orderId: input.orderId,
+          ticketId: ticket.id,
+          email: ticket.attendee_email,
+        })
+        continue
+      }
 
-    this.logger.info('Tickets issued', {
+      items.push({
+        event_id: input.eventId,
+        name: ticket.attendee_name,
+        email: ticket.attendee_email,
+        custom_question_answer: null,
+        identity_type: ticket.identity_type,
+        identity_number: ticket.identity_number,
+        whatsapp: ticket.whatsapp,
+        gender: ticket.gender,
+        token: crypto.randomUUID(),
+        is_attending: true,
+      })
+    }
+
+    if (items.length > 0) {
+      await this.rsvpRepo.createBatch({ items })
+    }
+
+    this.logger.info('Registrations created for settled order', {
       orderId: input.orderId,
       ticketCount: tickets.length,
-      rsvpCount: rsvpItems.length,
-      userId: input.userId,
+      created: items.length,
+      skipped,
     })
 
-    return tickets
+    return { created: items.length, skipped }
   }
 
   async findTicketsByOrderId(orderId: string): Promise<Ticket[]> {
     return this.ticketRepo.findTicketsByOrderId(orderId)
+  }
+
+  async deleteTicketsByOrderId(orderId: string): Promise<void> {
+    await this.ticketRepo.deleteByOrderId(orderId)
   }
 }

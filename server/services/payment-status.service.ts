@@ -4,7 +4,6 @@ import type {
 } from '../repositories/interfaces'
 import type { Order, OrderStatus, PaymentStatus } from '../domain/types'
 import type { ILogger } from './logger.service'
-import type { OrderService } from './order.service'
 import type { TicketService } from './ticket.service'
 
 const FINAL_PAYMENT_STATUSES: PaymentStatus[] = [
@@ -111,7 +110,6 @@ export class PaymentStatusService {
   constructor(
     private readonly orderRepo: IOrderRepository,
     private readonly paymentEventRepo: IPaymentEventRepository,
-    private readonly orderService: OrderService,
     private readonly ticketService: TicketService,
     private readonly logger: ILogger,
   ) {}
@@ -183,8 +181,8 @@ export class PaymentStatusService {
     if (transition.action === 'already_final') {
       await this.paymentEventRepo.markProcessed(eventId)
       // the order may have settled via another path (e.g. webhook raced
-      // the finish endpoint) while ticket issuance failed; retry safely
-      await this.issueTicketsIfNeeded(order)
+      // the finish endpoint) while registration failed; retry safely
+      await this.finalizeSettledOrder(order)
       return 'already_final'
     }
 
@@ -224,49 +222,28 @@ export class PaymentStatusService {
     })
 
     if (isSettled) {
-      await this.issueTicketsIfNeeded(order)
+      await this.finalizeSettledOrder(order)
+    } else if (
+      ['expired', 'cancelled', 'failed'].includes(transition.orderStatus)
+    ) {
+      await this.ticketService.deleteTicketsByOrderId(order.id)
     }
 
     await this.paymentEventRepo.markProcessed(eventId)
     return 'applied'
   }
 
-  private async issueTicketsIfNeeded(order: Order): Promise<void> {
-    const existingTickets = await this.ticketService.findTicketsByOrderId(
-      order.id,
-    )
-    if (existingTickets.length > 0) {
-      return
-    }
-
-    const orderItems = await this.orderService.findOrderItemsByOrderId(order.id)
-    const userProfile = await this.orderService.getUserProfile(order.user_id)
-
-    if (orderItems.length === 0 || !userProfile) {
-      this.logger.error('Cannot issue tickets for settled order', {
-        orderId: order.id,
-        hasOrderItems: orderItems.length > 0,
-        hasUserProfile: Boolean(userProfile),
-      })
-      return
-    }
-
-    await this.ticketService.issueTickets({
+  private async finalizeSettledOrder(order: Order): Promise<void> {
+    const result = await this.ticketService.createRsvpsForOrderTickets({
       orderId: order.id,
-      userId: order.user_id,
       eventId: order.event_id,
-      attendeeName: userProfile.name ?? 'Tamu',
-      attendeeEmail: userProfile.email ?? '',
-      attendeeEmailPhone: null,
-      items: orderItems.map((item) => ({
-        ticket_type_id: item.ticket_type_id,
-        qty: item.qty,
-      })),
     })
 
-    this.logger.info('Tickets issued for settled order', {
-      orderId: order.id,
-      lineItems: orderItems.length,
-    })
+    if (result.created > 0 || result.skipped > 0) {
+      this.logger.info('Finalized settled order', {
+        orderId: order.id,
+        ...result,
+      })
+    }
   }
 }

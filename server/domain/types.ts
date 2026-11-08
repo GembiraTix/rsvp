@@ -14,11 +14,15 @@ export interface Event {
   deleted_at?: string | null
   registration_limit?: number | null
   is_draft: boolean
+  custom_question_label?: string | null
+  custom_question_required?: boolean
 }
 
 export interface UpdateableEvent {
   created_at?: string | undefined
   created_by?: string | undefined
+  custom_question_label?: string | null | undefined
+  custom_question_required?: boolean | undefined
   deleted_at?: string | null | undefined
   description?: string | null | undefined
   ends_at?: string | null | undefined
@@ -46,6 +50,8 @@ export interface InsertableEvent {
   slug: string
   starts_at?: string | null | undefined
   title?: string | null | undefined
+  custom_question_label?: string | null | undefined
+  custom_question_required?: boolean | undefined
 }
 
 export type CreateEventInput = Omit<InsertableEvent, 'id' | 'created_at'>
@@ -74,7 +80,11 @@ export interface Rsvp {
   event_id: number | null
   name: string
   email: string | null
-  organization: string | null
+  custom_question_answer: string | null
+  identity_type: IdentityType | null
+  identity_number: string | null
+  whatsapp: string | null
+  gender: AttendeeGender | null
   token: string
   is_attending: boolean
   created_at: string
@@ -127,6 +137,19 @@ export type CreateTicketTypeInput = Omit<
 export type UpdateTicketTypeInput = Partial<
   Omit<CreateTicketTypeInput, 'event_id' | 'sort_order'>
 >
+
+export type AttendeeGender = 'laki-laki' | 'perempuan'
+
+export type IdentityType = 'ktp' | 'sim' | 'paspor' | 'kartu_pelajar'
+
+export type OrderAttendeeInput = {
+  name: string
+  identityType: IdentityType
+  identityNumber: string
+  email: string
+  whatsapp: string
+  gender: AttendeeGender
+}
 
 export type OrderStatus =
   | 'draft'
@@ -188,7 +211,6 @@ export interface OrderItem {
   ticket_type_id: number
   total: number
   unit_price: number
-  attendee_data: Record<string, unknown>
   created_at: string
 }
 
@@ -199,6 +221,10 @@ export interface Ticket {
   attendee_name: string
   attendee_email: string
   attendee_phone: string | null
+  identity_type: IdentityType | null
+  identity_number: string | null
+  whatsapp: string | null
+  gender: AttendeeGender | null
   token: string
   fields: Record<string, unknown> | null
   checkin_at: string | null
@@ -217,5 +243,6 @@ export interface CreateOrderInput {
     name: string
     unitPrice: number
     qty: number
+    attendees: OrderAttendeeInput[]
   }[]
 }

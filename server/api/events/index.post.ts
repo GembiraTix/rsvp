@@ -12,6 +12,8 @@ const createEventSchema = z.object({
     .optional()
     .or(z.literal(''))
     .nullable(),
+  customQuestionLabel: z.string().optional().nullable(),
+  customQuestionRequired: z.boolean().optional(),
 })
 
 export default defineEventHandler(async (event) => {
@@ -33,6 +35,8 @@ export default defineEventHandler(async (event) => {
     endsAt: body.endsAt,
     description: body.description,
     imageUrl: body.imageUrl,
+    customQuestionLabel: body.customQuestionLabel,
+    customQuestionRequired: body.customQuestionRequired,
     createdBy: auth.user.sub,
   })
 

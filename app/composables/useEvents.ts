@@ -7,6 +7,8 @@ export interface CreateEventBody {
   endsAt?: string | null
   description?: string | null
   imageUrl?: string | null
+  customQuestionLabel?: string | null
+  customQuestionRequired?: boolean
 }
 
 export interface UpdateEventBody {
@@ -17,6 +19,8 @@ export interface UpdateEventBody {
   description?: string | null
   imageUrl?: string | null
   registrationLimit?: number | null
+  customQuestionLabel?: string | null
+  customQuestionRequired?: boolean
 }
 
 type EventFetchOptions = {

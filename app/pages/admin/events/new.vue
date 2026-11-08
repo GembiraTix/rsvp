@@ -61,6 +61,8 @@ const formStateSchema = z
         { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
       ),
     description: z.string().optional(),
+    customQuestionLabel: z.string().optional(),
+    customQuestionRequired: z.boolean(),
   })
   .superRefine((data, ctx) => {
     if (!data.is_one_day && data.endsAt.compare(data.startsAt) < 0) {
@@ -86,6 +88,8 @@ const formState = shallowReactive<FormState>({
   image: undefined,
   imageUrl: '',
   description: '',
+  customQuestionLabel: '',
+  customQuestionRequired: false,
 })
 
 const isUploadingImage = ref(false)
@@ -137,6 +141,8 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
       endsAt,
       description: e.data.description || null,
       imageUrl: e.data.imageUrl || null,
+      customQuestionLabel: e.data.customQuestionLabel || null,
+      customQuestionRequired: e.data.customQuestionRequired,
     })
 
     if (res.data?.slug) {
@@ -239,18 +245,16 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
         description="Gambar langsung diunggah saat dipilih. Format: JPG, PNG, WEBP (maks. 5MB)."
         class="order-first col-span-full"
       >
-        <div class="space-y-3">
-          <UFileUpload
-            v-model="formState.image"
-            accept="image/*"
-            :loading="isUploadingImage"
-            icon="i-lucide-image"
-            label="Pilih atau seret gambar banner ke sini"
-            description="PNG, JPG, WEBP hingga 5MB"
-            size="lg"
-            class="w-full"
-          />
-        </div>
+        <UFileUpload
+          v-model="formState.image"
+          accept="image/*"
+          :loading="isUploadingImage"
+          icon="i-lucide-image"
+          label="Pilih atau seret gambar banner ke sini"
+          description="PNG, JPG, WEBP hingga 5MB"
+          size="lg"
+          class="w-full"
+        />
       </UFormField>
 
       <UFormField label="Deskripsi" name="description" class="col-span-full">
@@ -261,6 +265,33 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
           placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
           name="description"
           class="w-full"
+        />
+      </UFormField>
+
+      <UFormField
+        label="Pertanyaan tambahan"
+        name="customQuestionLabel"
+        help="Kosongkan bila tidak ada. Jawaban tersimpan pada data peserta."
+        class="col-span-full"
+      >
+        <UInput
+          id="custom_question_label"
+          v-model="formState.customQuestionLabel"
+          name="customQuestionLabel"
+          class="w-full"
+        />
+      </UFormField>
+
+      <UFormField
+        label="Pertanyaan tambahan wajib?"
+        name="customQuestionRequired"
+        class="col-span-full"
+      >
+        <UCheckbox
+          id="custom_question_required"
+          v-model="formState.customQuestionRequired"
+          name="customQuestionRequired"
+          :disabled="!formState.customQuestionLabel"
         />
       </UFormField>
 
