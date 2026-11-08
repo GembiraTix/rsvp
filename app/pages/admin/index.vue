@@ -33,6 +33,12 @@ const eventsColumns: TableColumn<Event>[] = [
       row.original.starts_at ? formatDate(row.original.starts_at) : '-',
   },
   {
+    accessorKey: 'ends_at',
+    header: 'Tanggal akhir',
+    cell: ({ row }) =>
+      row.original.ends_at ? formatDate(row.original.ends_at) : '-',
+  },
+  {
     accessorKey: 'location',
     header: 'Lokasi',
     cell: ({ row }) => row.original.location || '-',
