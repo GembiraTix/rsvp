@@ -11,7 +11,13 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'id' },
     },
   },
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxtjs/supabase'],
+  modules: [
+    '@nuxt/eslint',
+    '@nuxt/ui',
+    '@nuxtjs/supabase',
+    '@nuxtjs/sitemap',
+    '@nuxtjs/robots',
+  ],
   colorMode: {
     preference: 'light',
   },
