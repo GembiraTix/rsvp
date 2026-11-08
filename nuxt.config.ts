@@ -11,7 +11,13 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: 'id' },
     },
   },
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxtjs/supabase'],
+  modules: [
+    '@nuxt/eslint',
+    '@nuxt/ui',
+    '@nuxtjs/supabase',
+    '@nuxtjs/sitemap',
+    '@nuxtjs/robots',
+  ],
   colorMode: {
     preference: 'light',
   },
@@ -19,10 +25,40 @@ export default defineNuxtConfig({
     redirect: false,
   },
 
+  site: {
+    url: 'https://gembiratix.my.id',
+    name: 'GembiraTix',
+  },
+
+  sitemap: {
+    excludeAppSources: true,
+    sources: ['/api/__sitemap__/urls'],
+  },
+
+  robots: {
+    disallow: [
+      '/api',
+      '/admin',
+      '/users',
+      '/rsvp',
+      '/login',
+      '/signup',
+      '/confirm',
+      '/e/*/checkout',
+      '/e/*/register',
+      '/e/*/manage',
+      '/e/*/edit',
+    ],
+  },
+
   routeRules: {
     '/admin/**': { appLayout: 'admin' },
-    '/login': { prerender: true },
-    '/signup': { prerender: true },
+    '/login': {
+      prerender: true,
+    },
+    '/signup': {
+      prerender: true,
+    },
   },
 
   runtimeConfig: {

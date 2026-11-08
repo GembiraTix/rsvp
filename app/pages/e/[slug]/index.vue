@@ -49,6 +49,11 @@ const isLimitReached = computed(() => {
 useSeoMeta({
   title: () => `${event.value?.title || 'Acara'} - RSVP`,
   description: () => event.value?.description || '',
+  ogTitle: () => event.value?.title || undefined,
+  ogDescription: () => event.value?.description || undefined,
+  ogImage: () => event.value?.image_url || undefined,
+  ogImageAlt: () => event.value?.title || undefined,
+  twitterCard: 'summary_large_image',
 })
 
 const { data: existingRsvp, refresh: refreshExistingRsvp } = await useAsyncData(

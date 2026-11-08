@@ -11,6 +11,7 @@ useHead({
   },
 })
 
+const site = useSiteConfig()
 const title = `RSVP Acara - GembiraTix`
 const description = `Portal RSVP untuk GembiraTix`
 
@@ -19,6 +20,9 @@ useSeoMeta({
   description,
   ogTitle: title,
   ogDescription: description,
+  ogImage: `${site.url}/logo/gembiratix.png`,
+  ogImageAlt: 'GembiraTix',
+  ogSiteName: site.name,
 })
 
 const user = useSupabaseUser()
