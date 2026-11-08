@@ -94,7 +94,7 @@ async function saveRegistrationLimit(
     registrationAlert.value = {
       title: 'Berhasil',
       type: 'success',
-      message: 'Batas pendaftaran berhasil disimpan.',
+      message: 'Batas registrasi berhasil disimpan.',
     }
   } catch (err: unknown) {
     registrationAlert.value = {
@@ -103,7 +103,7 @@ async function saveRegistrationLimit(
       message:
         err instanceof Error
           ? err.message
-          : 'Gagal menyimpan batas pendaftaran.',
+          : 'Gagal menyimpan batas registrasi.',
     }
   } finally {
     isSavingRegistration.value = false
@@ -494,7 +494,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
               <template #header>
                 <div class="flex items-center gap-2">
                   <h2 class="text-lg font-bold text-on-surface">
-                    Batas Pendaftaran
+                    Batas Registrasi
                   </h2>
                 </div>
               </template>
@@ -517,14 +517,8 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                     </p>
                   </div>
 
-                  <UModal title="Atur Batas Pendaftaran">
-                    <UButton
-                      type="button"
-                      color="primary"
-                      icon="i-lucide-settings-2"
-                    >
-                      Atur Batas
-                    </UButton>
+                  <UModal title="Atur Batas Registrasi">
+                    <UButton label="Atur Batas" icon="i-lucide-settings-2" />
                     <template #body>
                       <UAlert
                         v-if="registrationAlert"
@@ -554,7 +548,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                       >
                         <UFormField
                           class="flex items-center justify-between"
-                          label="Aktifkan batas pendaftaran"
+                          label="Aktifkan batas registrasi"
                         >
                           <USwitch
                             v-model="eventLimitFormState.enabled"
@@ -734,7 +728,10 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   title="Ubah status draf"
                   description="Acara disembunyikan tidak akan ditampilkan ke pengguna."
                 >
-                  <UButton label="Ubah status draf" />
+                  <UButton
+                    label="Ubah status draf"
+                    icon="i-lucide-settings-2"
+                  />
 
                   <template #body>
                     <UForm
@@ -767,10 +764,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
 
             <UCard v-if="isSuperAdmin">
               <template #header>
-                <div class="flex items-center gap-2 text-error">
-                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
-                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
-                </div>
+                <h2 class="text-lg text-error font-bold">Zona Bahaya</h2>
               </template>
 
               <article
