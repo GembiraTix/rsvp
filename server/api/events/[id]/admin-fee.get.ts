@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const service = await usePaymentSettingsService(event)
-  const adminFee = await service.resolveAdminFee(params.id, query.subtotal)
+  const { fee, source } = await service.resolveAdminFee(params.id, query.subtotal)
 
-  return { success: true, data: { admin_fee: adminFee } }
+  return { success: true, data: { admin_fee: fee, fee_source: source } }
 })

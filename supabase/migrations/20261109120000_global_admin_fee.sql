@@ -1,7 +1,7 @@
 -- Global platform settings (single row), currently only the admin fee.
 create table "public"."app_settings" (
   "id" smallint not null default 1,
-  "admin_fee" bigint not null default 0,
+  "admin_fee" integer not null default 0,
   "updated_at" timestamp with time zone not null default now(),
   constraint "app_settings_id_check" check (id = 1),
   constraint "app_settings_admin_fee_check" check (admin_fee >= 0),
