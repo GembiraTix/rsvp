@@ -160,28 +160,26 @@ export class OrderService {
     ).toISOString()
 
     const orderId = crypto.randomUUID()
+    const itemDetails = normalizedLines.map((line) => ({
+      id: String(line.ticketTypeId),
+      name: line.name,
+      price: line.unitPrice,
+      quantity: line.qty,
+    }))
+
+    if (adminFee > 0) {
+      itemDetails.push({
+        id: 'admin-fee',
+        name: 'Biaya layanan',
+        price: adminFee,
+        quantity: 1,
+      })
+    }
 
     const { snapToken, redirectUrl } = await this.createMidtransTransaction({
       midtransOrderId: `ORDER-${orderId}`,
       grossAmount: total,
-      itemDetails: [
-        ...normalizedLines.map((line) => ({
-          id: String(line.ticketTypeId),
-          name: line.name,
-          price: line.unitPrice,
-          quantity: line.qty,
-        })),
-        ...(adminFee > 0
-          ? [
-              {
-                id: 'admin-fee',
-                name: 'Biaya layanan',
-                price: adminFee,
-                quantity: 1,
-              },
-            ]
-          : []),
-      ],
+      itemDetails: itemDetails,
     })
 
     const order = await this.orderRepo.create({
