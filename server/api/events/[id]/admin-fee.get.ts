@@ -6,6 +6,14 @@ const paramsSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
+  const { auth } = event.context
+  if (!auth.user) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Pengguna tidak terautentikasi.',
+    })
+  }
+
   const { data: params, error: paramsError } = await getValidatedRouterParams(
     event,
     paramsSchema.safeParse,

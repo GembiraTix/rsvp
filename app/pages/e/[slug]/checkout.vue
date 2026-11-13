@@ -10,6 +10,10 @@ import {
   type AttendeeDraft,
 } from '@/composables/useAttendeeDraft'
 
+definePageMeta({
+  middleware: 'auth',
+})
+
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
