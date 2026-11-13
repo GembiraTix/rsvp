@@ -37,10 +37,7 @@ const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 const { cart, selectedLines, subtotal, totalQty, decode } =
   useTicketCart(ticketTypes)
 
-const { data: adminFeeRes } = useAdminFee(
-  () => event.value.id,
-  subtotal,
-)
+const { data: adminFeeRes } = useAdminFee(() => event.value.id)
 const adminFee = computed(() => adminFeeRes.value?.data.admin_fee ?? 0)
 const total = computed(() => subtotal.value + adminFee.value)
 

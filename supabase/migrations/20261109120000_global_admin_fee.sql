@@ -47,9 +47,14 @@ grant update on table "public"."app_settings" to "authenticated";
 
 grant select, update on table "public"."app_settings" to "service_role";
 
--- Amounts are whole rupiah, drop the _cents suffix
+-- Amounts are whole rupiah, drop the _cents suffix.
+-- admin_fee_fixed: null = inherit the global fee, a number = per-event override
 alter table "public"."event_payment_settings" rename column "admin_fee_fixed_cents" to "admin_fee_fixed";
+alter table "public"."event_payment_settings" alter column "admin_fee_fixed" drop not null;
+alter table "public"."event_payment_settings" add constraint "event_payment_settings_admin_fee_fixed_check" check (admin_fee_fixed is null or admin_fee_fixed >= 0);
 alter table "public"."event_payment_settings" rename column "refund_default_cents" to "refund_default";
+alter table "public"."event_payment_settings" drop column "admin_fee_mode";
+alter table "public"."event_payment_settings" drop column "admin_fee_percent";
 
 -- Fee resolution runs under the buyer's JWT, so read must not be admin-only
 create policy "Anyone can read event payment settings"

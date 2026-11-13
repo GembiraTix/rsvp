@@ -136,11 +136,7 @@ export interface ISettingsRepository {
   updateAdminFee(adminFee: number): Promise<void>
   getEventPaymentSettings(
     eventId: number,
-  ): Promise<{
-    admin_fee_mode: string
-    admin_fee_fixed: number
-    admin_fee_percent: number
-  } | null>
+  ): Promise<{ admin_fee_fixed: number | null } | null>
 }
 
 export interface IPaymentEventRepository {

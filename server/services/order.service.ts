@@ -147,10 +147,8 @@ export class OrderService {
       (acc, line) => acc + line.unitPrice * line.qty,
       0,
     )
-    const { fee: adminFee } = await this.paymentSettingsService.resolveAdminFee(
-      eventId,
-      subtotal,
-    )
+    const { fee: adminFee } =
+      await this.paymentSettingsService.resolveAdminFee(eventId)
     const total = subtotal + adminFee
 
     const orderNumber = `INV-${nanoid(8)}`

@@ -104,9 +104,7 @@ export type Database = {
       }
       event_payment_settings: {
         Row: {
-          admin_fee_fixed: number
-          admin_fee_mode: string
-          admin_fee_percent: number
+          admin_fee_fixed: number | null
           created_at: string
           enabled: boolean
           event_id: number
@@ -115,9 +113,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          admin_fee_fixed?: number
-          admin_fee_mode?: string
-          admin_fee_percent?: number
+          admin_fee_fixed?: number | null
           created_at?: string
           enabled?: boolean
           event_id: number
@@ -126,9 +122,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          admin_fee_fixed?: number
-          admin_fee_mode?: string
-          admin_fee_percent?: number
+          admin_fee_fixed?: number | null
           created_at?: string
           enabled?: boolean
           event_id?: number

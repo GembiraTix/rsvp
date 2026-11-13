@@ -23,14 +23,12 @@ export class SupabaseSettingsRepository implements ISettingsRepository {
     if (error) throw error
   }
 
-  async getEventPaymentSettings(eventId: number): Promise<{
-    admin_fee_mode: string
-    admin_fee_fixed: number
-    admin_fee_percent: number
-  } | null> {
+  async getEventPaymentSettings(
+    eventId: number,
+  ): Promise<{ admin_fee_fixed: number | null } | null> {
     const { data, error } = await this.client
       .from('event_payment_settings')
-      .select('admin_fee_mode, admin_fee_fixed, admin_fee_percent')
+      .select('admin_fee_fixed')
       .eq('event_id', eventId)
       .maybeSingle()
     if (error) throw error

@@ -18,7 +18,6 @@ export class PaymentSettingsService {
 
   async resolveAdminFee(
     eventId: number,
-    subtotal: number,
   ): Promise<{ fee: number; source: AdminFeeSource }> {
     const event = await this.eventRepo.findById(eventId)
     if (!event) {
@@ -26,15 +25,9 @@ export class PaymentSettingsService {
     }
 
     const settings = await this.settingsRepo.getEventPaymentSettings(eventId)
-    if (!settings || settings.admin_fee_mode === 'auto') {
-      return { fee: await this.settingsRepo.getAdminFee(), source: 'global' }
+    if (settings?.admin_fee_fixed != null) {
+      return { fee: settings.admin_fee_fixed, source: 'event' }
     }
-    if (settings.admin_fee_mode === 'percent') {
-      return {
-        fee: Math.ceil((subtotal * Number(settings.admin_fee_percent)) / 100),
-        source: 'event',
-      }
-    }
-    return { fee: settings.admin_fee_fixed, source: 'event' }
+    return { fee: await this.settingsRepo.getAdminFee(), source: 'global' }
   }
 }
