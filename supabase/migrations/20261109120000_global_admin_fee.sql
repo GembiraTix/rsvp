@@ -56,9 +56,13 @@ alter table "public"."event_payment_settings" rename column "refund_default_cent
 alter table "public"."event_payment_settings" drop column "admin_fee_mode";
 alter table "public"."event_payment_settings" drop column "admin_fee_percent";
 
--- Fee resolution runs under the buyer's JWT, so read must not be admin-only
-create policy "Anyone can read event payment settings"
+-- Fee resolution runs under the buyer's JWT; checkout requires login, so
+-- anon does not need this table. Keeps refund_default hidden from anon.
+revoke select on table "public"."event_payment_settings" from "anon";
+grant select on table "public"."event_payment_settings" to "authenticated";
+
+create policy "Authenticated users can read event payment settings"
   on public.event_payment_settings
   for select
-  to anon, authenticated
+  to authenticated
   using (true);
