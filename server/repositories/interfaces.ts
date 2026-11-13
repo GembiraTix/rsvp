@@ -131,6 +131,14 @@ export interface IOrderRepository {
   findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]>
 }
 
+export interface ISettingsRepository {
+  getAdminFee(): Promise<number>
+  updateAdminFee(adminFee: number): Promise<void>
+  getEventPaymentSettings(
+    eventId: number,
+  ): Promise<{ admin_fee_fixed: number | null } | null>
+}
+
 export interface IPaymentEventRepository {
   existsByTransactionAndStatus(
     midtransTransactionId: string,

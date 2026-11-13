@@ -4,10 +4,15 @@ import { useEvents } from '@/composables/useEvents'
 import { useTicketTypes } from '@/composables/useTicketTypes'
 import { formatRupiah, formatCountdown } from '@/utils'
 import { useUserProfile } from '@/composables/useUserProfile'
+import { useAdminFee } from '@/composables/useAdminFee'
 import {
   useAttendeeDraft,
   type AttendeeDraft,
 } from '@/composables/useAttendeeDraft'
+
+definePageMeta({
+  middleware: 'auth',
+})
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
@@ -35,6 +40,10 @@ const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 
 const { cart, selectedLines, subtotal, totalQty, decode } =
   useTicketCart(ticketTypes)
+
+const { data: adminFeeRes } = useAdminFee(() => event.value.id)
+const adminFee = computed(() => adminFeeRes.value?.data.admin_fee ?? 0)
+const total = computed(() => subtotal.value + adminFee.value)
 
 const { load: loadDraft, clear: clearDraft } = useAttendeeDraft(eventSlug)
 
@@ -241,8 +250,25 @@ async function handleBayar() {
             <span class="text-on-surface-variant">
               Subtotal ({{ totalQty }} tiket)
             </span>
-            <span class="text-xl font-bold text-on-surface">
+            <span class="text-on-surface">
               {{ formatRupiah(subtotal) }}
+            </span>
+          </div>
+
+          <div
+            v-if="adminFee > 0 && selectedLines.length > 0"
+            class="flex items-center justify-between"
+          >
+            <span class="text-on-surface-variant">Biaya layanan</span>
+            <span class="text-on-surface">{{ formatRupiah(adminFee) }}</span>
+          </div>
+
+          <USeparator />
+
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-on-surface">Total</span>
+            <span class="text-xl font-bold text-on-surface">
+              {{ formatRupiah(total) }}
             </span>
           </div>
 
