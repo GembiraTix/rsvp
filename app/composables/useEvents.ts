@@ -25,6 +25,7 @@ export interface UpdateEventBody {
 
 type EventFetchOptions = {
   withDraft?: boolean
+  withDeleted?: boolean
 }
 
 export function useEvents() {
@@ -32,6 +33,9 @@ export function useEvents() {
     let url = '/api/events'
     if (options?.withDraft !== undefined) {
       url += `?with_draft=${options.withDraft}`
+    }
+    if (options?.withDeleted) {
+      url += `${url.includes('?') ? '&' : '?'}with_deleted=true`
     }
 
     return useFetch<{ success: boolean; data: Event[] }>(url)
@@ -54,6 +58,15 @@ export function useEvents() {
     return $fetch<{ success: boolean }>(`/api/events/${id}`, {
       method: 'DELETE',
     })
+  }
+
+  async function restoreEvent(id: number) {
+    return $fetch<{ success: boolean; data: Event }>(
+      `/api/events/${id}/restore`,
+      {
+        method: 'POST',
+      },
+    )
   }
 
   async function updateEvent(id: number, body: UpdateEventBody) {
@@ -104,6 +117,7 @@ export function useEvents() {
     updateRegistrationLimit,
     updateDraftStatus,
     deleteEvent,
+    restoreEvent,
     uploadEventImage,
   }
 }
