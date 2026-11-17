@@ -160,6 +160,52 @@ async function handleChangePassword(
     isChangingPassword.value = false
   }
 }
+
+const changeEmailSchema = z
+  .object({
+    newEmail: z.email('Masukkan alamat email yang valid.'),
+    confirmEmail: z.email(),
+  })
+  .refine((data) => data.newEmail === data.confirmEmail, {
+    message: 'Konfirmasi email tidak cocok.',
+    path: ['confirmEmail'],
+  })
+
+type ChangeEmailFormState = z.output<typeof changeEmailSchema>
+
+const changeEmailFormState = reactive<ChangeEmailFormState>({
+  newEmail: '',
+  confirmEmail: '',
+})
+
+const isUpdatingEmail = ref(false)
+const emailErrorMessage = ref('')
+
+async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
+  emailErrorMessage.value = ''
+  isUpdatingEmail.value = true
+
+  try {
+    await supabase.auth.updateUser({
+      email: e.data.newEmail,
+    })
+
+    changeEmailFormState.newEmail = ''
+    changeEmailFormState.confirmEmail = ''
+
+    toast.add({
+      title: 'Permintaan ubah email berhasil dikirim.',
+      description:
+        'Silakan konfirmasi alamat email baru melalui email yang baru Anda masukkan.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
+  } catch (err: unknown) {
+    emailErrorMessage.value = getErrorMessage(err, 'Gagal mengubah email.')
+  } finally {
+    isUpdatingEmail.value = false
+  }
+}
 </script>
 
 <template>
@@ -413,6 +459,64 @@ async function handleChangePassword(
                 label="Lupa kata sandi?"
               />
             </article>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <h2 class="text-lg font-bold">Perbarui Email</h2>
+            </template>
+
+            <UAlert
+              v-if="emailErrorMessage"
+              :title="emailErrorMessage"
+              icon="i-lucide-alert-circle"
+              color="error"
+              variant="subtle"
+              class="my-4"
+              close
+              @update:open="emailErrorMessage = ''"
+            />
+
+            <UForm
+              :schema="changeEmailSchema"
+              :state="changeEmailFormState"
+              class="space-y-4"
+              @submit="handleChangeEmail"
+            >
+              <UFormField label="Email Baru" name="newEmail">
+                <UInput
+                  id="newEmail"
+                  v-model="changeEmailFormState.newEmail"
+                  placeholder="andi@johan.com"
+                  name="newEmail"
+                  type="email"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <UFormField label="Konfirmasi Email" name="confirmEmail">
+                <UInput
+                  id="confirmEmail"
+                  v-model="changeEmailFormState.confirmEmail"
+                  placeholder="andi@johan.com"
+                  name="confirmEmail"
+                  type="email"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <div class="pt-4 flex justify-end gap-2">
+                <UButton
+                  color="primary"
+                  type="submit"
+                  :loading="isUpdatingEmail"
+                >
+                  Simpan
+                </UButton>
+              </div>
+            </UForm>
           </UCard>
         </div>
       </template>
