@@ -133,10 +133,10 @@ async function handleResendConfirmation() {
         <p class="text-on-surface-variant">Tidak mendapatkan email?</p>
 
         <UButton
-          @click="handleResendConfirmation"
           size="lg"
           variant="outline"
           label="kirimkan ulang email konfirmasi"
+          @click="handleResendConfirmation"
         />
       </div>
     </header>
