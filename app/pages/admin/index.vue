@@ -12,14 +12,37 @@ const { fetchProfile } = useUserProfile()
 const { data: profileRes } = await fetchProfile()
 const profile = computed(() => profileRes.value?.data || null)
 
-const { fetchAll } = useEvents()
+const { fetchAll, restoreEvent } = useEvents()
 
-const { data: organizedRes } = await fetchAll()
+const { data: organizedRes, refresh } = await fetchAll({ withDeleted: true })
 const organizedEvents = computed(() =>
   ['admin', 'super_admin'].includes(profile.value?.role ?? '')
     ? organizedRes.value?.data
     : [],
 )
+
+const isSuperAdmin = computed(() => profile.value?.role === 'super_admin')
+const isRestoringId = ref<number | null>(null)
+const errorMessage = ref('')
+const toast = useToast()
+
+async function handleRestore(id: number) {
+  isRestoringId.value = id
+  errorMessage.value = ''
+  try {
+    await restoreEvent(id)
+    await refresh()
+    toast.add({
+      title: 'Acara berhasil dipulihkan.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
+  } catch {
+    errorMessage.value = 'Gagal memulihkan acara.'
+  } finally {
+    isRestoringId.value = null
+  }
+}
 
 const eventsColumns: TableColumn<Event>[] = [
   {
@@ -44,6 +67,15 @@ const eventsColumns: TableColumn<Event>[] = [
     cell: ({ row }) => row.original.location || '-',
   },
   {
+    id: 'status',
+    header: 'Status',
+    cell: ({ row }) => {
+      if (row.original.deleted_at) return 'Dihapus'
+      if (row.original.is_draft) return 'Draf'
+      return 'Aktif'
+    },
+  },
+  {
     id: 'action',
     header: 'Aksi',
   },
@@ -64,25 +96,64 @@ const eventsColumns: TableColumn<Event>[] = [
       </div>
     </div>
 
+    <UAlert
+      v-if="errorMessage"
+      color="error"
+      variant="subtle"
+      icon="i-lucide-triangle-alert"
+      :title="errorMessage"
+    />
+
     <UCard class="border-outline" :ui="{ body: 'p-0 sm:p-0' }">
       <UTable :data="organizedEvents ?? []" :columns="eventsColumns">
+        <template #status-cell="{ row }">
+          <UBadge
+            v-if="row.original.deleted_at"
+            color="error"
+            variant="subtle"
+          >
+            Dihapus
+          </UBadge>
+          <UBadge
+            v-else-if="row.original.is_draft"
+            color="warning"
+            variant="subtle"
+          >
+            Draf
+          </UBadge>
+          <UBadge v-else color="success" variant="subtle">Aktif</UBadge>
+        </template>
+
         <template #action-cell="{ row }">
           <div class="flex gap-2 justify-end whitespace-nowrap">
             <UButton
-              :to="`/e/${row.original.slug}/manage`"
+              v-if="row.original.deleted_at && isSuperAdmin"
               variant="soft"
-              icon="i-lucide-settings"
+              color="warning"
+              icon="i-lucide-archive-restore"
+              :loading="isRestoringId === row.original.id"
+              :disabled="isRestoringId !== null"
+              @click="handleRestore(row.original.id)"
             >
-              Kelola
+              Pulihkan
             </UButton>
-            <UButton
-              :to="`/e/${row.original.slug}`"
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              icon="i-lucide-external-link"
-              title="Lihat halaman publik"
-            />
+            <template v-else-if="!row.original.deleted_at">
+              <UButton
+                :to="`/e/${row.original.slug}/manage`"
+                variant="soft"
+                icon="i-lucide-settings"
+              >
+                Kelola
+              </UButton>
+              <UButton
+                :to="`/e/${row.original.slug}`"
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-external-link"
+                title="Lihat halaman publik"
+              />
+            </template>
           </div>
         </template>
 
