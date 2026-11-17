@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { OrderWithEvent, RsvpWithEvent } from '~~/server/domain/types'
-import type { TableColumn } from '@nuxt/ui'
+import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
+import { z } from 'zod'
 
 import { useOrders } from '@/composables/useOrders'
 import { useResumePayment } from '@/composables/useResumePayment'
@@ -14,6 +15,8 @@ useSeoMeta({
 })
 
 const user = useSupabaseUser()
+
+const toast = useToast()
 
 const { data: joinedRsvps } = await useAsyncData<RsvpWithEvent[]>(
   `joined-rsvps-${user.value?.email}`,
@@ -107,6 +110,55 @@ const supabase = useSupabaseClient()
 async function handleLogout() {
   await supabase.auth.signOut()
   await navigateTo('/login')
+}
+
+const changePasswordSchema = z
+  .object({
+    newPassword: z.string().min(8, 'Kata sandi minimal 8 karakter.'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Konfirmasi kata sandi tidak cocok.',
+    path: ['confirmPassword'],
+  })
+
+type ChangePasswordFormState = z.output<typeof changePasswordSchema>
+
+const changePasswordFormState = reactive<ChangePasswordFormState>({
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const isChangingPassword = ref(false)
+const passwordErrorMessage = ref('')
+
+async function handleChangePassword(
+  e: FormSubmitEvent<ChangePasswordFormState>,
+) {
+  passwordErrorMessage.value = ''
+  isChangingPassword.value = true
+
+  try {
+    await supabase.auth.updateUser({
+      password: e.data.newPassword,
+    })
+
+    changePasswordFormState.newPassword = ''
+    changePasswordFormState.confirmPassword = ''
+
+    toast.add({
+      title: 'Kata sandi berhasil diubah.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
+  } catch (err: unknown) {
+    passwordErrorMessage.value = getErrorMessage(
+      err,
+      'Gagal mengubah kata sandi.',
+    )
+  } finally {
+    isChangingPassword.value = false
+  }
 }
 </script>
 
@@ -289,6 +341,77 @@ async function handleLogout() {
               >
                 Keluar
               </UButton>
+            </article>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <h2 class="text-lg font-bold">Ganti Kata Sandi</h2>
+            </template>
+
+            <UAlert
+              v-if="passwordErrorMessage"
+              :title="passwordErrorMessage"
+              icon="i-lucide-alert-circle"
+              color="error"
+              variant="subtle"
+              class="my-4"
+              close
+              @update:open="passwordErrorMessage = ''"
+            />
+
+            <UForm
+              :schema="changePasswordSchema"
+              :state="changePasswordFormState"
+              class="space-y-4"
+              @submit="handleChangePassword"
+            >
+              <UFormField label="Kata Sandi Baru" name="newPassword">
+                <UInput
+                  id="newPassword"
+                  v-model="changePasswordFormState.newPassword"
+                  placeholder="••••••••"
+                  name="newPassword"
+                  type="password"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <UFormField label="Konfirmasi Kata Sandi" name="confirmPassword">
+                <UInput
+                  id="confirmPassword"
+                  v-model="changePasswordFormState.confirmPassword"
+                  placeholder="••••••••"
+                  name="confirmPassword"
+                  type="password"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <div class="pt-4 flex justify-end gap-2">
+                <UButton
+                  color="primary"
+                  type="submit"
+                  :loading="isChangingPassword"
+                >
+                  Simpan
+                </UButton>
+              </div>
+            </UForm>
+
+            <article
+              class="flex items-center gap-2 mt-4 text-on-surface-variant text-sm"
+            >
+              <UIcon name="i-lucide-help-circle" size="sm" />
+              <UButton
+                as="a"
+                :href="`/forgot-password`"
+                variant="ghost"
+                size="sm"
+                label="Lupa kata sandi?"
+              />
             </article>
           </UCard>
         </div>
