@@ -452,9 +452,8 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
             >
               <UIcon name="i-lucide-help-circle" size="sm" />
               <UButton
-                as="a"
-                :href="`/forgot-password`"
-                variant="ghost"
+                to="`/forgot-password`"
+                variant="link"
                 size="sm"
                 label="Lupa kata sandi?"
               />
