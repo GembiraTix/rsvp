@@ -35,12 +35,12 @@ async function handleResetPassword(e: FormSubmitEvent<FormState>) {
     const { error } = await supabase.auth.resetPasswordForEmail(
       e.data.email,
       {
-        redirectTo: `${url.origin}/login`,
+        redirectTo: `${url.origin}/reset-password`,
       },
     )
 
     if (error) {
-      errorMessage.value = error.message
+      errorMessage.value = 'Gagal mengirim email reset kata sandi. Silakan coba lagi.'
       return
     }
 
@@ -53,12 +53,8 @@ async function handleResetPassword(e: FormSubmitEvent<FormState>) {
     })
 
     formState.email = ''
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      errorMessage.value = err.message
-    } else {
-      errorMessage.value = 'Terjadi kesalahan saat mengirimkan email reset kata sandi.'
-    }
+  } catch {
+    errorMessage.value = 'Terjadi kesalahan saat mengirimkan email reset kata sandi.'
   } finally {
     isLoading.value = false
   }

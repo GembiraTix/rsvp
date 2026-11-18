@@ -438,6 +438,14 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
 
               <div class="pt-4 flex justify-end gap-2">
                 <UButton
+                  to="/forgot-password"
+                  icon="i-lucide-help-circle"
+                  variant="link"
+                  size="sm"
+                  label="Lupa kata sandi?"
+                />
+
+                <UButton
                   color="primary"
                   type="submit"
                   :loading="isChangingPassword"
@@ -446,18 +454,6 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
                 </UButton>
               </div>
             </UForm>
-
-            <article
-              class="flex items-center gap-2 mt-4 text-on-surface-variant text-sm"
-            >
-              <UIcon name="i-lucide-help-circle" size="sm" />
-              <UButton
-                to="`/forgot-password`"
-                variant="link"
-                size="sm"
-                label="Lupa kata sandi?"
-              />
-            </article>
           </UCard>
 
           <UCard>
@@ -486,7 +482,7 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
                 <UInput
                   id="newEmail"
                   v-model="changeEmailFormState.newEmail"
-                  placeholder="andi@johan.com"
+                  placeholder="old@email.com"
                   name="newEmail"
                   type="email"
                   class="w-full"
@@ -498,7 +494,7 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
                 <UInput
                   id="confirmEmail"
                   v-model="changeEmailFormState.confirmEmail"
-                  placeholder="andi@johan.com"
+                  placeholder="new@email.com"
                   name="confirmEmail"
                   type="email"
                   class="w-full"
