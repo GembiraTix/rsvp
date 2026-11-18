@@ -12,6 +12,20 @@ definePageMeta({
 
 const supabase = useSupabaseClient()
 
+const user = useSupabaseUser()
+const route = useRoute()
+
+watch(
+  user,
+  () => {
+    if (user.value) {
+      const redirectPath = (route.query.redirectTo as string) || '/users'
+      return navigateTo(redirectPath)
+    }
+  },
+  { immediate: true },
+)
+
 const formStateSchema = z.object({
   name: z.string().optional(),
   email: z.email('Masukkan alamat email yang valid.'),
@@ -83,7 +97,6 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
 }
 
 const url = useRequestURL()
-const route = useRoute()
 
 async function handleResendConfirmation() {
   isLoading.value = true
