@@ -26,24 +26,26 @@ const formState = reactive<FormState>({
 
 const isLoading = ref(false)
 const errorMessage = ref('')
+const isSuccess = ref(false)
 
 async function handleResetPassword(e: FormSubmitEvent<FormState>) {
   errorMessage.value = ''
   isLoading.value = true
 
+  isSuccess.value = false
+
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      e.data.email,
-      {
-        redirectTo: `${url.origin}/reset-password`,
-      },
-    )
+    const { error } = await supabase.auth.resetPasswordForEmail(e.data.email, {
+      redirectTo: `${url.origin}/reset-password`,
+    })
 
     if (error) {
-      errorMessage.value = 'Gagal mengirim email reset kata sandi. Silakan coba lagi.'
+      errorMessage.value =
+        'Gagal mengirim email reset kata sandi. Silakan coba lagi.'
       return
     }
 
+    isSuccess.value = true
     toast.add({
       title: 'Email reset kata sandi telah dikirim.',
       description:
@@ -54,7 +56,8 @@ async function handleResetPassword(e: FormSubmitEvent<FormState>) {
 
     formState.email = ''
   } catch {
-    errorMessage.value = 'Terjadi kesalahan saat mengirimkan email reset kata sandi.'
+    errorMessage.value =
+      'Terjadi kesalahan saat mengirimkan email reset kata sandi.'
   } finally {
     isLoading.value = false
   }
@@ -80,11 +83,21 @@ async function handleResetPassword(e: FormSubmitEvent<FormState>) {
         variant="subtle"
       />
 
+      <UAlert
+        v-if="isSuccess"
+        title="Email berhasil terkirim!"
+        description="Silahkan buka pranala yang kami kirim untuk mengganti kata sandi. Jangan lupa cek kolom spam ya"
+        color="success"
+        icon="i-lucide-circle-check"
+        variant="subtle"
+      />
+
       <UForm
         :schema="formStateSchema"
         :state="formState"
         class="space-y-4"
         @submit="handleResetPassword"
+        v-else
       >
         <UFormField label="Email" name="email">
           <UInput
