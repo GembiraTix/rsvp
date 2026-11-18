@@ -138,11 +138,5 @@ async function handleLogin(e: FormSubmitEvent<FormState>) {
         />
       </template>
     </UCard>
-
-    <div class="text-center">
-      <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
-        Kembali ke beranda
-      </UButton>
-    </div>
   </div>
 </template>
