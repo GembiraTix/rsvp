@@ -161,21 +161,14 @@ async function handleChangePassword(
   }
 }
 
-const changeEmailSchema = z
-  .object({
-    newEmail: z.email('Masukkan alamat email yang valid.'),
-    confirmEmail: z.email(),
-  })
-  .refine((data) => data.newEmail === data.confirmEmail, {
-    message: 'Konfirmasi email tidak cocok.',
-    path: ['confirmEmail'],
-  })
+const changeEmailSchema = z.object({
+  newEmail: z.email('Masukkan alamat email yang valid.'),
+})
 
 type ChangeEmailFormState = z.output<typeof changeEmailSchema>
 
 const changeEmailFormState = reactive<ChangeEmailFormState>({
   newEmail: '',
-  confirmEmail: '',
 })
 
 const isUpdatingEmail = ref(false)
@@ -191,7 +184,6 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
     })
 
     changeEmailFormState.newEmail = ''
-    changeEmailFormState.confirmEmail = ''
 
     toast.add({
       title: 'Permintaan ubah email berhasil dikirim.',
@@ -368,30 +360,6 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
 
           <UCard>
             <template #header>
-              <h2 class="text-lg font-bold">Otentikasi</h2>
-            </template>
-
-            <article
-              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-            >
-              <div>
-                <h3 class="font-semibold font-lg">Keluar</h3>
-                <p class="text-on-surface-variant">Keluar dari akun anda</p>
-              </div>
-
-              <UButton
-                variant="outline"
-                color="error"
-                icon="i-lucide-log-out"
-                @click="handleLogout"
-              >
-                Keluar
-              </UButton>
-            </article>
-          </UCard>
-
-          <UCard>
-            <template #header>
               <h2 class="text-lg font-bold">Ganti Kata Sandi</h2>
             </template>
 
@@ -490,18 +458,6 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
                 />
               </UFormField>
 
-              <UFormField label="Konfirmasi Email" name="confirmEmail">
-                <UInput
-                  id="confirmEmail"
-                  v-model="changeEmailFormState.confirmEmail"
-                  placeholder="new@email.com"
-                  name="confirmEmail"
-                  type="email"
-                  class="w-full"
-                  required
-                />
-              </UFormField>
-
               <div class="pt-4 flex justify-end gap-2">
                 <UButton
                   color="primary"
@@ -512,6 +468,30 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
                 </UButton>
               </div>
             </UForm>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <h2 class="text-lg font-bold">Otentikasi</h2>
+            </template>
+
+            <article
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            >
+              <div>
+                <h3 class="font-semibold font-lg">Keluar</h3>
+                <p class="text-on-surface-variant">Keluar dari akun anda</p>
+              </div>
+
+              <UButton
+                variant="outline"
+                color="error"
+                icon="i-lucide-log-out"
+                @click="handleLogout"
+              >
+                Keluar
+              </UButton>
+            </article>
           </UCard>
         </div>
       </template>
