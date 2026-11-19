@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
+import type { z } from 'zod'
 import {
   createPasswordChangeSchema,
   weakPasswordErrorMessage,

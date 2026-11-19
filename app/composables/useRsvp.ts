@@ -7,6 +7,7 @@ type RsvpDetail = Rsvp & {
     location: string | null
     starts_at: string | null
     ends_at: string | null
+    custom_question_label: string | null
   } | null
 }
 
