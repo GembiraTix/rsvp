@@ -78,6 +78,11 @@ const eventsColumns: TableColumn<Event>[] = [
   {
     id: 'action',
     header: 'Aksi',
+    meta: {
+      class: {
+        th: 'text-center',
+      },
+    },
   },
 ]
 </script>

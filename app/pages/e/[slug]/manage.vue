@@ -96,7 +96,7 @@ async function saveRegistrationLimit(
     registrationAlert.value = {
       title: 'Berhasil',
       type: 'success',
-      message: 'Batas pendaftaran berhasil disimpan.',
+      message: 'Batas registrasi berhasil disimpan.',
     }
   } catch (err: unknown) {
     registrationAlert.value = {
@@ -105,7 +105,7 @@ async function saveRegistrationLimit(
       message:
         err instanceof Error
           ? err.message
-          : 'Gagal menyimpan batas pendaftaran.',
+          : 'Gagal menyimpan batas registrasi.',
     }
   } finally {
     isSavingRegistration.value = false
@@ -190,22 +190,7 @@ useSeoMeta({
     `Pengelolaan acara dan daftar peserta untuk ${event.value?.title || 'acara'}`,
 })
 
-const attendeeSearch = ref('')
-
-const filteredAttendees = computed(() => {
-  if (!attendees.value) return []
-  if (!attendeeSearch.value.trim()) return attendees.value
-  const q = attendeeSearch.value.toLowerCase()
-  return attendees.value.filter(
-    (a) =>
-      a.name.toLowerCase().includes(q) ||
-      (a.email && a.email.toLowerCase().includes(q)) ||
-      (a.custom_question_answer &&
-        a.custom_question_answer.toLowerCase().includes(q)) ||
-      (a.whatsapp && a.whatsapp.includes(q)) ||
-      (a.identity_number && a.identity_number.toLowerCase().includes(q)),
-  )
-})
+const attendeeFilter = ref('')
 
 const attendeesColumns: TableColumn<Rsvp>[] = [
   {
@@ -406,6 +391,11 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
   {
     id: 'action',
     header: 'Aksi',
+    meta: {
+      class: {
+        th: 'text-center',
+      },
+    },
   },
 ]
 </script>
@@ -474,7 +464,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                 </h2>
                 <div class="flex flex-1 gap-4 sm:w-72">
                   <UInput
-                    v-model="attendeeSearch"
+                    v-model="attendeeFilter"
                     placeholder="Cari berdasarkan nama, email, organisasi..."
                     icon="i-lucide-search"
                     class="w-full"
@@ -503,7 +493,11 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                 @update:open="attendeeErrorMessage = ''"
               />
 
-              <UTable :data="filteredAttendees" :columns="attendeesColumns">
+              <UTable
+                v-model:global-filter="attendeeFilter"
+                :data="attendees"
+                :columns="attendeesColumns"
+              >
                 <template #identity-cell="{ row }">
                   {{
                     [row.original.identity_type, row.original.identity_number]
@@ -530,7 +524,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
               <template #header>
                 <div class="flex items-center gap-2">
                   <h2 class="text-lg font-bold text-on-surface">
-                    Batas Pendaftaran
+                    Batas Registrasi
                   </h2>
                 </div>
               </template>
@@ -553,14 +547,8 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                     </p>
                   </div>
 
-                  <UModal title="Atur Batas Pendaftaran">
-                    <UButton
-                      type="button"
-                      color="primary"
-                      icon="i-lucide-settings-2"
-                    >
-                      Atur Batas
-                    </UButton>
+                  <UModal title="Atur Batas Registrasi">
+                    <UButton label="Atur Batas" icon="i-lucide-settings-2" />
                     <template #body>
                       <UAlert
                         v-if="registrationAlert"
@@ -590,7 +578,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                       >
                         <UFormField
                           class="flex items-center justify-between"
-                          label="Aktifkan batas pendaftaran"
+                          label="Aktifkan batas registrasi"
                         >
                           <USwitch
                             v-model="eventLimitFormState.enabled"
@@ -795,7 +783,10 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   title="Ubah status draf"
                   description="Acara disembunyikan tidak akan ditampilkan ke pengguna."
                 >
-                  <UButton label="Ubah status draf" />
+                  <UButton
+                    label="Ubah status draf"
+                    icon="i-lucide-settings-2"
+                  />
 
                   <template #body>
                     <UForm
@@ -828,10 +819,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
 
             <UCard v-if="isSuperAdmin">
               <template #header>
-                <div class="flex items-center gap-2 text-error">
-                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
-                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
-                </div>
+                <h2 class="text-lg text-error font-bold">Zona Bahaya</h2>
               </template>
 
               <article
