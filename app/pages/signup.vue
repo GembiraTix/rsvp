@@ -2,6 +2,8 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 
+import { passwordSchema } from '~~/shared/utils/password'
+
 useSeoMeta({
   title: 'Daftar - GembiraTix',
 })
@@ -12,10 +14,24 @@ definePageMeta({
 
 const supabase = useSupabaseClient()
 
+const user = useSupabaseUser()
+const route = useRoute()
+
+watch(
+  user,
+  () => {
+    if (user.value) {
+      const redirectPath = (route.query.redirectTo as string) || '/users'
+      return navigateTo(redirectPath)
+    }
+  },
+  { immediate: true },
+)
+
 const formStateSchema = z.object({
   name: z.string().optional(),
   email: z.email('Masukkan alamat email yang valid.'),
-  password: z.string().min(1, 'Kata sandi wajib diisi.'),
+  password: passwordSchema,
 })
 
 type FormState = z.output<typeof formStateSchema>
@@ -83,7 +99,6 @@ async function handleSignUp(e: FormSubmitEvent<FormState>) {
 }
 
 const url = useRequestURL()
-const route = useRoute()
 
 async function handleResendConfirmation() {
   isLoading.value = true
@@ -133,10 +148,10 @@ async function handleResendConfirmation() {
         <p class="text-on-surface-variant">Tidak mendapatkan email?</p>
 
         <UButton
-          @click="handleResendConfirmation"
           size="lg"
           variant="outline"
           label="kirimkan ulang email konfirmasi"
+          @click="handleResendConfirmation"
         />
       </div>
     </header>
@@ -216,11 +231,5 @@ async function handleResendConfirmation() {
         />
       </template>
     </UCard>
-
-    <div class="text-center">
-      <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
-        Kembali ke beranda
-      </UButton>
-    </div>
   </div>
 </template>

@@ -29,6 +29,11 @@ const { cart, totalQty, subtotal, selectedLines, encode, select, remove } =
 useSeoMeta({
   title: () => `${event.value?.title || 'Acara'} - Tiket`,
   description: () => event.value?.description || '',
+  ogTitle: () => event.value?.title || undefined,
+  ogDescription: () => event.value?.description || undefined,
+  ogImage: () => event.value?.image_url || undefined,
+  ogImageAlt: () => event.value?.title || undefined,
+  twitterCard: 'summary_large_image',
 })
 
 const paymentsEnabled = useRuntimeConfig().public.paymentsEnabled

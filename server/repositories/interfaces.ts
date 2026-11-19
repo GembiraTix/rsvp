@@ -24,6 +24,7 @@ import type {
 
 export type EventFindOptions = {
   withDraft?: boolean
+  withDeleted?: boolean
 }
 
 export interface IEventRepository {
@@ -36,6 +37,7 @@ export interface IEventRepository {
   create(payload: CreateEventInput): Promise<Event>
   update(id: number, payload: UpdateEventInput): Promise<Event>
   delete(id: number): Promise<void>
+  restore(id: number): Promise<Event | null>
   updateRegistrationLimit(id: number, limit: number | null): Promise<Event>
 }
 
@@ -129,6 +131,14 @@ export interface IOrderRepository {
   updateCheckoutUrl(id: string, checkoutUrl: string): Promise<void>
   findByMidtransOrderId(midtransOrderId: string): Promise<Order | null>
   findOrderItemsByOrderId(orderId: string): Promise<OrderItem[]>
+}
+
+export interface ISettingsRepository {
+  getAdminFee(): Promise<number>
+  updateAdminFee(adminFee: number): Promise<void>
+  getEventPaymentSettings(
+    eventId: number,
+  ): Promise<{ admin_fee_fixed: number | null } | null>
 }
 
 export interface IPaymentEventRepository {

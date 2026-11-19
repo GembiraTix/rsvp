@@ -4,10 +4,15 @@ import { useEvents } from '@/composables/useEvents'
 import { useTicketTypes } from '@/composables/useTicketTypes'
 import { formatRupiah, formatCountdown } from '@/utils'
 import { useUserProfile } from '@/composables/useUserProfile'
+import { useAdminFee } from '@/composables/useAdminFee'
 import {
   useAttendeeDraft,
   type AttendeeDraft,
 } from '@/composables/useAttendeeDraft'
+
+definePageMeta({
+  middleware: 'auth',
+})
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
@@ -36,26 +41,13 @@ const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 const { cart, selectedLines, subtotal, totalQty, decode } =
   useTicketCart(ticketTypes)
 
+const { data: adminFeeRes } = useAdminFee(() => event.value.id)
+const adminFee = computed(() => adminFeeRes.value?.data.admin_fee ?? 0)
+const total = computed(() => subtotal.value + adminFee.value)
+
 const { load: loadDraft, clear: clearDraft } = useAttendeeDraft(eventSlug)
 
 const attendeeDraft = ref<AttendeeDraft[]>([])
-
-onMounted(() => {
-  // TODO: handle nonexistent cart param
-  try {
-    cart.value = decode(route.query.cart as string)
-  } catch {
-    cart.value = []
-    checkoutError.value =
-      'Keranjang tidak valid. Silakan pilih tiket kembali dari halaman acara.'
-    return
-  }
-
-  attendeeDraft.value = loadDraft()
-  if (attendeeDraft.value.length === 0) {
-    navigateTo(`/e/${eventSlug.value}/tickets`)
-  }
-})
 
 // Checkout state
 type CheckoutResult = {
@@ -70,6 +62,23 @@ type CheckoutResult = {
 const isLoading = ref(false)
 const checkoutResult = ref<CheckoutResult | null>(null)
 const checkoutError = ref('')
+
+// Decoded in setup so SSR renders the real cart instead of an empty state.
+// A missing param decodes to [] and shows the empty-cart state.
+try {
+  cart.value = decode(route.query.cart as string)
+} catch {
+  cart.value = []
+  checkoutError.value =
+    'Keranjang tidak valid. Silakan pilih tiket kembali dari halaman acara.'
+}
+
+onMounted(() => {
+  attendeeDraft.value = loadDraft()
+  if (attendeeDraft.value.length === 0) {
+    navigateTo(`/e/${eventSlug.value}/tickets`)
+  }
+})
 
 const ORDER_TIME_LIMIT_S = 10 * 60 // 10 minutes
 
@@ -241,8 +250,25 @@ async function handleBayar() {
             <span class="text-on-surface-variant">
               Subtotal ({{ totalQty }} tiket)
             </span>
-            <span class="text-xl font-bold text-on-surface">
+            <span class="text-on-surface">
               {{ formatRupiah(subtotal) }}
+            </span>
+          </div>
+
+          <div
+            v-if="adminFee > 0 && selectedLines.length > 0"
+            class="flex items-center justify-between"
+          >
+            <span class="text-on-surface-variant">Biaya layanan</span>
+            <span class="text-on-surface">{{ formatRupiah(adminFee) }}</span>
+          </div>
+
+          <USeparator />
+
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-on-surface">Total</span>
+            <span class="text-xl font-bold text-on-surface">
+              {{ formatRupiah(total) }}
             </span>
           </div>
 

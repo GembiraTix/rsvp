@@ -9,6 +9,8 @@ const isRoleModalOpen = defineModel<boolean>('open', { required: true })
 
 const { updateUserRole: apiUpdateUserRole } = useAdminUsers()
 
+const toast = useToast()
+
 const selectedNewRole = ref<UserRole>('user')
 const isUpdatingRole = ref(false)
 const roleErrorMessage = ref('')
@@ -31,6 +33,11 @@ async function handleSaveRole() {
 
   try {
     await apiUpdateUserRole(props.user.id, selectedNewRole.value)
+    toast.add({
+      title: 'Role pengguna berhasil diperbarui.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
     emit('saved')
     isRoleModalOpen.value = false
   } catch (err: unknown) {
@@ -63,7 +70,11 @@ async function handleSaveRole() {
             v-model="selectedNewRole"
             class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
           >
-            <option v-for="opt in roleOptions" :key="opt.value" :value="opt.value">
+            <option
+              v-for="opt in roleOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
               {{ opt.label }}
             </option>
           </select>
@@ -73,10 +84,18 @@ async function handleSaveRole() {
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="ghost" @click="isRoleModalOpen = false">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          @click="isRoleModalOpen = false"
+        >
           Batal
         </UButton>
-        <UButton color="primary" :loading="isUpdatingRole" @click="handleSaveRole">
+        <UButton
+          color="primary"
+          :loading="isUpdatingRole"
+          @click="handleSaveRole"
+        >
           Simpan Perubahan
         </UButton>
       </div>

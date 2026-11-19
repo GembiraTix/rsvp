@@ -81,15 +81,17 @@ const genderItems = [
   { label: 'Perempuan', value: 'perempuan' },
 ]
 
-onMounted(() => {
-  try {
-    cart.value = decode(route.query.cart as string)
-  } catch {
-    goBackToTickets()
-    return
-  }
+// Decoded in setup so SSR renders the real cart instead of an empty state.
+const cartInvalid = ref(false)
+try {
+  cart.value = decode(route.query.cart as string)
+} catch {
+  cart.value = []
+  cartInvalid.value = true
+}
 
-  if (selectedLines.value.length === 0) {
+onMounted(() => {
+  if (cartInvalid.value || selectedLines.value.length === 0) {
     goBackToTickets()
     return
   }

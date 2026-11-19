@@ -6,18 +6,25 @@ Context for AI coding agents working in this repo.
 
 GembiraTix — event RSVP + paid ticketing app. All UI copy, error messages, dates (`id-ID`, Asia/Jakarta) and currency (IDR via `formatRupiah`) are in Bahasa Indonesia.
 
-Stack: Nuxt 4 (SSR), Nuxt UI v4 + Tailwind CSS v4, Supabase (Postgres, Auth, Storage), Midtrans Snap (payments), Resend (email), zod (validation). Deployed at `gembiratix.my.id`.
+Stack: Nuxt 4 (SSR), Nuxt UI v4 + Tailwind CSS v4, Supabase (Postgres, Auth, Storage), Midtrans Snap (payments), pluggable email provider (Resend by default, SMTP via `NUXT_EMAIL_PROVIDER`), zod (validation). Deployed at `gembiratix.my.id`.
 
 ## Commands
 
-Package manager is **pnpm** (Node 22 in CI).
+Package manager is **pnpm** (Node 24 in CI).
 
 - `pnpm dev` — dev server on http://localhost:3000
 - `pnpm lint` — ESLint
 - `pnpm typecheck` — `nuxt typecheck` (vue-tsc)
+- `pnpm test` — Vitest (`vitest run`)
 - `pnpm format` — Prettier
 
-There are no tests. Before considering work done, `pnpm lint` and `pnpm typecheck` must pass — that's exactly what CI runs.
+Branch off `develop` (kebab-case branch names); PRs target `develop`.
+
+## Tests
+
+Unit tests live in `tests/` (Vitest). Only pure, dependency-free logic is testable: put such logic in `shared/utils/` and import it in both tests and app code. Code that touches Vue composables, Nuxt auto-imports, or `#server` imports can't run under Vitest (pnpm isolated deps leave those unresolved), so keep it out of test scope.
+
+CI runs lint and typecheck only; run `pnpm test` locally for the unit tests. Before considering work done, `pnpm lint` and `pnpm typecheck` must pass.
 
 Supabase CLI (devDependency; local stack on ports 54321/54322, Postgres 17):
 
@@ -61,7 +68,7 @@ Strict layering; every new backend feature follows it:
 
 - RLS is enabled on every table; any new table needs policies in its migration.
 - Schema changes = a new file in `supabase/migrations/` (never edit an applied migration), then regenerate types.
-- Tables: `events`, `users`, `rsvps`, `confirmation_emails`, `ticket_types`, `orders`, `order_items`, `tickets`, plus `event_payment_settings` and `payment_events` (reserved, not used by app code yet).
+- Tables: `events`, `users`, `rsvps`, `confirmation_emails`, `ticket_categories`, `ticket_types`, `orders`, `order_items`, `tickets`, `event_payment_settings`, `payment_events`, and `app_settings` (global settings like the admin fee, read via the settings repository).
 - Storage: single public bucket `event-banners`; uploads go through `POST /api/events/upload` (server-side, magic-byte validated via `shared/utils/imageValidation.ts`).
 - No RPC/views; plain table queries only.
 
@@ -78,7 +85,8 @@ Strict layering; every new backend feature follows it:
 - Nuxt UI v4 components only (`UForm`, `UCard`, `UButton`, `UTabs`, ...). Icons as string names: `i-lucide-*`.
 - Tailwind v4 CSS-first — no `tailwind.config.*`. Theme tokens and the `brand` palette live in `app/assets/css/main.css`; use the semantic classes (`text-on-surface`, `bg-surface-container`, `border-outline`).
 - Forms: `UForm` + zod schema + `type FormState = z.output<typeof schema>` + `reactive<FormState>`; dates via `@internationalized/date`, converted to UTC strings before sending.
-- Errors/feedback: inline `UAlert color="error" variant="subtle" icon="i-lucide-triangle-alert"` bound to an `errorMessage` ref, next to `isLoading`/`isSubmitting` refs. No `useToast`.
+- Errors/feedback: inline `UAlert color="error" variant="subtle" icon="i-lucide-triangle-alert"` bound to an `errorMessage` ref, next to `isLoading`/`isSubmitting` refs. All error feedback stays inline.
+- Success feedback: `useToast` with `color: 'success'` and `icon: 'i-lucide-circle-check'` after a mutation succeeds, called where the success lands (not inside composables). Don't use toasts for errors.
 - Composables are imported explicitly; Vue/Nuxt primitives and `app/utils` helpers are auto-imported.
 - SFCs: `<script setup lang="ts">` first, template second; Vue 3.5 prop destructure (`const { event } = defineProps<Props>()`).
 

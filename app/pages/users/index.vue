@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import type { OrderWithEvent, RsvpWithEvent } from '~~/server/domain/types'
-import type { TableColumn } from '@nuxt/ui'
+import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
+import { z } from 'zod'
+
+import {
+  passwordMatchRefinement,
+  passwordSchema,
+  weakPasswordErrorMessage,
+} from '~~/shared/utils/password'
 
 import { useOrders } from '@/composables/useOrders'
 import { useResumePayment } from '@/composables/useResumePayment'
@@ -14,6 +21,8 @@ useSeoMeta({
 })
 
 const user = useSupabaseUser()
+
+const toast = useToast()
 
 const { data: joinedRsvps } = await useAsyncData<RsvpWithEvent[]>(
   `joined-rsvps-${user.value?.email}`,
@@ -107,6 +116,117 @@ const supabase = useSupabaseClient()
 async function handleLogout() {
   await supabase.auth.signOut()
   await navigateTo('/login')
+}
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Kata sandi saat ini wajib diisi.'),
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine(
+    (data) => data.newPassword === data.confirmPassword,
+    passwordMatchRefinement,
+  )
+
+type ChangePasswordFormState = z.output<typeof changePasswordSchema>
+
+const changePasswordFormState = reactive<ChangePasswordFormState>({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const isChangingPassword = ref(false)
+const passwordErrorMessage = ref('')
+
+async function handleChangePassword(
+  e: FormSubmitEvent<ChangePasswordFormState>,
+) {
+  passwordErrorMessage.value = ''
+  isChangingPassword.value = true
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: e.data.newPassword,
+      current_password: e.data.currentPassword,
+    })
+
+    if (error) {
+      if (
+        error.code === 'current_password_mismatch' ||
+        error.code === 'current_password_required'
+      ) {
+        passwordErrorMessage.value = 'Kata sandi saat ini salah.'
+      } else if (error.code === 'same_password') {
+        passwordErrorMessage.value =
+          'Kata sandi baru tidak boleh sama dengan kata sandi lama.'
+      } else if (error.code === 'weak_password') {
+        passwordErrorMessage.value = weakPasswordErrorMessage(
+          (error as { reasons?: string[] }).reasons,
+        )
+      } else {
+        passwordErrorMessage.value =
+          'Gagal mengubah kata sandi. Silakan coba lagi.'
+      }
+      return
+    }
+
+    changePasswordFormState.currentPassword = ''
+    changePasswordFormState.newPassword = ''
+    changePasswordFormState.confirmPassword = ''
+
+    toast.add({
+      title: 'Kata sandi berhasil diubah.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
+  } catch (err: unknown) {
+    passwordErrorMessage.value = getErrorMessage(
+      err,
+      'Gagal mengubah kata sandi.',
+    )
+  } finally {
+    isChangingPassword.value = false
+  }
+}
+
+const changeEmailSchema = z.object({
+  newEmail: z.email('Masukkan alamat email yang valid.'),
+})
+
+type ChangeEmailFormState = z.output<typeof changeEmailSchema>
+
+const changeEmailFormState = reactive<ChangeEmailFormState>({
+  newEmail: '',
+})
+
+const isUpdatingEmail = ref(false)
+const emailErrorMessage = ref('')
+
+async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
+  emailErrorMessage.value = ''
+  isUpdatingEmail.value = true
+
+  try {
+    await supabase.auth.updateUser({
+      email: e.data.newEmail,
+    })
+
+    changeEmailFormState.newEmail = ''
+
+    toast.add({
+      title: 'Permintaan ubah email berhasil dikirim.',
+      description:
+        'Silakan konfirmasi alamat email baru melalui email yang baru Anda masukkan.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
+  } catch (err: unknown) {
+    emailErrorMessage.value = getErrorMessage(err, 'Gagal mengubah email.')
+  } finally {
+    isUpdatingEmail.value = false
+  }
 }
 </script>
 
@@ -266,6 +386,133 @@ async function handleLogout() {
               <p class="text-on-surface">Mode warna aplikasi</p>
               <UColorModeSelect size="lg" />
             </article>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <h2 class="text-lg font-bold">Ganti Kata Sandi</h2>
+            </template>
+
+            <UAlert
+              v-if="passwordErrorMessage"
+              :title="passwordErrorMessage"
+              icon="i-lucide-alert-circle"
+              color="error"
+              variant="subtle"
+              class="my-4"
+              close
+              @update:open="passwordErrorMessage = ''"
+            />
+
+            <UForm
+              :schema="changePasswordSchema"
+              :state="changePasswordFormState"
+              class="space-y-4"
+              @submit="handleChangePassword"
+            >
+              <UFormField
+                label="Kata Sandi Saat Ini"
+                name="currentPassword"
+              >
+                <UInput
+                  id="currentPassword"
+                  v-model="changePasswordFormState.currentPassword"
+                  placeholder="••••••••"
+                  name="currentPassword"
+                  type="password"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <UFormField label="Kata Sandi Baru" name="newPassword">
+                <UInput
+                  id="newPassword"
+                  v-model="changePasswordFormState.newPassword"
+                  placeholder="••••••••"
+                  name="newPassword"
+                  type="password"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <UFormField label="Konfirmasi Kata Sandi" name="confirmPassword">
+                <UInput
+                  id="confirmPassword"
+                  v-model="changePasswordFormState.confirmPassword"
+                  placeholder="••••••••"
+                  name="confirmPassword"
+                  type="password"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <div class="pt-4 flex justify-end gap-2">
+                <UButton
+                  to="/forgot-password"
+                  icon="i-lucide-help-circle"
+                  variant="link"
+                  size="sm"
+                  label="Lupa kata sandi?"
+                />
+
+                <UButton
+                  color="primary"
+                  type="submit"
+                  :loading="isChangingPassword"
+                >
+                  Simpan
+                </UButton>
+              </div>
+            </UForm>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <h2 class="text-lg font-bold">Perbarui Email</h2>
+            </template>
+
+            <UAlert
+              v-if="emailErrorMessage"
+              :title="emailErrorMessage"
+              icon="i-lucide-alert-circle"
+              color="error"
+              variant="subtle"
+              class="my-4"
+              close
+              @update:open="emailErrorMessage = ''"
+            />
+
+            <UForm
+              :schema="changeEmailSchema"
+              :state="changeEmailFormState"
+              class="space-y-4"
+              @submit="handleChangeEmail"
+            >
+              <UFormField label="Email Baru" name="newEmail">
+                <UInput
+                  id="newEmail"
+                  v-model="changeEmailFormState.newEmail"
+                  placeholder="old@email.com"
+                  name="newEmail"
+                  type="email"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
+              <div class="pt-4 flex justify-end gap-2">
+                <UButton
+                  color="primary"
+                  type="submit"
+                  :loading="isUpdatingEmail"
+                >
+                  Simpan
+                </UButton>
+              </div>
+            </UForm>
           </UCard>
 
           <UCard>

@@ -9,6 +9,7 @@ import { nanoid } from 'nanoid'
 
 type EventGetAllOptions = {
   withDraft?: boolean
+  withDeleted?: boolean
 }
 
 export class EventService {
@@ -17,9 +18,12 @@ export class EventService {
     private readonly logger: ILogger,
   ) {}
 
-  async getAllEvents({ withDraft }: EventGetAllOptions): Promise<Event[]> {
+  async getAllEvents({
+    withDraft,
+    withDeleted,
+  }: EventGetAllOptions): Promise<Event[]> {
     this.logger.info('Fetching all events')
-    return this.eventRepo.find({ withDraft })
+    return this.eventRepo.find({ withDraft, withDeleted })
   }
 
   async getEventById(id: number): Promise<Event | null> {
@@ -85,6 +89,24 @@ export class EventService {
 
     this.logger.info('Deleting event', { id, userId: currentUser.id })
     await this.eventRepo.delete(id)
+  }
+
+  async restoreEvent(
+    id: number,
+    currentUser: { id: string; role?: string | null },
+  ): Promise<Event> {
+    if (currentUser.role !== 'super_admin') {
+      throw new Error(
+        'Hanya super admin yang memiliki izin untuk memulihkan acara.',
+      )
+    }
+
+    this.logger.info('Restoring event', { id, userId: currentUser.id })
+    const restored = await this.eventRepo.restore(id)
+    if (!restored) {
+      throw new Error('Acara tidak ditemukan')
+    }
+    return restored
   }
 
   async updateEvent(

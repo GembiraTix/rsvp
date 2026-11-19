@@ -9,9 +9,10 @@ const isCreateModalOpen = defineModel<boolean>('open', { required: true })
 
 const { createUser: apiCreateUser } = useAdminUsers()
 
+const toast = useToast()
+
 const isCreating = ref(false)
 const createErrorMessage = ref('')
-const createSuccessMessage = ref('')
 
 const createUserSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi.'),
@@ -32,7 +33,6 @@ const createFormState = reactive<CreateUserState>({
 async function handleCreateUser(e: FormSubmitEvent<CreateUserState>) {
   isCreating.value = true
   createErrorMessage.value = ''
-  createSuccessMessage.value = ''
 
   try {
     await apiCreateUser({
@@ -41,16 +41,17 @@ async function handleCreateUser(e: FormSubmitEvent<CreateUserState>) {
       password: e.data.password,
       role: e.data.role,
     })
+    toast.add({
+      title: 'Pengguna berhasil dibuat.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
     emit('saved')
-    createSuccessMessage.value = 'Pengguna berhasil dibuat!'
+    isCreateModalOpen.value = false
     createFormState.name = ''
     createFormState.email = ''
     createFormState.password = ''
     createFormState.role = 'admin'
-    setTimeout(() => {
-      isCreateModalOpen.value = false
-      createSuccessMessage.value = ''
-    }, 1500)
   } catch (err: unknown) {
     createErrorMessage.value = getErrorMessage(err, 'Gagal membuat pengguna.')
   } finally {
@@ -71,15 +72,6 @@ async function handleCreateUser(e: FormSubmitEvent<CreateUserState>) {
         :title="createErrorMessage"
         icon="i-lucide-alert-circle"
         color="error"
-        variant="subtle"
-        class="mb-4"
-      />
-
-      <UAlert
-        v-if="createSuccessMessage"
-        :title="createSuccessMessage"
-        icon="i-lucide-check-circle"
-        color="success"
         variant="subtle"
         class="mb-4"
       />
@@ -121,7 +113,11 @@ async function handleCreateUser(e: FormSubmitEvent<CreateUserState>) {
             v-model="createFormState.role"
             class="w-full rounded-md border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface"
           >
-            <option v-for="opt in roleOptions" :key="opt.value" :value="opt.value">
+            <option
+              v-for="opt in roleOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
               {{ opt.label }}
             </option>
           </select>

@@ -10,7 +10,7 @@ import type {
   RsvpWithEvent,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
-import { useResend } from '#server/utils/resend'
+import type { EmailService } from './email.service'
 import { isValidWhatsapp, normalizeWhatsapp } from '../../shared/utils/whatsapp'
 import { PostgrestError } from '@supabase/supabase-js'
 
@@ -24,6 +24,7 @@ export class RsvpService {
     private readonly rsvpRepo: IRsvpRepository,
     private readonly eventRepo: IEventRepository,
     private readonly emailLogRepo: IEmailLogRepository,
+    private readonly emailService: EmailService | null,
     private readonly logger: ILogger,
   ) {}
 
@@ -113,10 +114,9 @@ export class RsvpService {
 
     const ticketUrl = `${input.origin}/rsvp/${rsvp.token}`
     const subject = `Konfirmasi RSVP: ${event.title}`
-    const resend = useResend()
 
-    if (!resend) {
-      this.logger.warn('Resend not configured, skipping confirmation email', {
+    if (!this.emailService) {
+      this.logger.warn('Email service not configured, skipping confirmation email', {
         rsvpId: rsvp.id,
       })
       await this.emailLogRepo.log({
@@ -124,7 +124,7 @@ export class RsvpService {
         email: input.email,
         subject,
         status: 'failed',
-        error: "Resend instance doesn't exist",
+        error: 'Email service not configured',
       })
       return { rsvp, emailSent: false }
     }
@@ -137,61 +137,29 @@ export class RsvpService {
       ticketUrl,
     })
 
-    let emailSent = true
+    const result = await this.emailService.send({
+      to: input.email,
+      subject,
+      html: emailHtml,
+    })
 
-    try {
-      const from = useRuntimeConfig().emailFrom
-      const fromFallback = 'GembiraTix <noreply@info.gembiratix.my.id>'
-      if (!from) {
-        this.logger.warn(
-          `email: sender email address is not defined falling back to ${fromFallback}`,
-        )
-      }
-
-      // error must be checked explicitly:
-      // the SDK resolves with { data: null, error }
-      // instead of throwing on API failure
-      const result = await resend.emails.send({
-        from: from || fromFallback,
-        to: [input.email],
+    if (result.success) {
+      await this.emailLogRepo.log({
+        rsvpId: rsvp.id,
+        email: input.email,
         subject,
-        html: emailHtml,
+        status: 'sent',
+        messageId: result.messageId,
       })
 
-      if (result.error) {
-        emailSent = false
-        this.logger.error('Failed to send confirmation email', {
-          rsvpId: rsvp.id,
-          error: result.error.message,
-        })
-
-        await this.emailLogRepo.log({
-          rsvpId: rsvp.id,
-          email: input.email,
-          subject,
-          status: 'failed',
-          error: result.error.message,
-        })
-      } else {
-        await this.emailLogRepo.log({
-          rsvpId: rsvp.id,
-          email: input.email,
-          subject,
-          status: 'sent',
-          messageId: result.data?.id ?? null,
-        })
-
-        this.logger.info('Confirmation email sent', {
-          rsvpId: rsvp.id,
-          messageId: result.data?.id,
-        })
-      }
-    } catch (err: unknown) {
-      emailSent = false
-      const errorMsg = err instanceof Error ? err.message : String(err)
+      this.logger.info('Confirmation email sent', {
+        rsvpId: rsvp.id,
+        messageId: result.messageId,
+      })
+    } else {
       this.logger.error('Failed to send confirmation email', {
         rsvpId: rsvp.id,
-        error: errorMsg,
+        error: result.error,
       })
 
       await this.emailLogRepo.log({
@@ -199,12 +167,12 @@ export class RsvpService {
         email: input.email,
         subject,
         status: 'failed',
-        error: errorMsg,
+        error: result.error,
       })
     }
 
     this.logger.info('RSVP created successfully', { rsvpId: rsvp.id })
-    return { rsvp, emailSent }
+    return { rsvp, emailSent: result.success }
   }
 
   async getRsvpByToken(token: string): Promise<Rsvp | null> {

@@ -6,12 +6,15 @@ import type { Event, CreateEventInput, UpdateEventInput } from '../domain/types'
 export class SupabaseEventRepository implements IEventRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
-  async find({ withDraft }: EventFindOptions): Promise<Event[]> {
+  async find({ withDraft, withDeleted }: EventFindOptions): Promise<Event[]> {
     let query = this.client
       .from('events')
       .select('*')
-      .is('deleted_at', null)
       .order('starts_at', { ascending: true })
+
+    if (!withDeleted) {
+      query = query.is('deleted_at', null)
+    }
 
     if (withDraft !== undefined) {
       query = query.eq('is_draft', withDraft)
@@ -89,6 +92,18 @@ export class SupabaseEventRepository implements IEventRepository {
       .eq('id', id)
 
     if (error) throw error
+  }
+
+  async restore(id: number): Promise<Event | null> {
+    const { data, error } = await this.client
+      .from('events')
+      .update({ deleted_at: null })
+      .eq('id', id)
+      .select('*')
+      .maybeSingle()
+
+    if (error) throw error
+    return data
   }
 
   async updateRegistrationLimit(

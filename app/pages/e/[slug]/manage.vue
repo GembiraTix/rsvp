@@ -16,6 +16,8 @@ definePageMeta({
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
 
+const toast = useToast()
+
 const tabItems = computed(() => {
   const items = [
     {
@@ -94,7 +96,7 @@ async function saveRegistrationLimit(
     registrationAlert.value = {
       title: 'Berhasil',
       type: 'success',
-      message: 'Batas pendaftaran berhasil disimpan.',
+      message: 'Batas registrasi berhasil disimpan.',
     }
   } catch (err: unknown) {
     registrationAlert.value = {
@@ -103,7 +105,7 @@ async function saveRegistrationLimit(
       message:
         err instanceof Error
           ? err.message
-          : 'Gagal menyimpan batas pendaftaran.',
+          : 'Gagal menyimpan batas registrasi.',
     }
   } finally {
     isSavingRegistration.value = false
@@ -144,19 +146,41 @@ const { data: attendeesRes, refresh: refreshAttendees } =
   await fetchByEvent(eventSlug)
 const attendees = computed(() => attendeesRes.value?.data ?? [])
 
+const attendeeToDelete = ref<Rsvp | null>(null)
+const isDeleteAttendeeModalOpen = ref(false)
+const isDeletingAttendee = ref(false)
 const attendeeErrorMessage = ref('')
 
-async function removeAttendee(id: number) {
-  if (!confirm('Hapus peserta ini dari daftar RSVP?')) return
+function askDeleteAttendee(attendee: Rsvp) {
+  attendeeToDelete.value = attendee
   attendeeErrorMessage.value = ''
+  isDeleteAttendeeModalOpen.value = true
+}
+
+async function handleRemoveAttendee() {
+  const attendee = attendeeToDelete.value
+  if (!attendee) return
+
+  isDeletingAttendee.value = true
+  attendeeErrorMessage.value = ''
+
   try {
-    await apiRemoveAttendee(eventSlug.value, id)
+    await apiRemoveAttendee(eventSlug.value, attendee.id)
     await refreshAttendees()
+    toast.add({
+      title: 'Peserta berhasil dihapus.',
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
+    isDeleteAttendeeModalOpen.value = false
+    attendeeToDelete.value = null
   } catch (err: unknown) {
     attendeeErrorMessage.value = getErrorMessage(
       err,
       'Gagal menghapus peserta.',
     )
+  } finally {
+    isDeletingAttendee.value = false
   }
 }
 
@@ -166,22 +190,7 @@ useSeoMeta({
     `Pengelolaan acara dan daftar peserta untuk ${event.value?.title || 'acara'}`,
 })
 
-const attendeeSearch = ref('')
-
-const filteredAttendees = computed(() => {
-  if (!attendees.value) return []
-  if (!attendeeSearch.value.trim()) return attendees.value
-  const q = attendeeSearch.value.toLowerCase()
-  return attendees.value.filter(
-    (a) =>
-      a.name.toLowerCase().includes(q) ||
-      (a.email && a.email.toLowerCase().includes(q)) ||
-      (a.custom_question_answer &&
-        a.custom_question_answer.toLowerCase().includes(q)) ||
-      (a.whatsapp && a.whatsapp.includes(q)) ||
-      (a.identity_number && a.identity_number.toLowerCase().includes(q)),
-  )
-})
+const attendeeFilter = ref('')
 
 const attendeesColumns: TableColumn<Rsvp>[] = [
   {
@@ -262,6 +271,11 @@ function exportCSV() {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+  toast.add({
+    title: 'CSV peserta berhasil diekspor.',
+    color: 'success',
+    icon: 'i-lucide-circle-check',
+  })
 }
 
 const { fetchByEvent: fetchTicketTypes, deleteTicketType } = useTicketTypes()
@@ -275,7 +289,6 @@ const editingTicketType = ref<TicketType | null>(null)
 const ticketTypeToDelete = ref<TicketType | null>(null)
 const isDeleteTicketTypeModalOpen = ref(false)
 const isDeletingTicketType = ref(false)
-const ticketTypeNotice = ref('')
 const ticketTypeError = ref('')
 
 function openCreateTicketTypeModal() {
@@ -295,7 +308,11 @@ function askDeleteTicketType(ticket: TicketType) {
 }
 
 function handleTicketTypeSaved(notice: string) {
-  ticketTypeNotice.value = notice
+  toast.add({
+    title: notice,
+    color: 'success',
+    icon: 'i-lucide-circle-check',
+  })
   refreshTicketTypes()
 }
 
@@ -312,9 +329,13 @@ async function handleDeleteTicketType() {
     await refreshTicketTypes()
     isDeleteTicketTypeModalOpen.value = false
     ticketTypeToDelete.value = null
-    ticketTypeNotice.value = res.data.deactivated
-      ? `Tipe tiket '${ticket.name}' sudah pernah terjual, tipe tiket akan dinonaktifkan.`
-      : `Tipe tiket '${ticket.name}' berhasil dihapus.`
+    toast.add({
+      title: res.data.deactivated
+        ? `Tipe tiket '${ticket.name}' sudah pernah terjual, tipe tiket akan dinonaktifkan.`
+        : `Tipe tiket '${ticket.name}' berhasil dihapus.`,
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+    })
   } catch (err: unknown) {
     ticketTypeError.value = getErrorMessage(
       err,
@@ -370,6 +391,11 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
   {
     id: 'action',
     header: 'Aksi',
+    meta: {
+      class: {
+        th: 'text-center',
+      },
+    },
   },
 ]
 </script>
@@ -438,7 +464,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                 </h2>
                 <div class="flex flex-1 gap-4 sm:w-72">
                   <UInput
-                    v-model="attendeeSearch"
+                    v-model="attendeeFilter"
                     placeholder="Cari berdasarkan nama, email, organisasi..."
                     icon="i-lucide-search"
                     class="w-full"
@@ -467,7 +493,11 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                 @update:open="attendeeErrorMessage = ''"
               />
 
-              <UTable :data="filteredAttendees" :columns="attendeesColumns">
+              <UTable
+                v-model:global-filter="attendeeFilter"
+                :data="attendees"
+                :columns="attendeesColumns"
+              >
                 <template #identity-cell="{ row }">
                   {{
                     [row.original.identity_type, row.original.identity_number]
@@ -482,7 +512,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                     variant="ghost"
                     icon="i-lucide-trash-2"
                     title="Hapus peserta"
-                    @click="removeAttendee(row.original.id)"
+                    @click="askDeleteAttendee(row.original)"
                   />
                 </template>
               </UTable>
@@ -494,7 +524,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
               <template #header>
                 <div class="flex items-center gap-2">
                   <h2 class="text-lg font-bold text-on-surface">
-                    Batas Pendaftaran
+                    Batas Registrasi
                   </h2>
                 </div>
               </template>
@@ -517,14 +547,8 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                     </p>
                   </div>
 
-                  <UModal title="Atur Batas Pendaftaran">
-                    <UButton
-                      type="button"
-                      color="primary"
-                      icon="i-lucide-settings-2"
-                    >
-                      Atur Batas
-                    </UButton>
+                  <UModal title="Atur Batas Registrasi">
+                    <UButton label="Atur Batas" icon="i-lucide-settings-2" />
                     <template #body>
                       <UAlert
                         v-if="registrationAlert"
@@ -554,7 +578,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                       >
                         <UFormField
                           class="flex items-center justify-between"
-                          label="Aktifkan batas pendaftaran"
+                          label="Aktifkan batas registrasi"
                         >
                           <USwitch
                             v-model="eventLimitFormState.enabled"
@@ -600,17 +624,6 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   />
                 </header>
               </template>
-
-              <UAlert
-                v-if="ticketTypeNotice"
-                :title="ticketTypeNotice"
-                color="success"
-                icon="i-lucide-circle-check"
-                variant="subtle"
-                class="mb-4"
-                close
-                @update:open="ticketTypeNotice = ''"
-              />
 
               <UTable
                 v-if="ticketTypes.length > 0"
@@ -709,6 +722,42 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   </div>
                 </template>
               </UModal>
+
+              <UModal
+                v-model:open="isDeleteAttendeeModalOpen"
+                title="Hapus peserta"
+                :description="`Apakah Anda yakin ingin menghapus peserta '${attendeeToDelete?.name}' dari daftar RSVP?`"
+              >
+                <template v-if="attendeeErrorMessage" #body>
+                  <UAlert
+                    title="Ada kesalahan!"
+                    :description="attendeeErrorMessage"
+                    color="error"
+                    icon="i-lucide-triangle-alert"
+                    variant="subtle"
+                  />
+                </template>
+
+                <template #footer>
+                  <div class="flex w-full justify-end gap-2">
+                    <UButton
+                      color="neutral"
+                      variant="ghost"
+                      @click="isDeleteAttendeeModalOpen = false"
+                    >
+                      Batal
+                    </UButton>
+                    <UButton
+                      color="error"
+                      icon="i-lucide-trash-2"
+                      :loading="isDeletingAttendee"
+                      @click="handleRemoveAttendee"
+                    >
+                      Ya, Hapus
+                    </UButton>
+                  </div>
+                </template>
+              </UModal>
             </UCard>
           </section>
 
@@ -734,7 +783,10 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
                   title="Ubah status draf"
                   description="Acara disembunyikan tidak akan ditampilkan ke pengguna."
                 >
-                  <UButton label="Ubah status draf" />
+                  <UButton
+                    label="Ubah status draf"
+                    icon="i-lucide-settings-2"
+                  />
 
                   <template #body>
                     <UForm
@@ -767,10 +819,7 @@ const ticketTypeColumns: TableColumn<TicketType>[] = [
 
             <UCard v-if="isSuperAdmin">
               <template #header>
-                <div class="flex items-center gap-2 text-error">
-                  <UIcon name="i-lucide-alert-triangle" class="w-5 h-5" />
-                  <h2 class="text-lg font-bold">Zona Bahaya</h2>
-                </div>
+                <h2 class="text-lg text-error font-bold">Zona Bahaya</h2>
               </template>
 
               <article
