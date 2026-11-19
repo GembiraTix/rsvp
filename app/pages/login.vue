@@ -10,8 +10,9 @@ definePageMeta({
   layout: 'auth',
 })
 
-const user = useSupabaseUser()
 const supabase = useSupabaseClient()
+
+const user = useSupabaseUser()
 const route = useRoute()
 
 watch(
@@ -131,6 +132,14 @@ async function handleLogin(e: FormSubmitEvent<FormState>) {
 
       <template #footer>
         <UButton
+          to="/forgot-password"
+          color="neutral"
+          variant="link"
+          class="w-full justify-center"
+          label="Lupa kata sandi?"
+        />
+
+        <UButton
           to="/signup"
           variant="ghost"
           class="w-full justify-center"
@@ -138,11 +147,5 @@ async function handleLogin(e: FormSubmitEvent<FormState>) {
         />
       </template>
     </UCard>
-
-    <div class="text-center">
-      <UButton to="/" icon="i-lucide-arrow-left" variant="ghost">
-        Kembali ke beranda
-      </UButton>
-    </div>
   </div>
 </template>
