@@ -3,6 +3,12 @@ import type { OrderWithEvent, RsvpWithEvent } from '~~/server/domain/types'
 import type { FormSubmitEvent, TableColumn } from '@nuxt/ui'
 import { z } from 'zod'
 
+import {
+  passwordMatchRefinement,
+  passwordSchema,
+  weakPasswordErrorMessage,
+} from '~~/shared/utils/password'
+
 import { useOrders } from '@/composables/useOrders'
 import { useResumePayment } from '@/composables/useResumePayment'
 
@@ -114,17 +120,19 @@ async function handleLogout() {
 
 const changePasswordSchema = z
   .object({
-    newPassword: z.string().min(8, 'Kata sandi minimal 8 karakter.'),
+    currentPassword: z.string().min(1, 'Kata sandi saat ini wajib diisi.'),
+    newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Konfirmasi kata sandi tidak cocok.',
-    path: ['confirmPassword'],
-  })
+  .refine(
+    (data) => data.newPassword === data.confirmPassword,
+    passwordMatchRefinement,
+  )
 
 type ChangePasswordFormState = z.output<typeof changePasswordSchema>
 
 const changePasswordFormState = reactive<ChangePasswordFormState>({
+  currentPassword: '',
   newPassword: '',
   confirmPassword: '',
 })
@@ -139,10 +147,32 @@ async function handleChangePassword(
   isChangingPassword.value = true
 
   try {
-    await supabase.auth.updateUser({
+    const { error } = await supabase.auth.updateUser({
       password: e.data.newPassword,
+      current_password: e.data.currentPassword,
     })
 
+    if (error) {
+      if (
+        error.code === 'current_password_mismatch' ||
+        error.code === 'current_password_required'
+      ) {
+        passwordErrorMessage.value = 'Kata sandi saat ini salah.'
+      } else if (error.code === 'same_password') {
+        passwordErrorMessage.value =
+          'Kata sandi baru tidak boleh sama dengan kata sandi lama.'
+      } else if (error.code === 'weak_password') {
+        passwordErrorMessage.value = weakPasswordErrorMessage(
+          (error as { reasons?: string[] }).reasons,
+        )
+      } else {
+        passwordErrorMessage.value =
+          'Gagal mengubah kata sandi. Silakan coba lagi.'
+      }
+      return
+    }
+
+    changePasswordFormState.currentPassword = ''
     changePasswordFormState.newPassword = ''
     changePasswordFormState.confirmPassword = ''
 
@@ -380,6 +410,21 @@ async function handleChangeEmail(e: FormSubmitEvent<ChangeEmailFormState>) {
               class="space-y-4"
               @submit="handleChangePassword"
             >
+              <UFormField
+                label="Kata Sandi Saat Ini"
+                name="currentPassword"
+              >
+                <UInput
+                  id="currentPassword"
+                  v-model="changePasswordFormState.currentPassword"
+                  placeholder="••••••••"
+                  name="currentPassword"
+                  type="password"
+                  class="w-full"
+                  required
+                />
+              </UFormField>
+
               <UFormField label="Kata Sandi Baru" name="newPassword">
                 <UInput
                   id="newPassword"

@@ -2,6 +2,8 @@
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { z } from 'zod'
 
+import { passwordSchema } from '~~/shared/utils/password'
+
 useSeoMeta({
   title: 'Daftar - GembiraTix',
 })
@@ -29,7 +31,7 @@ watch(
 const formStateSchema = z.object({
   name: z.string().optional(),
   email: z.email('Masukkan alamat email yang valid.'),
-  password: z.string().min(1, 'Kata sandi wajib diisi.'),
+  password: passwordSchema,
 })
 
 type FormState = z.output<typeof formStateSchema>
