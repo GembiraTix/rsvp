@@ -32,7 +32,10 @@ onMounted(async () => {
 
 const formStateSchema = z
   .object({
-    newPassword: z.string().min(8, 'Kata sandi minimal 8 karakter.'),
+    newPassword: z
+      .string()
+      .min(8, 'Kata sandi minimal 8 karakter.')
+      .max(72, 'Kata sandi maksimal 72 karakter.'),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -61,8 +64,19 @@ async function handleSetPassword(e: FormSubmitEvent<FormState>) {
         errorMessage.value =
           'Kata sandi baru tidak boleh sama dengan kata sandi lama.'
       } else if (error.code === 'weak_password') {
-        errorMessage.value =
-          'Kata sandi terlalu lemah. Gunakan minimal 8 karakter dengan kombinasi huruf, angka, dan simbol.'
+        const reasons = (error as { reasons?: string[] }).reasons ?? []
+        if (reasons.includes('pwned')) {
+          errorMessage.value =
+            'Kata sandi ini dikenal bocor dan mudah ditebak. Pilih kata sandi yang berbeda.'
+        } else if (reasons.includes('length')) {
+          errorMessage.value =
+            'Kata sandi terlalu pendek sesuai pengaturan keamanan akun.'
+        } else if (reasons.includes('characters')) {
+          errorMessage.value =
+            'Kata sandi belum memuat jenis karakter yang diwajibkan.'
+        } else {
+          errorMessage.value = 'Kata sandi tidak memenuhi persyaratan keamanan.'
+        }
       } else if (
         error.status === 401 ||
         error.code === 'session_not_found' ||
