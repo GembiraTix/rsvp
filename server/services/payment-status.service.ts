@@ -239,7 +239,7 @@ export class PaymentStatusService {
       eventId: order.event_id,
     })
 
-    if (result.created > 0 || result.skipped > 0) {
+    if (result.created > 0) {
       this.logger.info('Finalized settled order', {
         orderId: order.id,
         ...result,
