@@ -58,9 +58,10 @@ export type Database = {
           error_message: string | null
           id: number
           metadata: Json | null
+          order_id: string | null
           provider_message_id: string | null
           recipient_email: string
-          rsvp_id: number
+          rsvp_id: number | null
           sent_at: string | null
           status: string
           subject: string
@@ -71,9 +72,10 @@ export type Database = {
           error_message?: string | null
           id?: never
           metadata?: Json | null
+          order_id?: string | null
           provider_message_id?: string | null
           recipient_email: string
-          rsvp_id: number
+          rsvp_id?: number | null
           sent_at?: string | null
           status?: string
           subject?: string
@@ -84,15 +86,23 @@ export type Database = {
           error_message?: string | null
           id?: never
           metadata?: Json | null
+          order_id?: string | null
           provider_message_id?: string | null
           recipient_email?: string
-          rsvp_id?: number
+          rsvp_id?: number | null
           sent_at?: string | null
           status?: string
           subject?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "confirmation_emails_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "confirmation_emails_rsvp_id_fkey"
             columns: ["rsvp_id"]
@@ -262,6 +272,13 @@ export type Database = {
           midtrans_order_id: string | null
           midtrans_transaction_id: string | null
           order_number: string
+          orderer_email: string | null
+          orderer_identity_number: string | null
+          orderer_identity_type:
+            | Database["public"]["Enums"]["identity_type"]
+            | null
+          orderer_name: string | null
+          orderer_whatsapp: string | null
           paid_at: string | null
           payment_method: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -285,6 +302,13 @@ export type Database = {
           midtrans_order_id?: string | null
           midtrans_transaction_id?: string | null
           order_number: string
+          orderer_email?: string | null
+          orderer_identity_number?: string | null
+          orderer_identity_type?:
+            | Database["public"]["Enums"]["identity_type"]
+            | null
+          orderer_name?: string | null
+          orderer_whatsapp?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -308,6 +332,13 @@ export type Database = {
           midtrans_order_id?: string | null
           midtrans_transaction_id?: string | null
           order_number?: string
+          orderer_email?: string | null
+          orderer_identity_number?: string | null
+          orderer_identity_type?:
+            | Database["public"]["Enums"]["identity_type"]
+            | null
+          orderer_name?: string | null
+          orderer_whatsapp?: string | null
           paid_at?: string | null
           payment_method?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
@@ -399,6 +430,7 @@ export type Database = {
           identity_type: Database["public"]["Enums"]["identity_type"] | null
           is_attending: boolean
           name: string
+          ticket_id: number | null
           token: string
           whatsapp: string | null
         }
@@ -413,6 +445,7 @@ export type Database = {
           identity_type?: Database["public"]["Enums"]["identity_type"] | null
           is_attending?: boolean
           name: string
+          ticket_id?: number | null
           token: string
           whatsapp?: string | null
         }
@@ -427,6 +460,7 @@ export type Database = {
           identity_type?: Database["public"]["Enums"]["identity_type"] | null
           is_attending?: boolean
           name?: string
+          ticket_id?: number | null
           token?: string
           whatsapp?: string | null
         }
@@ -436,6 +470,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rsvps_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
         ]
