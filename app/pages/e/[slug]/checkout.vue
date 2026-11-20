@@ -100,6 +100,12 @@ onMounted(() => {
 
 const isTimeUp = computed(() => remaining.value === 0 && !checkoutResult.value)
 
+const eTicketNotice = computed(() =>
+  ordererDraft.value.email
+    ? `E-tiket akan dikirim ke ${ordererDraft.value.email} setelah pembayaran berhasil.`
+    : 'E-tiket akan dikirim ke email pemesan setelah pembayaran berhasil.',
+)
+
 async function handleBayar() {
   if (!profile.value) {
     checkoutError.value =
@@ -288,6 +294,14 @@ async function handleBayar() {
               {{ formatRupiah(total) }}
             </span>
           </div>
+
+          <UAlert
+            v-if="selectedLines.length > 0"
+            color="info"
+            variant="subtle"
+            icon="i-lucide-mail-check"
+            :description="eTicketNotice"
+          />
 
           <UButton
             color="primary"
