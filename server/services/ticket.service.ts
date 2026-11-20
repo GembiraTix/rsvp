@@ -2,7 +2,7 @@ import type {
   ITicketRepository,
   IRsvpRepository,
 } from '#server/repositories/interfaces'
-import type { CreateRsvpInput, Ticket } from '#server/domain/types'
+import type { CreateRsvpInput, TicketWithTypeName } from '#server/domain/types'
 import type { ILogger } from './logger.service'
 import { PostgrestError } from '@supabase/supabase-js'
 
@@ -74,7 +74,7 @@ export class TicketService {
     return { created: items.length }
   }
 
-  async findTicketsByOrderId(orderId: string): Promise<Ticket[]> {
+  async findTicketsByOrderId(orderId: string): Promise<TicketWithTypeName[]> {
     return this.ticketRepo.findTicketsByOrderId(orderId)
   }
 

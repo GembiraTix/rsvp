@@ -71,7 +71,8 @@ export interface IRsvpRepository {
 
 export interface IEmailLogRepository {
   log(entry: {
-    rsvpId: number
+    rsvpId?: number | null
+    orderId?: string | null
     email: string
     subject: string
     status: 'sent' | 'failed'

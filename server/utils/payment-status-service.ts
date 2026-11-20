@@ -4,8 +4,10 @@ import { SupabaseOrderRepository } from '#server/repositories/supabase-order.rep
 import { SupabaseTicketRepository } from '#server/repositories/supabase-ticket.repository'
 import { SupabaseRsvpRepository } from '#server/repositories/supabase-rsvp.repository'
 import { SupabasePaymentEventRepository } from '#server/repositories/supabase-payment-event.repository'
+import { SupabaseEventRepository } from '#server/repositories/supabase-event.repository'
 import { TicketService } from '#server/services/ticket.service'
 import { PaymentStatusService } from '#server/services/payment-status.service'
+import { useOrderEmailService } from '#server/utils/order-email-service'
 import { buildLogger } from '#server/services/logger.factory'
 
 // Payment status is only ever persisted through this service, from
@@ -26,6 +28,8 @@ export function usePaymentStatusService(event: H3Event): PaymentStatusService {
     orderRepo,
     paymentEventRepo,
     ticketService,
+    new SupabaseEventRepository(client),
+    useOrderEmailService(event),
     buildLogger(),
   )
 }

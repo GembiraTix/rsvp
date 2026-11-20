@@ -14,7 +14,8 @@ export class SupabaseEmailLogRepository implements IEmailLogRepository {
     error?: string
   }): Promise<void> {
     const { error } = await this.client.from('confirmation_emails').insert({
-      rsvp_id: entry.rsvpId,
+      rsvp_id: entry.rsvpId ?? null,
+      order_id: entry.orderId ?? null,
       recipient_email: entry.email,
       subject: entry.subject,
       status: entry.status,
