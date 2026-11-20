@@ -255,6 +255,7 @@ export interface TicketWithTypeName extends Ticket {
 export interface CreateOrderInput {
   eventId: number
   userId: string
+  orderer: OrdererInput
   lines: {
     ticketTypeId: number
     name: string
