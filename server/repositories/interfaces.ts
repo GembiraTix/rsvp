@@ -63,6 +63,7 @@ export interface IRsvpRepository {
   countAttendingByEventId(eventId: number): Promise<number>
   findByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null>
   findRegisteredEmails(eventId: number, emails: string[]): Promise<string[]>
+  findRegisteredTicketIds(ticketIds: number[]): Promise<number[]>
   create(payload: CreateRsvpInput): Promise<Rsvp>
   createBatch(input: { items: CreateRsvpInput[] }): Promise<Rsvp[]>
   delete(id: number): Promise<void>
@@ -103,6 +104,11 @@ export interface IOrderRepository {
     order_number: string
     event_id: number
     user_id: string
+    orderer_name?: string | null
+    orderer_email?: string | null
+    orderer_whatsapp?: string | null
+    orderer_identity_type?: IdentityType | null
+    orderer_identity_number?: string | null
     subtotal: number
     admin_fee: number
     total: number

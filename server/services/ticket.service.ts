@@ -49,6 +49,7 @@ export class TicketService {
 
       items.push({
         event_id: input.eventId,
+        ticket_id: ticket.id,
         name: ticket.attendee_name,
         email: ticket.attendee_email,
         custom_question_answer: null,

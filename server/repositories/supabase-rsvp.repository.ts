@@ -82,10 +82,25 @@ export class SupabaseRsvpRepository implements IRsvpRepository {
       .select('*')
       .eq('event_id', eventId)
       .eq('email', email)
+      .is('ticket_id', null)
       .maybeSingle()
 
     if (error) throw error
     return data
+  }
+
+  async findRegisteredTicketIds(ticketIds: number[]): Promise<number[]> {
+    if (ticketIds.length === 0) return []
+
+    const { data, error } = await this.client
+      .from('rsvps')
+      .select('ticket_id')
+      .in('ticket_id', ticketIds)
+
+    if (error) throw error
+    return (data ?? [])
+      .map((row) => row.ticket_id)
+      .filter((id): id is number => id !== null)
   }
 
   async findRegisteredEmails(

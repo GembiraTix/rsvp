@@ -91,6 +91,7 @@ export class RsvpService {
     try {
       rsvp = await this.rsvpRepo.create({
         event_id: input.eventId,
+        ticket_id: null,
         name: input.name,
         email: input.email,
         custom_question_answer: input.customQuestionAnswer?.trim() || null,
