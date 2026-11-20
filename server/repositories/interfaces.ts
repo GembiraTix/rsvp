@@ -62,7 +62,6 @@ export interface IRsvpRepository {
   findAttendingByEmail(email: string): Promise<RsvpWithEvent[]>
   countAttendingByEventId(eventId: number): Promise<number>
   findByEventAndEmail(eventId: number, email: string): Promise<Rsvp | null>
-  findRegisteredEmails(eventId: number, emails: string[]): Promise<string[]>
   findRegisteredTicketIds(ticketIds: number[]): Promise<number[]>
   create(payload: CreateRsvpInput): Promise<Rsvp>
   createBatch(input: { items: CreateRsvpInput[] }): Promise<Rsvp[]>

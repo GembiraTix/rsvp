@@ -8,6 +8,7 @@ import { useAdminFee } from '@/composables/useAdminFee'
 import {
   useAttendeeDraft,
   type AttendeeDraft,
+  type OrdererDraft,
 } from '@/composables/useAttendeeDraft'
 
 definePageMeta({
@@ -48,6 +49,13 @@ const total = computed(() => subtotal.value + adminFee.value)
 const { load: loadDraft, clear: clearDraft } = useAttendeeDraft(eventSlug)
 
 const attendeeDraft = ref<AttendeeDraft[]>([])
+const ordererDraft = ref<OrdererDraft>({
+  name: '',
+  identityType: '',
+  identityNumber: '',
+  email: '',
+  whatsapp: '',
+})
 
 // Checkout state
 type CheckoutResult = {
@@ -74,7 +82,9 @@ try {
 }
 
 onMounted(() => {
-  attendeeDraft.value = loadDraft()
+  const draft = loadDraft()
+  ordererDraft.value = draft.orderer
+  attendeeDraft.value = draft.attendees
   if (attendeeDraft.value.length === 0) {
     navigateTo(`/e/${eventSlug.value}/tickets`)
   }
@@ -111,6 +121,13 @@ async function handleBayar() {
       method: 'POST',
       body: {
         eventId: event.value.id,
+        orderer: {
+          name: ordererDraft.value.name,
+          identityType: ordererDraft.value.identityType,
+          identityNumber: ordererDraft.value.identityNumber,
+          email: ordererDraft.value.email,
+          whatsapp: ordererDraft.value.whatsapp,
+        },
         lines: selectedLines.value.map((l) => ({
           ticketTypeId: l.ticketType.id,
           qty: l.qty,
