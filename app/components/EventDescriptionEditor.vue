@@ -80,7 +80,7 @@ const toolbarItems: EditorToolbarItem[][] = [
     v-model="description"
     content-type="markdown"
     :image="false"
-    :starter-kit="{ headings: { levels: [2, 3] } }"
+    :starter-kit="{ heading: { levels: [2, 3] } }"
     :placeholder="{
       placeholder:
         'Detail mengenai persyaratan, agenda, kelayakan, dan pembicara...',
