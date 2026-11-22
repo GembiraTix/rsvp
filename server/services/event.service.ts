@@ -5,6 +5,7 @@ import type {
   UpdateEventInput,
 } from '#server/domain/types'
 import type { ILogger } from './logger.service'
+import { renderDescriptionHtml } from '#server/utils/markdown'
 import { nanoid } from 'nanoid'
 
 type EventGetAllOptions = {
@@ -56,6 +57,9 @@ export class EventService {
       starts_at: input.startsAt,
       ends_at: input.endsAt || null,
       description: input.description || null,
+      description_html: input.description
+        ? renderDescriptionHtml(input.description)
+        : null,
       image_url: input.imageUrl || null,
       custom_question_label: input.customQuestionLabel?.trim() || null,
       custom_question_required: input.customQuestionRequired ?? false,
@@ -136,6 +140,9 @@ export class EventService {
       starts_at: input.startsAt,
       ends_at: input.endsAt || null,
       description: input.description || null,
+      description_html: input.description
+        ? renderDescriptionHtml(input.description)
+        : null,
       image_url: input.imageUrl || null,
       custom_question_label: input.customQuestionLabel?.trim() || null,
       custom_question_required: input.customQuestionRequired ?? false,
