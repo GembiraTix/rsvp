@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { Event } from '~~/server/domain/types'
+import { stripMarkdown } from '~~/shared/utils/stripMarkdown'
 interface Props {
   event: Event
 }
@@ -36,7 +37,7 @@ const { event } = defineProps<Props>()
       </figcaption>
 
       <p class="text-sm text-on-surface-variant line-clamp-3 mb-4">
-        {{ event.description }}
+        {{ stripMarkdown(event.description ?? '') }}
       </p>
     </UCard>
   </NuxtLink>

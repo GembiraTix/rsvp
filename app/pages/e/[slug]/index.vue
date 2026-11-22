@@ -2,6 +2,7 @@
 import { useEvents } from '@/composables/useEvents'
 import { useRsvp } from '@/composables/useRsvp'
 import { useTicketTypes } from '@/composables/useTicketTypes'
+import { stripMarkdown } from '~~/shared/utils/stripMarkdown'
 
 const route = useRoute()
 const eventSlug = computed(() => route.params.slug as string)
@@ -48,9 +49,10 @@ const isLimitReached = computed(() => {
 
 useSeoMeta({
   title: () => `${event.value?.title || 'Acara'} - RSVP`,
-  description: () => event.value?.description || '',
+  description: () => stripMarkdown(event.value?.description || ''),
   ogTitle: () => event.value?.title || undefined,
-  ogDescription: () => event.value?.description || undefined,
+  ogDescription: () =>
+    stripMarkdown(event.value?.description || '') || undefined,
   ogImage: () => event.value?.image_url || undefined,
   ogImageAlt: () => event.value?.title || undefined,
   twitterCard: 'summary_large_image',
@@ -131,9 +133,17 @@ const sidebarPanel = computed(() =>
             </div>
           </article>
 
-          <article class="space-y-2">
+          <article v-if="event.description" class="space-y-2">
             <h2 class="text-xl font-bold text-on-surface">Tentang Sesi Ini</h2>
+            <!-- eslint-disable vue/no-v-html -- server-sanitized at write time -->
+            <div
+              v-if="event.description_html"
+              class="rich-text"
+              v-html="event.description_html"
+            />
+            <!-- eslint-enable vue/no-v-html -->
             <p
+              v-else
               class="text-on-surface-variant leading-relaxed whitespace-pre-line"
             >
               {{ event.description }}
