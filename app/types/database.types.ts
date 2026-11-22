@@ -148,6 +148,7 @@ export type Database = {
           custom_question_required: boolean
           deleted_at: string | null
           description: string | null
+          description_html: string | null
           ends_at: string | null
           id: number
           image_url: string | null
@@ -165,6 +166,7 @@ export type Database = {
           custom_question_required?: boolean
           deleted_at?: string | null
           description?: string | null
+          description_html?: string | null
           ends_at?: string | null
           id?: number
           image_url?: string | null
@@ -182,6 +184,7 @@ export type Database = {
           custom_question_required?: boolean
           deleted_at?: string | null
           description?: string | null
+          description_html?: string | null
           ends_at?: string | null
           id?: number
           image_url?: string | null
