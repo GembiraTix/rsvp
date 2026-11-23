@@ -86,8 +86,13 @@ const toolbarItems: EditorToolbarItem[][] = [
         'Detail mengenai persyaratan, agenda, kelayakan, dan pembicara...',
       mode: 'firstLine',
     }"
-    class="w-full min-h-40"
+    :ui="{ base: 'px-3 py-2 sm:px-3' }"
+    class="w-full min-h-40 rounded-md bg-default ring ring-inset ring-accented focus-within:outline-3 focus-within:outline-primary/25 focus-within:ring-primary"
   >
-    <UEditorToolbar :editor="editor" :items="toolbarItems" />
+    <UEditorToolbar
+      :editor="editor"
+      :items="toolbarItems"
+      class="border-b border-muted px-2 py-1.5 overflow-x-auto"
+    />
   </UEditor>
 </template>
