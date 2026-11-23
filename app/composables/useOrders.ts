@@ -4,8 +4,11 @@ import type {
 } from '~~/server/domain/types'
 
 export function useOrders() {
-  function fetchOrders() {
-    return useFetch<{ success: boolean; data: OrderWithEvent[] }>('/api/orders')
+  function fetchOrders(options?: { immediate?: boolean }) {
+    return useFetch<{ success: boolean; data: OrderWithEvent[] }>(
+      '/api/orders',
+      options,
+    )
   }
 
   function fetchOrder(id: string) {

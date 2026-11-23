@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEvents } from '@/composables/useEvents'
 import { useRsvp } from '@/composables/useRsvp'
+import { useOrders } from '@/composables/useOrders'
 import { useTicketTypes } from '@/composables/useTicketTypes'
 import { stripMarkdown } from '~~/shared/utils/stripMarkdown'
 
@@ -37,7 +38,7 @@ const isAdmin = computed(
   () => profile.value && ['admin', 'super_admin'].includes(profile.value.role),
 )
 
-const { fetchAttendingCount, getRsvpByEventAndEmail } = useRsvp()
+const { fetchAttendingCount, fetchJoined, getRsvpByEventAndEmail } = useRsvp()
 const { data: rsvpCountRes } = await fetchAttendingCount(event.value.id)
 
 const attendingCount = computed(() => rsvpCountRes.value?.data.count ?? 0)
@@ -63,6 +64,22 @@ const { data: existingRsvp, refresh: refreshExistingRsvp } = await useAsyncData(
   () => getRsvpByEventAndEmail(event.value.id, profile.value?.email ?? ''),
 )
 
+const isLoggedIn = Boolean(profile.value)
+
+const { data: joinedRes } = await fetchJoined({ immediate: isLoggedIn })
+const { fetchOrders } = useOrders()
+const { data: ordersRes } = await fetchOrders({ immediate: isLoggedIn })
+
+const hasExistingTickets = computed(
+  () =>
+    (joinedRes.value?.data ?? []).some((r) => r.event_id === event.value.id) ||
+    (ordersRes.value?.data ?? []).some(
+      (o) =>
+        o.event_id === event.value.id &&
+        ['settled', 'paid'].includes(o.payment_status),
+    ),
+)
+
 const rsvpToken = computed(() => existingRsvp.value?.token ?? '')
 
 const isRegistered = computed(() => existingRsvp.value?.is_attending ?? false)
@@ -76,7 +93,7 @@ const sidebarPanel = computed(() =>
     isRegistered: isRegistered.value,
     isLimitReached: isLimitReached.value,
     hasTickets: hasTickets.value,
-    isLoggedIn: Boolean(profile.value),
+    isLoggedIn,
   }),
 )
 </script>
@@ -234,6 +251,25 @@ const sidebarPanel = computed(() =>
           </template>
 
           <div v-else-if="sidebarPanel === 'buy_tickets'" class="space-y-3">
+            <UAlert
+              v-if="hasExistingTickets"
+              color="info"
+              variant="subtle"
+              icon="i-lucide-ticket-check"
+              title="Kamu sudah punya tiket untuk acara ini"
+              description="Kamu tetap bisa membeli tiket lagi jika diperlukan."
+            >
+              <template #actions>
+                <UButton
+                  to="/users/orders"
+                  color="info"
+                  variant="soft"
+                  size="sm"
+                  label="Lihat pesanan"
+                />
+              </template>
+            </UAlert>
+
             <header class="flex justify-between">
               <h2 class="text-xl font-bold text-on-surface">Beli tiket</h2>
               <p class="text-on-surface-variant">
