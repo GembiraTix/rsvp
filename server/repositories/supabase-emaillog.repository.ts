@@ -6,7 +6,8 @@ export class SupabaseEmailLogRepository implements IEmailLogRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
   async log(entry: {
-    rsvpId: number
+    rsvpId?: number | null
+    orderId?: string | null
     email: string
     subject: string
     status: 'sent' | 'failed'
