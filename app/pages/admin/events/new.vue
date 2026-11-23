@@ -60,7 +60,10 @@ const formStateSchema = z
         },
         { message: 'Konten berkas bukan merupakan format gambar yang valid.' },
       ),
-    description: z.string().optional(),
+    description: z
+      .string()
+      .max(20000, 'Deskripsi maksimal 20.000 karakter.')
+      .optional(),
     customQuestionLabel: z.string().optional(),
     customQuestionRequired: z.boolean(),
   })
@@ -257,15 +260,13 @@ async function handleSubmit(e: FormSubmitEvent<FormState>) {
         />
       </UFormField>
 
-      <UFormField label="Deskripsi" name="description" class="col-span-full">
-        <UTextarea
-          id="description"
-          v-model="formState.description"
-          :rows="4"
-          placeholder="Detail mengenai persyaratan, agenda, kelayakan, dan pembicara..."
-          name="description"
-          class="w-full"
-        />
+      <UFormField
+        label="Deskripsi"
+        name="description"
+        description="Mendukung teks terformat: tebal, miring, daftar, kutipan, tautan, dan lainnya."
+        class="col-span-full"
+      >
+        <EventDescriptionEditor v-model="formState.description" />
       </UFormField>
 
       <UFormField

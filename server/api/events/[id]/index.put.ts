@@ -10,7 +10,11 @@ const updateEventSchema = z.object({
   location: z.string().min(1, 'Lokasi wajib diisi.'),
   startsAt: z.string().min(1, 'Tanggal awal wajib diisi.'),
   endsAt: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
+  description: z
+    .string()
+    .max(20000, 'Deskripsi maksimal 20.000 karakter.')
+    .optional()
+    .nullable(),
   imageUrl: z
     .url('URL gambar tidak valid.')
     .optional()

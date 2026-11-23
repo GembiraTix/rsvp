@@ -5,6 +5,7 @@ export interface Event {
   slug: string
   title: string | null
   description: string | null
+  description_html: string | null
   location: string | null
   starts_at: string | null
   ends_at: string | null
@@ -25,6 +26,7 @@ export interface UpdateableEvent {
   custom_question_required?: boolean | undefined
   deleted_at?: string | null | undefined
   description?: string | null | undefined
+  description_html?: string | null | undefined
   ends_at?: string | null | undefined
   id?: number | undefined
   image_url?: string | null | undefined
@@ -41,6 +43,7 @@ export interface InsertableEvent {
   created_by: string
   deleted_at?: string | null | undefined
   description?: string | null | undefined
+  description_html?: string | null | undefined
   ends_at?: string | null | undefined
   id?: number | undefined
   image_url?: string | null | undefined
