@@ -1,10 +1,12 @@
 import type {
   IOrderRepository,
   IPaymentEventRepository,
+  IEventRepository,
 } from '../repositories/interfaces'
 import type { Order, OrderStatus, PaymentStatus } from '../domain/types'
 import type { ILogger } from './logger.service'
 import type { TicketService } from './ticket.service'
+import type { OrderEmailService } from './order-email.service'
 
 const FINAL_PAYMENT_STATUSES: PaymentStatus[] = [
   'settled',
@@ -111,6 +113,8 @@ export class PaymentStatusService {
     private readonly orderRepo: IOrderRepository,
     private readonly paymentEventRepo: IPaymentEventRepository,
     private readonly ticketService: TicketService,
+    private readonly eventRepo: IEventRepository,
+    private readonly orderEmailService: OrderEmailService,
     private readonly logger: ILogger,
   ) {}
 
@@ -239,10 +243,34 @@ export class PaymentStatusService {
       eventId: order.event_id,
     })
 
-    if (result.created > 0 || result.skipped > 0) {
+    if (result.created > 0) {
       this.logger.info('Finalized settled order', {
         orderId: order.id,
         ...result,
+      })
+    }
+
+    await this.sendOrderETicket(order)
+  }
+
+  private async sendOrderETicket(order: Order): Promise<void> {
+    const event = await this.eventRepo.findById(order.event_id)
+    if (!event) {
+      this.logger.warn(
+        'Event not found for settled order, skipping e-ticket email',
+        { orderId: order.id },
+      )
+      return
+    }
+
+    const tickets = await this.ticketService.findTicketsByOrderId(order.id)
+
+    try {
+      await this.orderEmailService.sendETicketEmail({ order, event, tickets })
+    } catch (err: unknown) {
+      this.logger.warn('E-ticket email failed', {
+        orderId: order.id,
+        error: err instanceof Error ? err.message : String(err),
       })
     }
   }

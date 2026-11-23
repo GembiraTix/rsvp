@@ -2,8 +2,9 @@ import type {
   ITicketRepository,
   IRsvpRepository,
 } from '#server/repositories/interfaces'
-import type { CreateRsvpInput, Ticket } from '#server/domain/types'
+import type { CreateRsvpInput, TicketWithTypeName } from '#server/domain/types'
 import type { ILogger } from './logger.service'
+import { PostgrestError } from '@supabase/supabase-js'
 
 export class TicketService {
   constructor(
@@ -12,43 +13,30 @@ export class TicketService {
     private readonly logger: ILogger,
   ) {}
 
-  // Tickets are created at order creation; settlement only registers each
-  // ticket's attendee. Emails already registered for the event are skipped
-  // so a paid order can never wedge.
+  // Tickets are created at order creation; settlement registers one RSVP per
+  // ticket. Duplicate attendee emails are legal — uniqueness is per ticket_id,
+  // enforced by the rsvps_ticket_id_key index. A replayed settlement finds all
+  // ticket_ids already registered and inserts nothing.
   async createRsvpsForOrderTickets(input: {
     orderId: string
     eventId: number
-  }): Promise<{ created: number; skipped: number }> {
+  }): Promise<{ created: number }> {
     const tickets = await this.ticketRepo.findTicketsByOrderId(input.orderId)
     if (tickets.length === 0) {
-      return { created: 0, skipped: 0 }
+      return { created: 0 }
     }
 
     const registered = new Set(
-      (
-        await this.rsvpRepo.findRegisteredEmails(
-          input.eventId,
-          tickets.map((t) => t.attendee_email),
-        )
-      ).map((email) => email.toLowerCase()),
+      await this.rsvpRepo.findRegisteredTicketIds(
+        tickets.map((t) => t.id),
+      ),
     )
 
-    const items: CreateRsvpInput[] = []
-    let skipped = 0
-
-    for (const ticket of tickets) {
-      if (registered.has(ticket.attendee_email.trim().toLowerCase())) {
-        skipped += 1
-        this.logger.warn('Skipping registration for already-registered email', {
-          orderId: input.orderId,
-          ticketId: ticket.id,
-          email: ticket.attendee_email,
-        })
-        continue
-      }
-
-      items.push({
+    const items: CreateRsvpInput[] = tickets
+      .filter((ticket) => !registered.has(ticket.id))
+      .map((ticket) => ({
         event_id: input.eventId,
+        ticket_id: ticket.id,
         name: ticket.attendee_name,
         email: ticket.attendee_email,
         custom_question_answer: null,
@@ -58,24 +46,35 @@ export class TicketService {
         gender: ticket.gender,
         token: crypto.randomUUID(),
         is_attending: true,
-      })
-    }
+      }))
 
     if (items.length > 0) {
-      await this.rsvpRepo.createBatch({ items })
+      try {
+        await this.rsvpRepo.createBatch({ items })
+      } catch (err: unknown) {
+        // a concurrent settlement (webhook + finish endpoint race) registered
+        // these tickets first; the single-statement insert is atomic so
+        // nothing was inserted here
+        if (err instanceof PostgrestError && err.code === '23505') {
+          this.logger.warn('Registrations already exist for order tickets', {
+            orderId: input.orderId,
+          })
+          return { created: 0 }
+        }
+        throw err
+      }
     }
 
     this.logger.info('Registrations created for settled order', {
       orderId: input.orderId,
       ticketCount: tickets.length,
       created: items.length,
-      skipped,
     })
 
-    return { created: items.length, skipped }
+    return { created: items.length }
   }
 
-  async findTicketsByOrderId(orderId: string): Promise<Ticket[]> {
+  async findTicketsByOrderId(orderId: string): Promise<TicketWithTypeName[]> {
     return this.ticketRepo.findTicketsByOrderId(orderId)
   }
 

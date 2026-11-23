@@ -91,6 +91,7 @@ export class RsvpService {
     try {
       rsvp = await this.rsvpRepo.create({
         event_id: input.eventId,
+        ticket_id: null,
         name: input.name,
         email: input.email,
         custom_question_answer: input.customQuestionAnswer?.trim() || null,
@@ -191,13 +192,6 @@ export class RsvpService {
   ): Promise<Rsvp | null> {
     this.logger.info('Checking existing RSVP', { eventId, email })
     return this.rsvpRepo.findByEventAndEmail(eventId, email)
-  }
-
-  async findRegisteredEmails(
-    eventId: number,
-    emails: string[],
-  ): Promise<string[]> {
-    return this.rsvpRepo.findRegisteredEmails(eventId, emails)
   }
 
   async listAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {

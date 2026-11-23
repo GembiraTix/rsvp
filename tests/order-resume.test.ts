@@ -19,8 +19,13 @@ function buildService() {
     updateStatus: vi.fn().mockResolvedValue(true),
     updateCheckoutUrl: vi.fn().mockResolvedValue(undefined),
   }
+  const ticketRepo = {
+    deleteByOrderId: vi.fn().mockResolvedValue(undefined),
+  }
   const service = new OrderService(
     orderRepo as never,
+    ticketRepo as never,
+    {} as never,
     {} as never,
     {} as never,
     {
@@ -31,7 +36,7 @@ function buildService() {
     },
     logger as never,
   )
-  return { service, orderRepo }
+  return { service, orderRepo, ticketRepo }
 }
 
 function makeOrder(overrides: Partial<Order> = {}): Order {

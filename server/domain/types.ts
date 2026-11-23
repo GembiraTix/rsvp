@@ -81,6 +81,7 @@ export interface UpdateUserProfileInput {
 export interface Rsvp {
   id: number
   event_id: number | null
+  ticket_id: number | null
   name: string
   email: string | null
   custom_question_answer: string | null
@@ -154,6 +155,14 @@ export type OrderAttendeeInput = {
   gender: AttendeeGender
 }
 
+export type OrdererInput = {
+  name: string
+  identityType: IdentityType
+  identityNumber: string
+  email: string
+  whatsapp: string
+}
+
 export type OrderStatus =
   | 'draft'
   | 'pending'
@@ -180,6 +189,11 @@ export interface Order {
   order_number: string
   event_id: number
   user_id: string
+  orderer_name: string | null
+  orderer_email: string | null
+  orderer_whatsapp: string | null
+  orderer_identity_type: IdentityType | null
+  orderer_identity_number: string | null
   subtotal: number
   admin_fee: number
   total: number | null
@@ -241,6 +255,7 @@ export interface TicketWithTypeName extends Ticket {
 export interface CreateOrderInput {
   eventId: number
   userId: string
+  orderer: OrdererInput
   lines: {
     ticketTypeId: number
     name: string

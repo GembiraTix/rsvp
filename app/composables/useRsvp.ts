@@ -18,9 +18,10 @@ export function useRsvp() {
     })
   }
 
-  function fetchJoined() {
+  function fetchJoined(options?: { immediate?: boolean }) {
     return useFetch<{ success: boolean; data: RsvpWithEvent[] }>(
       '/api/users/me/rsvps',
+      options,
     )
   }
 

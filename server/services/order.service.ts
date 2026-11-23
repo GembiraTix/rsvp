@@ -75,7 +75,7 @@ export class OrderService {
     snapToken: string
     redirectUrl: string
   }> {
-    const { eventId, userId, lines } = input
+    const { eventId, userId, orderer, lines } = input
 
     for (const line of lines) {
       if (line.attendees.length !== line.qty) {
@@ -86,26 +86,16 @@ export class OrderService {
     }
 
     const attendees = lines.flatMap((line) => line.attendees)
-    const seenEmails = new Set<string>()
-    for (const attendee of attendees) {
-      const email = attendee.email.trim().toLowerCase()
-      if (seenEmails.has(email)) {
-        throw new CheckoutValidationError(
-          'Email peserta tidak boleh duplikat dalam satu pesanan.',
-        )
-      }
-      seenEmails.add(email)
-    }
 
-    const registeredEmails = await this.rsvpRepo.findRegisteredEmails(
-      eventId,
-      attendees.map((a) => a.email),
-    )
-    if (registeredEmails.length > 0) {
-      throw new CheckoutValidationError(
-        'Beberapa peserta sudah terdaftar untuk acara ini. Periksa kembali email peserta.',
-        409,
-      )
+    const normalizedOrderer = {
+      name: orderer.name.trim(),
+      identityType: orderer.identityType,
+      identityNumber: orderer.identityNumber.trim(),
+      email: orderer.email.trim().toLowerCase(),
+      whatsapp: orderer.whatsapp.trim(),
+    }
+    if (!isValidWhatsapp(normalizedOrderer.whatsapp)) {
+      throw new CheckoutValidationError('Nomor WhatsApp tidak valid.')
     }
 
     const event = await this.eventRepo.findById(eventId)
@@ -185,6 +175,11 @@ export class OrderService {
       order_number: orderNumber,
       event_id: eventId,
       user_id: userId,
+      orderer_name: normalizedOrderer.name,
+      orderer_email: normalizedOrderer.email,
+      orderer_whatsapp: normalizedOrderer.whatsapp,
+      orderer_identity_type: normalizedOrderer.identityType,
+      orderer_identity_number: normalizedOrderer.identityNumber,
       subtotal,
       admin_fee: adminFee,
       total,

@@ -6,7 +6,9 @@ import { useTicketCart } from '@/composables/useTicketCart'
 import {
   useAttendeeDraft,
   type AttendeeDraft,
+  type OrdererDraft,
 } from '@/composables/useAttendeeDraft'
+import { useUserProfile } from '@/composables/useUserProfile'
 import { isValidWhatsapp } from '~~/shared/utils/whatsapp'
 
 definePageMeta({
@@ -32,6 +34,10 @@ useSeoMeta({
   title: () => `${event.value?.title || 'Acara'} - Data Peserta`,
 })
 
+const { fetchProfile } = useUserProfile()
+const { data: profileRes } = await fetchProfile()
+const profile = computed(() => profileRes.value?.data || null)
+
 const { fetchPublicByEvent } = useTicketTypes()
 const { data: ticketTypesRes } = await fetchPublicByEvent(eventSlug)
 const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
@@ -39,10 +45,6 @@ const ticketTypes = computed(() => ticketTypesRes.value?.data ?? [])
 const { cart, selectedLines, encode, decode } = useTicketCart(ticketTypes)
 
 const { load: loadDraft, save: saveDraft } = useAttendeeDraft(eventSlug)
-
-const outerSchema = z.object({
-  attendees: z.array(z.unknown()),
-})
 
 const attendeeSchema = z.object({
   name: z.string().trim().min(1, 'Nama lengkap wajib diisi.'),
@@ -63,11 +65,19 @@ const attendeeSchema = z.object({
     ),
 })
 
-const state = reactive<{ attendees: AttendeeDraft[] }>({ attendees: [] })
+const ordererSchema = attendeeSchema.omit({ gender: true })
 
-const isLoading = ref(false)
-const submitError = ref('')
-const registeredEmails = ref<string[]>([])
+const outerSchema = z.object({
+  orderer: ordererSchema,
+  attendees: z.array(z.unknown()),
+})
+
+const state = reactive<{ orderer: OrdererDraft; attendees: AttendeeDraft[] }>({
+  orderer: { name: '', identityType: '', identityNumber: '', email: '', whatsapp: '' },
+  attendees: [],
+})
+
+const sameAsOrderer = ref<boolean[]>([])
 
 const identityTypeItems = [
   { label: 'KTP', value: 'ktp' },
@@ -97,10 +107,19 @@ onMounted(() => {
   }
 
   const previous = loadDraft()
+
+  state.orderer = {
+    name: previous.orderer.name || profile.value?.name || '',
+    email: previous.orderer.email || profile.value?.email || '',
+    identityType: previous.orderer.identityType,
+    identityNumber: previous.orderer.identityNumber,
+    whatsapp: previous.orderer.whatsapp,
+  }
+
   const attendees: AttendeeDraft[] = []
 
   for (const line of selectedLines.value) {
-    const lineUnits = previous.filter(
+    const lineUnits = previous.attendees.filter(
       (u) => u.ticketTypeId === line.ticketType.id,
     )
     for (let i = 0; i < line.qty; i += 1) {
@@ -118,6 +137,7 @@ onMounted(() => {
   }
 
   state.attendees = attendees
+  sameAsOrderer.value = attendees.map(() => false)
 })
 
 function goBackToTickets() {
@@ -136,74 +156,24 @@ function unitHeaderLabel(index: number): string | null {
   return ticketTypes.value.find((t) => t.id === unit.ticketTypeId)?.name ?? null
 }
 
-const duplicateEmails = computed(() => {
-  const seen = new Set<string>()
-  const duplicates = new Set<string>()
+function toggleSameAsOrderer(index: number, value: boolean) {
+  sameAsOrderer.value[index] = value
+  if (!value) return
 
-  for (const unit of state.attendees) {
-    const email = unit.email.trim().toLowerCase()
-    if (!email) continue
-    if (seen.has(email)) {
-      duplicates.add(email)
-    } else {
-      seen.add(email)
-    }
-  }
-
-  return duplicates
-})
-
-function emailFlag(unit: AttendeeDraft): 'duplicate' | 'registered' | null {
-  const email = unit.email.trim().toLowerCase()
-  if (!email) return null
-  if (duplicateEmails.value.has(email)) return 'duplicate'
-  if (registeredEmails.value.some((e) => e.toLowerCase() === email)) {
-    return 'registered'
-  }
-  return null
+  const unit = state.attendees[index]
+  if (!unit) return
+  unit.name = state.orderer.name
+  unit.identityType = state.orderer.identityType
+  unit.identityNumber = state.orderer.identityNumber
+  unit.email = state.orderer.email
+  unit.whatsapp = state.orderer.whatsapp
 }
 
-async function handleContinue() {
-  submitError.value = ''
-
-  if (duplicateEmails.value.size > 0) {
-    submitError.value = 'Email peserta tidak boleh duplikat dalam satu pesanan.'
-    return
-  }
-
-  isLoading.value = true
-
-  try {
-    const res = await $fetch<{
-      success: boolean
-      data: { registered: string[] }
-    }>('/api/registrations/check', {
-      method: 'POST',
-      body: {
-        eventId: event.value.id,
-        emails: state.attendees.map((u) => u.email.trim()),
-      },
-    })
-
-    registeredEmails.value = res.data.registered
-    if (res.data.registered.length > 0) {
-      submitError.value =
-        'Beberapa peserta sudah terdaftar untuk acara ini. Ubah data peserta yang ditandai.'
-      return
-    }
-
-    saveDraft(state.attendees)
-    navigateTo(
-      `/e/${eventSlug.value}/checkout?cart=${encode(selectedLines.value)}`,
-    )
-  } catch (err: unknown) {
-    submitError.value = getErrorMessage(
-      err,
-      'Gagal memeriksa data peserta. Silakan coba lagi.',
-    )
-  } finally {
-    isLoading.value = false
-  }
+function handleContinue() {
+  saveDraft({ orderer: state.orderer, attendees: state.attendees })
+  navigateTo(
+    `/e/${eventSlug.value}/checkout?cart=${encode(selectedLines.value)}`,
+  )
 }
 </script>
 
@@ -214,14 +184,6 @@ async function handleContinue() {
       back-label="Kembali ke pemilihan tiket"
       title="Data Peserta"
       :description="event.title"
-    />
-
-    <UAlert
-      v-if="submitError"
-      color="error"
-      variant="subtle"
-      icon="i-lucide-triangle-alert"
-      :description="submitError"
     />
 
     <UAlert
@@ -238,6 +200,59 @@ async function handleContinue() {
       class="space-y-6"
       @submit="handleContinue"
     >
+      <h3 class="text-lg font-semibold text-on-surface">Data Pemesan</h3>
+
+      <UCard>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <UFormField
+            label="Nama Lengkap"
+            name="orderer.name"
+            class="sm:col-span-2"
+          >
+            <UInput
+              v-model="state.orderer.name"
+              placeholder="Nama sesuai identitas"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Tipe Identitas" name="orderer.identityType">
+            <USelect
+              v-model="state.orderer.identityType"
+              :items="identityTypeItems"
+              placeholder="Pilih tipe"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Nomor Identitas" name="orderer.identityNumber">
+            <UInput
+              v-model="state.orderer.identityNumber"
+              placeholder="Nomor KTP/SIM/paspor"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="Email" name="orderer.email">
+            <UInput
+              v-model="state.orderer.email"
+              type="email"
+              placeholder="nama@email.com"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField label="No. WhatsApp" name="orderer.whatsapp">
+            <UInput
+              v-model="state.orderer.whatsapp"
+              type="tel"
+              placeholder="08xxxxxxxxxx"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+      </UCard>
+
       <template v-for="(unit, count) in state.attendees" :key="count">
         <h3
           v-if="unitHeaderLabel(count)"
@@ -249,87 +264,74 @@ async function handleContinue() {
         <UForm :name="`attendees.${count}`" :schema="attendeeSchema" nested>
           <UCard>
             <template #header>
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between gap-4">
                 <p class="font-medium text-on-surface">
                   Peserta {{ count + 1 }}
                 </p>
+                <USwitch
+                  :model-value="sameAsOrderer[count] ?? false"
+                  label="Samakan dengan detail pemesan"
+                  @update:model-value="toggleSameAsOrderer(count, $event)"
+                />
               </div>
             </template>
 
-            <div class="space-y-4">
-              <UAlert
-                v-if="emailFlag(unit) === 'duplicate'"
-                color="warning"
-                variant="subtle"
-                icon="i-lucide-users"
-                description="Email ini dipakai peserta lain di pesanan yang sama."
-              />
+            <div class="grid sm:grid-cols-2 gap-4">
+              <UFormField
+                label="Nama Lengkap"
+                name="name"
+                class="sm:col-span-2"
+              >
+                <UInput
+                  v-model="unit.name"
+                  placeholder="Nama sesuai identitas"
+                  class="w-full"
+                />
+              </UFormField>
 
-              <UAlert
-                v-else-if="emailFlag(unit) === 'registered'"
-                color="error"
-                variant="subtle"
-                icon="i-lucide-user-check"
-                description="Email ini sudah terdaftar untuk acara ini. Ubah data peserta ini atau ubah tiket yang dipesan."
-              />
+              <UFormField label="Tipe Identitas" name="identityType">
+                <USelect
+                  v-model="unit.identityType"
+                  :items="identityTypeItems"
+                  placeholder="Pilih tipe"
+                  class="w-full"
+                />
+              </UFormField>
 
-              <div class="grid sm:grid-cols-2 gap-4">
-                <UFormField
-                  label="Nama Lengkap"
-                  name="name"
-                  class="sm:col-span-2"
-                >
-                  <UInput
-                    v-model="unit.name"
-                    placeholder="Nama sesuai identitas"
-                    class="w-full"
-                  />
-                </UFormField>
+              <UFormField label="Nomor Identitas" name="identityNumber">
+                <UInput
+                  v-model="unit.identityNumber"
+                  placeholder="Nomor KTP/SIM/paspor"
+                  class="w-full"
+                />
+              </UFormField>
 
-                <UFormField label="Tipe Identitas" name="identityType">
-                  <USelect
-                    v-model="unit.identityType"
-                    :items="identityTypeItems"
-                    placeholder="Pilih tipe"
-                    class="w-full"
-                  />
-                </UFormField>
+              <UFormField label="Email" name="email">
+                <UInput
+                  v-model="unit.email"
+                  type="email"
+                  placeholder="nama@email.com"
+                  class="w-full"
+                />
+              </UFormField>
 
-                <UFormField label="Nomor Identitas" name="identityNumber">
-                  <UInput
-                    v-model="unit.identityNumber"
-                    placeholder="Nomor KTP/SIM/paspor"
-                    class="w-full"
-                  />
-                </UFormField>
+              <UFormField label="No. WhatsApp" name="whatsapp">
+                <UInput
+                  v-model="unit.whatsapp"
+                  type="tel"
+                  placeholder="08xxxxxxxxxx"
+                  class="w-full"
+                />
+              </UFormField>
 
-                <UFormField label="Email" name="email">
-                  <UInput
-                    v-model="unit.email"
-                    type="email"
-                    placeholder="nama@email.com"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField label="No. WhatsApp" name="whatsapp">
-                  <UInput
-                    v-model="unit.whatsapp"
-                    type="tel"
-                    placeholder="08xxxxxxxxxx"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField label="Jenis Kelamin" name="gender">
-                  <USelect
-                    v-model="unit.gender"
-                    :items="genderItems"
-                    placeholder="Pilih jenis kelamin"
-                    class="w-full"
-                  />
-                </UFormField>
-              </div>
+              <UFormField label="Jenis Kelamin" name="gender">
+                <USelect
+                  v-model="unit.gender"
+                  :items="genderItems"
+                  placeholder="Pilih jenis kelamin"
+                  class="w-full"
+                />
+              </UFormField>
             </div>
           </UCard>
         </UForm>
@@ -340,7 +342,6 @@ async function handleContinue() {
         color="primary"
         size="lg"
         block
-        :loading="isLoading"
         :disabled="state.attendees.length === 0"
       >
         Lanjut ke Pembayaran

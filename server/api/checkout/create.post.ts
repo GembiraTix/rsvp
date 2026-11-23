@@ -16,8 +16,11 @@ const attendeeSchema = z.object({
   gender: z.enum(['laki-laki', 'perempuan']),
 })
 
+const ordererSchema = attendeeSchema.omit({ gender: true })
+
 const checkoutSchema = z.object({
   eventId: z.coerce.number().positive(),
+  orderer: ordererSchema,
   lines: z.array(
     z.object({
       ticketTypeId: z.coerce.number().positive(),
@@ -96,6 +99,10 @@ export default defineEventHandler(async (event) => {
     const result = await orderService.createOrder({
       eventId: body.eventId,
       userId: auth.user.sub,
+      orderer: {
+        ...body.orderer,
+        whatsapp: normalizeWhatsapp(body.orderer.whatsapp),
+      },
       lines: linesWithAttendees,
     })
 

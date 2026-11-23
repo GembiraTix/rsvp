@@ -7,6 +7,7 @@ import type {
   OrderWithEvent,
   OrderStatus,
   PaymentStatus,
+  IdentityType,
 } from '../domain/types'
 
 type OrderInsert = Database['public']['Tables']['orders']['Insert']
@@ -19,6 +20,11 @@ export class SupabaseOrderRepository implements IOrderRepository {
     order_number: string
     event_id: number
     user_id: string
+    orderer_name?: string | null
+    orderer_email?: string | null
+    orderer_whatsapp?: string | null
+    orderer_identity_type?: IdentityType | null
+    orderer_identity_number?: string | null
     subtotal: number
     admin_fee: number
     total: number
@@ -34,6 +40,11 @@ export class SupabaseOrderRepository implements IOrderRepository {
       order_number: input.order_number,
       event_id: input.event_id,
       user_id: input.user_id,
+      orderer_name: input.orderer_name,
+      orderer_email: input.orderer_email,
+      orderer_whatsapp: input.orderer_whatsapp,
+      orderer_identity_type: input.orderer_identity_type,
+      orderer_identity_number: input.orderer_identity_number,
       subtotal: input.subtotal,
       admin_fee: input.admin_fee,
       total: input.total,
