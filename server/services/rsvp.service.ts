@@ -12,7 +12,6 @@ import type {
 import type { ILogger } from './logger.service'
 import type { EmailService } from './email.service'
 import { isValidWhatsapp, normalizeWhatsapp } from '../../shared/utils/whatsapp'
-import { PostgrestError } from '@supabase/supabase-js'
 
 type RsvpCreateResult = {
   rsvp: Rsvp
@@ -104,8 +103,14 @@ export class RsvpService {
       })
     } catch (err: unknown) {
       // Case-variant duplicates slip past findByEventAndEmail and hit the
-      // unique index on (event_id, lower(email)) instead
-      if (err instanceof PostgrestError && err.code === '23505') {
+      // unique index on (event_id, lower(email)) instead. supabase-js throws
+      // a plain object, so match on the code property instead of instanceof
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        err.code === '23505'
+      ) {
         throw new Error('Email sudah terdaftar untuk acara ini.', {
           cause: err,
         })
