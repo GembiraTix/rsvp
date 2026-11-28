@@ -200,7 +200,9 @@ export class RsvpService {
   }
 
   async listAttendingByEmail(email: string): Promise<RsvpWithEvent[]> {
-    return this.rsvpRepo.findAttendingByEmail(email)
+    // paid rsvp emails are lowercased at order creation; match that here so
+    // mixed-case account emails still find their tickets
+    return this.rsvpRepo.findAttendingByEmail(email.trim().toLowerCase())
   }
 
   async countAttendingByEventId(eventId: number): Promise<number> {
