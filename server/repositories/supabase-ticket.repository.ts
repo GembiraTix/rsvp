@@ -97,7 +97,8 @@ export class SupabaseTicketRepository implements ITicketRepository {
     if (error) throw error
 
     return (data ?? []).map(({ ticket_type, ...ticket }) => ({
-      ...ticket,
+      // generated rows type fields as Json; the domain type narrows it
+      ...(ticket as unknown as Ticket),
       ticket_type_name: ticket_type?.name ?? null,
     }))
   }
