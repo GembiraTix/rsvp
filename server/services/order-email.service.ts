@@ -99,9 +99,9 @@ function buildETicketEmailHtml(input: {
       (ticket) => `
         <tr>
           <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; font-size: 14px;">
-            <strong>${ticket.attendee_name}</strong>
+            <strong>${escapeHtml(ticket.attendee_name)}</strong>
             <br />
-            <span style="color: #6b7280; font-size: 13px;">${ticket.ticket_type_name ?? 'Tiket'} - ${ticket.attendee_email}</span>
+            <span style="color: #6b7280; font-size: 13px;">${escapeHtml(ticket.ticket_type_name ?? 'Tiket')} - ${escapeHtml(ticket.attendee_email)}</span>
           </td>
         </tr>
       `,
@@ -116,12 +116,12 @@ function buildETicketEmailHtml(input: {
 
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1f2937;">
-      <h2 style="color: #111827; margin-bottom: 16px;">Halo ${input.ordererName},</h2>
+      <h2 style="color: #111827; margin-bottom: 16px;">Halo ${escapeHtml(input.ordererName)},</h2>
       <p style="font-size: 16px; line-height: 24px; margin-bottom: 20px;">
-        Pembayaran untuk pesanan <strong>${input.orderNumber}</strong> telah kami terima. Berikut adalah e-tiket Anda untuk menghadiri <strong>${input.eventTitle}</strong>.
+        Pembayaran untuk pesanan <strong>${escapeHtml(input.orderNumber)}</strong> telah kami terima. Berikut adalah e-tiket Anda untuk menghadiri <strong>${escapeHtml(input.eventTitle)}</strong>.
       </p>
       <div style="background-color: #f3f4f6; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-        <p style="margin: 6px 0; font-size: 14px;"><strong>Lokasi:</strong> ${input.eventLocation || '-'}</p>
+        <p style="margin: 6px 0; font-size: 14px;"><strong>Lokasi:</strong> ${escapeHtml(input.eventLocation || '-')}</p>
         <p style="margin: 6px 0 12px; font-size: 14px;"><strong>Waktu:</strong> ${eventTime}</p>
         <table style="width: 100%; border-collapse: collapse;">${ticketRows}</table>
       </div>
@@ -137,4 +137,13 @@ function buildETicketEmailHtml(input: {
       </p>
     </div>
   `
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
