@@ -27,6 +27,13 @@ export class OrderEmailService {
       return
     }
 
+    if (await this.emailLogRepo.hasSentEmailForOrder(input.order.id)) {
+      this.logger.info('E-ticket email already sent for order, skipping', {
+        orderId: input.order.id,
+      })
+      return
+    }
+
     if (!this.emailService) {
       this.logger.warn(
         'Email service not configured, skipping e-ticket email',

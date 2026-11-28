@@ -48,4 +48,15 @@ export class SupabaseEmailLogRepository implements IEmailLogRepository {
 
     if (error) throw error
   }
+
+  async hasSentEmailForOrder(orderId: string): Promise<boolean> {
+    const { count, error } = await this.client
+      .from('confirmation_emails')
+      .select('*', { head: true, count: 'exact' })
+      .eq('order_id', orderId)
+      .eq('status', 'sent')
+
+    if (error) throw error
+    return (count ?? 0) > 0
+  }
 }

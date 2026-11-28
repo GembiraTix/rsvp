@@ -86,6 +86,8 @@ export interface IEmailLogRepository {
     deliveredAt?: string | null
     metadata?: Record<string, unknown>
   }): Promise<void>
+
+  hasSentEmailForOrder(orderId: string): Promise<boolean>
 }
 
 export interface ITicketTypeRepository {
