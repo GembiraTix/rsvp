@@ -95,7 +95,12 @@ export class SupabaseTicketRepository implements ITicketRepository {
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    return (data ?? []) as unknown as TicketWithTypeName[]
+
+    return (data ?? []).map(({ ticket_type, ...ticket }) => ({
+      // generated rows type fields as Json; the domain type narrows it
+      ...(ticket as unknown as Ticket),
+      ticket_type_name: ticket_type?.name ?? null,
+    }))
   }
 
   async countPendingOrderTicketsByEventId(eventId: number): Promise<number> {

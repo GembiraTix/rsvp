@@ -56,6 +56,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  if (rsvp.ticket_id !== null) {
+    // deleting a paid rsvp is futile: settlement replays re-register it
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'Peserta tiket berbayar tidak dapat dihapus langsung.',
+    })
+  }
+
   await rsvpService.deleteRsvp(rsvp.id)
 
   return { success: true, data: { id: rsvp.id } }

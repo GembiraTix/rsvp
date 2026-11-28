@@ -312,12 +312,16 @@ export class OrderService {
     }
 
     if (new Date(order.expires_at).getTime() <= Date.now()) {
-      await this.orderRepo.updateStatus(
+      // the guard fails when the order settled concurrently; in that case its
+      // tickets (and rsvps) must be left alone
+      const expired = await this.orderRepo.updateStatus(
         order.id,
         { status: 'expired', payment_status: 'expired' },
         { onlyIfPaymentStatusIn: ['pending', 'awaiting_payment'] },
       )
-      await this.ticketRepo.deleteByOrderId(order.id)
+      if (expired) {
+        await this.ticketRepo.deleteByOrderId(order.id)
+      }
       throw new OrderNotPayableError('Pesanan telah kedaluwarsa.', 410)
     }
 

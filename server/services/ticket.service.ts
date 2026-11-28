@@ -4,7 +4,6 @@ import type {
 } from '#server/repositories/interfaces'
 import type { CreateRsvpInput, TicketWithTypeName } from '#server/domain/types'
 import type { ILogger } from './logger.service'
-import { PostgrestError } from '@supabase/supabase-js'
 
 export class TicketService {
   constructor(
@@ -54,8 +53,14 @@ export class TicketService {
       } catch (err: unknown) {
         // a concurrent settlement (webhook + finish endpoint race) registered
         // these tickets first; the single-statement insert is atomic so
-        // nothing was inserted here
-        if (err instanceof PostgrestError && err.code === '23505') {
+        // nothing was inserted here. supabase-js throws a plain object, so
+        // match on the code property instead of instanceof
+        if (
+          typeof err === 'object' &&
+          err !== null &&
+          'code' in err &&
+          err.code === '23505'
+        ) {
           this.logger.warn('Registrations already exist for order tickets', {
             orderId: input.orderId,
           })
